@@ -181,8 +181,15 @@
 </div>
 
 <script>
-let employees = JSON.parse(localStorage.getItem('gc_retention') || '[]');
+const DATA_VERSION = '20260430-freee';
+let employees = [];
 let editIdx = -1;
+
+if (localStorage.getItem('gc_retention_version') !== DATA_VERSION) {
+  localStorage.removeItem('gc_retention');
+  localStorage.setItem('gc_retention_version', DATA_VERSION);
+}
+employees = JSON.parse(localStorage.getItem('gc_retention') || '[]');
 
 if (!employees.length) {
   employees = [

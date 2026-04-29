@@ -158,12 +158,20 @@
 </div>
 
 <script>
-let employees = JSON.parse(localStorage.getItem('gc_directory') || '[]');
+const DATA_VERSION = '20260430-freee';
+let employees = [];
 let viewMode = 'card';
 let selectedIdx = -1;
 let editIdx = -1;
 
 const COLORS = ['#2d6a4f','#40916c','#1b4332','#52b788','#2563eb','#7c3aed','#b45309','#be185d'];
+
+// Clear stale localStorage data if version doesn't match
+if (localStorage.getItem('gc_directory_version') !== DATA_VERSION) {
+  localStorage.removeItem('gc_directory');
+  localStorage.setItem('gc_directory_version', DATA_VERSION);
+}
+employees = JSON.parse(localStorage.getItem('gc_directory') || '[]');
 
 if (!employees.length) {
   employees = [

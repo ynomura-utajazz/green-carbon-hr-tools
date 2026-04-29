@@ -86,8 +86,8 @@
 </header>
 
 <div class="toolbar">
-  <span style="font-size:14px;color:#666">社員数: <strong style="color:var(--gc-dark)">47名</strong></span>
-  <span style="font-size:14px;color:#666">部門数: <strong style="color:var(--gc-dark)">5</strong></span>
+  <span style="font-size:14px;color:#666">社員数: <strong style="color:var(--gc-dark)">184名</strong></span>
+  <span style="font-size:14px;color:#666">部門数: <strong style="color:var(--gc-dark)">22</strong></span>
   <div class="toggle-view" style="display:flex;gap:8px">
     <button class="btn btn-secondary" id="treeBtn" onclick="setView('tree')">🌳 ツリー表示</button>
     <button class="btn btn-secondary" id="deptBtn" onclick="setView('dept')">🏢 部門別</button>
@@ -99,10 +99,10 @@
   <!-- Tree View -->
   <div id="treeView" class="org-tree">
     <!-- CEO -->
-    <div class="node ceo" onclick="showDetail('CEO','最高経営責任者','GreenCarbon創業者。気候変動ソリューションのビジョナリー。','管理部','2021-01-01')">
+    <div class="node ceo" onclick="showDetail('大北 潤','代表取締役','Green Carbon創業者。カーボンクレジット市場のパイオニア。','取締役会','2025-01-01')">
       <div class="node-avatar">GC</div>
-      <div class="node-name">代表取締役 CEO</div>
-      <div class="node-role">Green Carbon Inc.</div>
+      <div class="node-name">大北 潤</div>
+      <div class="node-role">代表取締役</div>
     </div>
     <div class="branch-line"></div>
 
@@ -203,40 +203,215 @@
   <!-- Dept View -->
   <div id="deptView" class="dept-view">
     <div class="dept-section">
-      <div class="dept-header"><h3>🏢 管理部</h3><span class="dept-count">8名</span></div>
+      <div class="dept-header"><h3>📊 リサーチチーム</h3><span class="dept-count">37名</span></div>
       <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">山</div><div class="member-info"><div class="m-name">山本 誠</div><div class="m-role">CFO</div></div></div>
-        <div class="member-card"><div class="member-avatar">野</div><div class="member-info"><div class="m-name">野村 裕太</div><div class="m-role">P&C Manager</div></div></div>
-        <div class="member-card"><div class="member-avatar">加</div><div class="member-info"><div class="m-name">加藤 智子</div><div class="m-role">経理担当</div></div></div>
+        <div class="member-card"><div class="member-avatar">塚</div><div class="member-info"><div class="m-name">塚越 航汰</div></div></div>
+        <div class="member-card"><div class="member-avatar">高</div><div class="member-info"><div class="m-name">高徳 志帆</div></div></div>
+        <div class="member-card"><div class="member-avatar">木</div><div class="member-info"><div class="m-name">木村 健太郎</div></div></div>
+        <div class="member-card"><div class="member-avatar">入</div><div class="member-info"><div class="m-name">入江 七葉</div></div></div>
+        <div class="member-card"><div class="member-avatar">Y</div><div class="member-info"><div class="m-name">Yap Alyssa</div><div class="m-role">リーダー</div></div></div>
+        <div class="member-card"><div class="member-avatar">埜</div><div class="member-info"><div class="m-name">埜崎 大空</div></div></div>
+        <div class="member-card"><div class="member-avatar">藤</div><div class="member-info"><div class="m-name">藤本 若奈</div></div></div>
+        <div class="member-card"><div class="member-avatar">Q</div><div class="member-info"><div class="m-name">Quinn Genevieve</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他29名</div><div class="m-role">合計37名</div></div></div>
       </div>
     </div>
     <div class="dept-section">
-      <div class="dept-header"><h3>💻 プロダクト部</h3><span class="dept-count">12名</span></div>
+      <div class="dept-header"><h3>🇯🇵 国内企画部</h3><span class="dept-count">35名</span></div>
       <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">鈴</div><div class="member-info"><div class="m-name">鈴木 健太</div><div class="m-role">FEエンジニア</div></div></div>
-        <div class="member-card"><div class="member-avatar">小</div><div class="member-info"><div class="m-name">小林 大輔</div><div class="m-role">BEエンジニア</div></div></div>
-        <div class="member-card"><div class="member-avatar">渡</div><div class="member-info"><div class="m-name">渡辺 涼</div><div class="m-role">エンジニア</div></div></div>
+        <div class="member-card"><div class="member-avatar">土</div><div class="member-info"><div class="m-name">土居 海斗</div><div class="m-role">リーダー</div></div></div>
+        <div class="member-card"><div class="member-avatar">富</div><div class="member-info"><div class="m-name">富澤 雫</div></div></div>
+        <div class="member-card"><div class="member-avatar">吉</div><div class="member-info"><div class="m-name">吉田 花菜</div></div></div>
+        <div class="member-card"><div class="member-avatar">保</div><div class="member-info"><div class="m-name">保木 陽人</div></div></div>
+        <div class="member-card"><div class="member-avatar">岡</div><div class="member-info"><div class="m-name">岡村 航太朗</div></div></div>
+        <div class="member-card"><div class="member-avatar">竹</div><div class="member-info"><div class="m-name">竹下 瑛貴</div></div></div>
+        <div class="member-card"><div class="member-avatar">佐</div><div class="member-info"><div class="m-name">佐々木 瞭</div></div></div>
+        <div class="member-card"><div class="member-avatar">森</div><div class="member-info"><div class="m-name">森川 あおい</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他27名</div><div class="m-role">合計35名</div></div></div>
       </div>
     </div>
     <div class="dept-section">
-      <div class="dept-header"><h3>🌱 ソリューション事業部</h3><span class="dept-count">15名</span></div>
+      <div class="dept-header"><h3>⚙️ オペレーションチーム</h3><span class="dept-count">19名</span></div>
       <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">田</div><div class="member-info"><div class="m-name">田中 美咲</div><div class="m-role">Srアナリスト</div></div></div>
-        <div class="member-card"><div class="member-avatar">高</div><div class="member-info"><div class="m-name">高橋 隆司</div><div class="m-role">ESGスペシャリスト</div></div></div>
-        <div class="member-card"><div class="member-avatar">中</div><div class="member-info"><div class="m-name">中村 恵</div><div class="m-role">取引アナリスト</div></div></div>
-        <div class="member-card"><div class="member-avatar">伊</div><div class="member-info"><div class="m-name">伊藤 花</div><div class="m-role">カーボンアナリスト</div></div></div>
+        <div class="member-card"><div class="member-avatar">S</div><div class="member-info"><div class="m-name">SHU HAOWEN</div></div></div>
+        <div class="member-card"><div class="member-avatar">B</div><div class="member-info"><div class="m-name">BAL TAMANG Anurodh</div><div class="m-role">リーダー</div></div></div>
+        <div class="member-card"><div class="member-avatar">夏</div><div class="member-info"><div class="m-name">夏目 環</div></div></div>
+        <div class="member-card"><div class="member-avatar">N</div><div class="member-info"><div class="m-name">Nyakoon Cherish</div></div></div>
+        <div class="member-card"><div class="member-avatar">O</div><div class="member-info"><div class="m-name">Ompusunggu Gratia Dearios</div></div></div>
+        <div class="member-card"><div class="member-avatar">P</div><div class="member-info"><div class="m-name">Premanandhan Anandha Selvi</div></div></div>
+        <div class="member-card"><div class="member-avatar">武</div><div class="member-info"><div class="m-name">武関 瀬七</div></div></div>
+        <div class="member-card"><div class="member-avatar">前</div><div class="member-info"><div class="m-name">前坂 海英</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他11名</div><div class="m-role">合計19名</div></div></div>
       </div>
     </div>
     <div class="dept-section">
-      <div class="dept-header"><h3>🤝 コンサルティング部</h3><span class="dept-count">8名</span></div>
+      <div class="dept-header"><h3>🚀 ビジネスディベロップメントチーム</h3><span class="dept-count">16名</span></div>
       <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">佐</div><div class="member-info"><div class="m-name">佐藤 あい</div><div class="m-role">ESGコンサルタント</div></div></div>
+        <div class="member-card"><div class="member-avatar">加</div><div class="member-info"><div class="m-name">加藤 葉月</div></div></div>
+        <div class="member-card"><div class="member-avatar">原</div><div class="member-info"><div class="m-name">原田 亮</div></div></div>
+        <div class="member-card"><div class="member-avatar">S</div><div class="member-info"><div class="m-name">Saw Jane</div></div></div>
+        <div class="member-card"><div class="member-avatar">D</div><div class="member-info"><div class="m-name">Deepak HV</div><div class="m-role">リーダー</div></div></div>
+        <div class="member-card"><div class="member-avatar">E</div><div class="member-info"><div class="m-name">Effendi Daulay Muthia Otsuka</div></div></div>
+        <div class="member-card"><div class="member-avatar">羽</div><div class="member-info"><div class="m-name">羽山 伊弦</div></div></div>
+        <div class="member-card"><div class="member-avatar">L</div><div class="member-info"><div class="m-name">Lee Raina</div></div></div>
+        <div class="member-card"><div class="member-avatar">C</div><div class="member-info"><div class="m-name">Clemency Claudia</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他8名</div><div class="m-role">合計16名</div></div></div>
       </div>
     </div>
     <div class="dept-section">
-      <div class="dept-header"><h3>🚀 事業開発部</h3><span class="dept-count">4名</span></div>
+      <div class="dept-header"><h3>🌱 ESGコンサルティング部</h3><span class="dept-count">14名</span></div>
       <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">松</div><div class="member-info"><div class="m-name">松田 俊介</div><div class="m-role">PM</div></div></div>
+        <div class="member-card"><div class="member-avatar">井</div><div class="member-info"><div class="m-name">井家 良輔</div><div class="m-role">部長</div></div></div>
+        <div class="member-card"><div class="member-avatar">下</div><div class="member-info"><div class="m-name">下條 拓真</div></div></div>
+        <div class="member-card"><div class="member-avatar">川</div><div class="member-info"><div class="m-name">川崎 堅太</div></div></div>
+        <div class="member-card"><div class="member-avatar">中</div><div class="member-info"><div class="m-name">中津川 千聖</div></div></div>
+        <div class="member-card"><div class="member-avatar">櫛</div><div class="member-info"><div class="m-name">櫛田 健志郎</div></div></div>
+        <div class="member-card"><div class="member-avatar">朱</div><div class="member-info"><div class="m-name">朱 無邪</div></div></div>
+        <div class="member-card"><div class="member-avatar">南</div><div class="member-info"><div class="m-name">南部 栞音</div></div></div>
+        <div class="member-card"><div class="member-avatar">圷</div><div class="member-info"><div class="m-name">圷 琴美</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他6名</div><div class="m-role">合計14名</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>📈 データチーム</h3><span class="dept-count">13名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">A</div><div class="member-info"><div class="m-name">Alifah Viona Puteri</div></div></div>
+        <div class="member-card"><div class="member-avatar">G</div><div class="member-info"><div class="m-name">Garren Adriel</div></div></div>
+        <div class="member-card"><div class="member-avatar">桐</div><div class="member-info"><div class="m-name">桐山 拓未</div></div></div>
+        <div class="member-card"><div class="member-avatar">R</div><div class="member-info"><div class="m-name">RANJATOSON MESSIE</div></div></div>
+        <div class="member-card"><div class="member-avatar">設</div><div class="member-info"><div class="m-name">設楽 大雅</div></div></div>
+        <div class="member-card"><div class="member-avatar">M</div><div class="member-info"><div class="m-name">MacNamara Michael</div></div></div>
+        <div class="member-card"><div class="member-avatar">D</div><div class="member-info"><div class="m-name">Dolorosa Reggie Mae</div></div></div>
+        <div class="member-card"><div class="member-avatar">V</div><div class="member-info"><div class="m-name">Villanueva Boj</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他5名</div><div class="m-role">合計13名</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🌏 海外企画部</h3><span class="dept-count">11名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">横</div><div class="member-info"><div class="m-name">横山 治生</div><div class="m-role">リーダー</div></div></div>
+        <div class="member-card"><div class="member-avatar">酒</div><div class="member-info"><div class="m-name">酒井 友希乃</div></div></div>
+        <div class="member-card"><div class="member-avatar">清</div><div class="member-info"><div class="m-name">清水 優花</div></div></div>
+        <div class="member-card"><div class="member-avatar">仲</div><div class="member-info"><div class="m-name">仲間 悠衣</div></div></div>
+        <div class="member-card"><div class="member-avatar">諸</div><div class="member-info"><div class="m-name">諸岡 まり子</div></div></div>
+        <div class="member-card"><div class="member-avatar">バ</div><div class="member-info"><div class="m-name">バーサンクフー サインザヤ</div></div></div>
+        <div class="member-card"><div class="member-avatar">常</div><div class="member-info"><div class="m-name">常田 姫歌</div></div></div>
+        <div class="member-card"><div class="member-avatar">T</div><div class="member-info"><div class="m-name">Tran Thi My Tran</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他3名</div><div class="m-role">合計11名</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>💻 システムディベロップメントチーム</h3><span class="dept-count">9名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">野</div><div class="member-info"><div class="m-name">野口 登子</div></div></div>
+        <div class="member-card"><div class="member-avatar">作</div><div class="member-info"><div class="m-name">作野 あゆみ</div></div></div>
+        <div class="member-card"><div class="member-avatar">森</div><div class="member-info"><div class="m-name">森田 乃吾</div></div></div>
+        <div class="member-card"><div class="member-avatar">メ</div><div class="member-info"><div class="m-name">メノン 智</div></div></div>
+        <div class="member-card"><div class="member-avatar">G</div><div class="member-info"><div class="m-name">Ghosh Shrinnwanti</div></div></div>
+        <div class="member-card"><div class="member-avatar">A</div><div class="member-info"><div class="m-name">ANG Joanna Marie Dodson</div></div></div>
+        <div class="member-card"><div class="member-avatar">R</div><div class="member-info"><div class="m-name">Regin Arron</div></div></div>
+        <div class="member-card"><div class="member-avatar">G</div><div class="member-info"><div class="m-name">GAWANDE Gayatri Dinkar</div></div></div>
+        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他1名</div><div class="m-role">合計9名</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🏢 国内事業部</h3><span class="dept-count">7名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">吉</div><div class="member-info"><div class="m-name">吉見 俊哉</div><div class="m-role">リーダー</div></div></div>
+        <div class="member-card"><div class="member-avatar">宮</div><div class="member-info"><div class="m-name">宮本 晋一郎</div><div class="m-role">部長</div></div></div>
+        <div class="member-card"><div class="member-avatar">兵</div><div class="member-info"><div class="m-name">兵藤 悠太</div></div></div>
+        <div class="member-card"><div class="member-avatar">丸</div><div class="member-info"><div class="m-name">丸山 克紀</div></div></div>
+        <div class="member-card"><div class="member-avatar">鶴</div><div class="member-info"><div class="m-name">鶴岡 拓真</div></div></div>
+        <div class="member-card"><div class="member-avatar">竹</div><div class="member-info"><div class="m-name">竹内 大翔</div></div></div>
+        <div class="member-card"><div class="member-avatar">武</div><div class="member-info"><div class="m-name">武田 佳樹</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>👑 取締役会</h3><span class="dept-count">4名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">大</div><div class="member-info"><div class="m-name">大北 潤</div><div class="m-role">代表取締役</div></div></div>
+        <div class="member-card"><div class="member-avatar">妹</div><div class="member-info"><div class="m-name">妹尾 聖人</div><div class="m-role">取締役</div></div></div>
+        <div class="member-card"><div class="member-avatar">山</div><div class="member-info"><div class="m-name">山本 高太郎</div><div class="m-role">取締役</div></div></div>
+        <div class="member-card"><div class="member-avatar">田</div><div class="member-info"><div class="m-name">田邉 健介</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>📋 経営企画部</h3><span class="dept-count">3名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">蔭</div><div class="member-info"><div class="m-name">蔭山 隼人</div><div class="m-role">部長</div></div></div>
+        <div class="member-card"><div class="member-avatar">立</div><div class="member-info"><div class="m-name">立石 みなみ</div></div></div>
+        <div class="member-card"><div class="member-avatar">石</div><div class="member-info"><div class="m-name">石川 拓人</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>👥 HR室</h3><span class="dept-count">2名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">野</div><div class="member-info"><div class="m-name">野村 佑大</div><div class="m-role">本部長</div></div></div>
+        <div class="member-card"><div class="member-avatar">北</div><div class="member-info"><div class="m-name">北川 詩温</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🔬 R&D</h3><span class="dept-count">2名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">藤</div><div class="member-info"><div class="m-name">藤本 翔大</div><div class="m-role">リーダー</div></div></div>
+        <div class="member-card"><div class="member-avatar">冷</div><div class="member-info"><div class="m-name">冷牟田 修一</div><div class="m-role">リーダー</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>📢 広報室</h3><span class="dept-count">2名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">芝</div><div class="member-info"><div class="m-name">芝崎 かれん</div></div></div>
+        <div class="member-card"><div class="member-avatar">川</div><div class="member-info"><div class="m-name">川端 準</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🤝 CXチーム</h3><span class="dept-count">2名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">坂</div><div class="member-info"><div class="m-name">坂田 瑞穂</div></div></div>
+        <div class="member-card"><div class="member-avatar">梅</div><div class="member-info"><div class="m-name">梅田 花代</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>💡 事業企画チーム</h3><span class="dept-count">2名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">A</div><div class="member-info"><div class="m-name">A NAHU</div></div></div>
+        <div class="member-card"><div class="member-avatar">立</div><div class="member-info"><div class="m-name">立谷 琴音</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🌾 秋田チーム</h3><span class="dept-count">1名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">中</div><div class="member-info"><div class="m-name">中尾 圭太</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>💰 海外クレジット事業本部</h3><span class="dept-count">1名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">田</div><div class="member-info"><div class="m-name">田口 智恵美</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🏔️ 北海道営業所</h3><span class="dept-count">1名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">安</div><div class="member-info"><div class="m-name">安藤 元樹</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🏔️ 北陸営業所</h3><span class="dept-count">1名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">貴</div><div class="member-info"><div class="m-name">貴船 祐太</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🏔️ 東北営業所</h3><span class="dept-count">1名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">佐</div><div class="member-info"><div class="m-name">佐藤 圭介</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>💴 経理・財務チーム</h3><span class="dept-count">1名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">塚</div><div class="member-info"><div class="m-name">塚本 伸一郎</div><div class="m-role">部長</div></div></div>
       </div>
     </div>
   </div>

@@ -88,7 +88,7 @@
 
 <div class="container">
   <h1>社員名簿</h1>
-  <p class="page-sub">全47名の社員情報を管理します</p>
+  <p class="page-sub" id="empSubtitle">社員情報を管理します</p>
 
   <div class="toolbar">
     <input type="text" class="search-input" placeholder="🔍 名前・役職・部門で検索..." id="searchInput" oninput="render()">
@@ -359,20 +359,6 @@ if (!employees.length) {
     {"name": "Sun Choran", "role": "メンバー", "dept": "ESGコンサルティング部", "email": "emp246@green-carbon.inc", "ext": "246", "start": "2026-03-02", "location": "東京", "manager": ""},
     {"name": "TANG TIANYI", "role": "メンバー", "dept": "ESGコンサルティング部", "email": "emp247@green-carbon.inc", "ext": "247", "start": "2026-03-02", "location": "東京", "manager": ""},
     {"name": "北川 詩温", "role": "メンバー", "dept": "HR室", "email": "emp248@green-carbon.inc", "ext": "248", "start": "2026-03-02", "location": "東京", "manager": ""},
-  ];
-  save();
-},
-    {name:'田中 美咲', role:'シニアカーボンアナリスト', dept:'ソリューション事業部', email:'m.tanaka@green-carbon.inc', ext:'2001', start:'2023-07-01', location:'東京', manager:'部門長'},
-    {name:'鈴木 健太', role:'フロントエンドエンジニア', dept:'プロダクト部', email:'k.suzuki@green-carbon.inc', ext:'3001', start:'2024-04-01', location:'東京', manager:'CTO'},
-    {name:'佐藤 あい', role:'ESGコンサルタント', dept:'コンサルティング部', email:'a.sato@green-carbon.inc', ext:'4001', start:'2024-10-01', location:'東京', manager:'部門長'},
-    {name:'高橋 隆司', role:'ESGスペシャリスト', dept:'ソリューション事業部', email:'r.takahashi@green-carbon.inc', ext:'2002', start:'2025-07-01', location:'東京', manager:'田中 美咲'},
-    {name:'伊藤 花', role:'カーボンアナリスト', dept:'ソリューション事業部', email:'h.ito@green-carbon.inc', ext:'2003', start:'2026-05-01', location:'東京', manager:'田中 美咲'},
-    {name:'渡辺 涼', role:'エンジニア', dept:'プロダクト部', email:'r.watanabe@green-carbon.inc', ext:'3002', start:'2026-05-15', location:'東京', manager:'CTO'},
-    {name:'山本 誠', role:'CFO', dept:'管理部', email:'m.yamamoto@green-carbon.inc', ext:'1002', start:'2021-01-01', location:'東京', manager:'CEO'},
-    {name:'中村 恵', role:'カーボン取引アナリスト', dept:'ソリューション事業部', email:'m.nakamura@green-carbon.inc', ext:'2004', start:'2023-04-01', location:'東京', manager:'田中 美咲'},
-    {name:'小林 大輔', role:'バックエンドエンジニア', dept:'プロダクト部', email:'d.kobayashi@green-carbon.inc', ext:'3003', start:'2022-10-01', location:'東京', manager:'CTO'},
-    {name:'加藤 智子', role:'経理担当', dept:'管理部', email:'t.kato@green-carbon.inc', ext:'1003', start:'2022-07-01', location:'東京', manager:'山本 誠'},
-    {name:'松田 俊介', role:'プロジェクトマネージャー', dept:'事業開発部', email:'s.matsuda@green-carbon.inc', ext:'5001', start:'2023-10-01', location:'東京', manager:'COO'},
   ];
   save();
 }

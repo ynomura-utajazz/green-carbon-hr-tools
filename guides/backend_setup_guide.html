@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GASバックエンドセットアップガイド | Green Carbon HR</title>
+<style>
+  :root { --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc; --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: #1a1a2e; line-height: 1.7; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+  .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 26px; color: var(--gc-dark); margin-bottom: 8px; }
+  .intro { font-size: 15px; color: #555; margin-bottom: 32px; padding: 16px; background: var(--gc-pale); border-radius: 10px; border-left: 4px solid var(--gc-green); }
+  h2 { font-size: 20px; color: var(--gc-dark); margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  h3 { font-size: 16px; color: var(--gc-dark); margin: 20px 0 8px; }
+  p { margin-bottom: 12px; color: #333; font-size: 15px; }
+  ul, ol { padding-left: 22px; margin-bottom: 14px; }
+  li { margin-bottom: 8px; font-size: 15px; color: #333; }
+  .step { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; position: relative; }
+  .step-num { position: absolute; top: -14px; left: 20px; background: var(--gc-green); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 10px; overflow-x: auto; margin: 14px 0; font-size: 13px; line-height: 1.7; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #c0392b; }
+  .tip { background: #e8f5e9; border-left: 4px solid var(--gc-green); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14px; color: #2e7d32; }
+  .warn { background: #fff3e0; border-left: 4px solid #f4a261; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14px; color: #e65100; }
+  .btn { display: inline-block; padding: 10px 22px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; background: var(--gc-green); color: white; text-decoration: none; }
+  .toc { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; }
+  .toc h3 { font-size: 15px; color: var(--gc-dark); margin-bottom: 10px; }
+  .toc ol { padding-left: 20px; }
+  .toc li a { color: var(--gc-green); text-decoration: none; font-size: 14px; }
+  .toc li a:hover { text-decoration: underline; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--gc-pale); color: var(--gc-dark); vertical-align: middle; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">GASバックエンドセットアップガイド</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="container">
+  <h1>🔧 GASバックエンドセットアップガイド</h1>
+  <div class="intro">
+    このガイドでは <strong>Google Apps Script（GAS）</strong> を使ったバックエンドを設定し、Green Carbon HRツールのデータを Google Sheets に保存・チーム共有できるようにする手順を説明します。所要時間: 約20〜30分。
+  </div>
+
+  <div class="toc">
+    <h3>📋 目次</h3>
+    <ol>
+      <li><a href="#step1">Google Sheetsの準備</a></li>
+      <li><a href="#step2">Apps Scriptにコードを貼り付け</a></li>
+      <li><a href="#step3">Web Appとして公開</a></li>
+      <li><a href="#step4">HRツールに接続</a></li>
+      <li><a href="#step5">トラブルシューティング</a></li>
+    </ol>
+  </div>
+
+  <!-- Step 1 -->
+  <h2 id="step1">📊 Step 1: Google Sheetsの準備</h2>
+  <div class="step">
+    <div class="step-num">1</div>
+    <h3>スプレッドシートを作成</h3>
+    <ol>
+      <li><a href="https://sheets.google.com" target="_blank">Google Sheets</a> を開き、新規スプレッドシートを作成</li>
+      <li>ファイル名を <code>Green Carbon HR Data</code> に変更</li>
+      <li>シート名を以下の通りに作成（タブを追加）：
+        <ul>
+          <li>📋 <code>Candidates</code> — 採用候補者</li>
+          <li>👥 <code>Employees</code> — 社員名簿</li>
+          <li>📝 <code>OneOnOne</code> — 1on1記録</li>
+          <li>🎯 <code>Retention</code> — 離職リスク</li>
+        </ul>
+      </li>
+    </ol>
+    <div class="tip">💡 スプレッドシートのURLにある長いIDをメモしておいてください。後で使います。</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <h3>ヘッダー行を設定</h3>
+    <p><strong>Candidatesシート</strong>のA1から横に以下を入力：</p>
+    <pre>id | name | email | position | status | date | source | note | createdAt | updatedAt</pre>
+    <p><strong>Employeesシート</strong>のA1から：</p>
+    <pre>id | name | role | dept | email | ext | start | location | manager | createdAt</pre>
+  </div>
+
+  <!-- Step 2 -->
+  <h2 id="step2">⚙️ Step 2: Apps Scriptにコードを貼り付け</h2>
+  <div class="step">
+    <div class="step-num">3</div>
+    <h3>Apps Scriptを開く</h3>
+    <ol>
+      <li>スプレッドシートのメニューから <strong>拡張機能 → Apps Script</strong> を選択</li>
+      <li>既存のコードを全て削除</li>
+      <li>以下のコードを貼り付け：</li>
+    </ol>
+    <pre>
+const SHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+function doGet(e) {
+  const action = e.parameter.action;
+  let result;
+
+  try {
+    switch(action) {
+      case 'ping':
+        result = {status: 'ok', message: 'Green Carbon GAS Backend Running'};
+        break;
+      case 'getCandidates':
+        result = getCandidates();
+        break;
+      case 'getEmployees':
+        result = getEmployees();
+        break;
+      default:
+        result = {status: 'error', message: 'Unknown action: ' + action};
+    }
+  } catch(err) {
+    result = {status: 'error', message: err.toString()};
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  const action = data.action;
+  let result;
+
+  try {
+    switch(action) {
+      case 'saveCandidate':
+        result = saveCandidate(data.candidate);
+        break;
+      case 'saveEmployee':
+        result = saveEmployee(data.employee);
+        break;
+      default:
+        result = {status: 'error', message: 'Unknown action'};
+    }
+  } catch(err) {
+    result = {status: 'error', message: err.toString()};
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getCandidates() {
+  const sheet = ss.getSheetByName('Candidates');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  const candidates = rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  }).filter(c => c.id);
+  return {status: 'ok', candidates};
+}
+
+function saveCandidate(candidate) {
+  const sheet = ss.getSheetByName('Candidates');
+  const rows = sheet.getDataRange().getValues();
+  const ids = rows.slice(1).map(r => r[0]);
+  const now = new Date().toISOString();
+
+  const idx = ids.indexOf(candidate.id);
+  const rowData = [
+    candidate.id, candidate.name, candidate.email,
+    candidate.position, candidate.status, candidate.date,
+    candidate.source, candidate.note,
+    idx < 0 ? now : rows[idx+1][8],  // createdAt
+    now  // updatedAt
+  ];
+
+  if (idx >= 0) {
+    sheet.getRange(idx + 2, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+  return {status: 'ok', message: 'Saved'};
+}
+
+function getEmployees() {
+  const sheet = ss.getSheetByName('Employees');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  const employees = rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  }).filter(e => e.id);
+  return {status: 'ok', employees};
+}
+
+function saveEmployee(employee) {
+  const sheet = ss.getSheetByName('Employees');
+  const rows = sheet.getDataRange().getValues();
+  const ids = rows.slice(1).map(r => r[0]);
+  const now = new Date().toISOString();
+
+  const idx = ids.indexOf(employee.id);
+  const rowData = [
+    employee.id, employee.name, employee.role, employee.dept,
+    employee.email, employee.ext, employee.start,
+    employee.location, employee.manager, now
+  ];
+
+  if (idx >= 0) {
+    sheet.getRange(idx + 2, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+  return {status: 'ok', message: 'Saved'};
+}
+</pre>
+  </div>
+
+  <!-- Step 3 -->
+  <h2 id="step3">🚀 Step 3: Web Appとして公開</h2>
+  <div class="step">
+    <div class="step-num">4</div>
+    <h3>デプロイ</h3>
+    <ol>
+      <li>右上の <strong>「デプロイ」→「新しいデプロイ」</strong> をクリック</li>
+      <li>「種類を選択」で <strong>「ウェブアプリ」</strong> を選択</li>
+      <li>設定：
+        <ul>
+          <li>説明: <code>Green Carbon HR Backend v1</code></li>
+          <li>次のユーザーとして実行: <strong>自分（your email）</strong></li>
+          <li>アクセスできるユーザー: <strong>全員</strong>（または「Googleアカウントを持つ全員」）</li>
+        </ul>
+      </li>
+      <li><strong>「デプロイ」</strong> をクリック</li>
+      <li>表示された <strong>ウェブアプリURL</strong> をコピー</li>
+    </ol>
+    <div class="warn">⚠️ URLは <code>https://script.google.com/macros/s/...</code> で始まります。このURLは外部公開されるため、取り扱いに注意してください。</div>
+    <div class="tip">💡 コードを変更した場合は、「新しいデプロイ」ではなく「デプロイを管理」→「編集」→バージョンを「新バージョン」にして更新してください。</div>
+  </div>
+
+  <!-- Step 4 -->
+  <h2 id="step4">🔗 Step 4: HRツールに接続</h2>
+  <div class="step">
+    <div class="step-num">5</div>
+    <h3>採用管理バックエンド版に接続</h3>
+    <ol>
+      <li><a href="../tools/gc_recruiting_backend.html">採用管理バックエンド版</a> を開く</li>
+      <li>上部の入力欄にコピーしたURLを貼り付け</li>
+      <li><strong>「接続テスト」</strong> をクリック</li>
+      <li>✅ 接続済み と表示されれば完了</li>
+      <li><strong>「🔄 同期」</strong> でGoogle Sheetsのデータを取得</li>
+    </ol>
+  </div>
+
+  <!-- Step 5 -->
+  <h2 id="step5">🛠️ トラブルシューティング</h2>
+  <div class="step" style="border-color:#ffcc80">
+    <div class="step-num" style="background:#f4a261">!</div>
+    <h3>よくある問題</h3>
+    <table style="width:100%;border-collapse:collapse;margin-top:8px">
+      <thead><tr style="background:var(--gc-pale)"><th style="padding:10px;text-align:left">症状</th><th style="padding:10px;text-align:left">解決策</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:10px;border-top:1px solid #eee">CORS エラー</td><td style="padding:10px;border-top:1px solid #eee">GASのデプロイ設定で「全員」にアクセスを許可。<code>no-cors</code>モードで接続テスト。</td></tr>
+        <tr><td style="padding:10px;border-top:1px solid #eee">404 / エラーページ</td><td style="padding:10px;border-top:1px solid #eee">URLが正しいか確認。デプロイ後に新しいURLが生成されます。</td></tr>
+        <tr><td style="padding:10px;border-top:1px solid #eee">権限エラー</td><td style="padding:10px;border-top:1px solid #eee">初回実行時にGoogleアカウントの承認が必要です。Apps Scriptで一度手動実行してください。</td></tr>
+        <tr><td style="padding:10px;border-top:1px solid #eee">データが更新されない</td><td style="padding:10px;border-top:1px solid #eee">コード変更後は必ず「新しいバージョン」でデプロイしてください。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:32px;text-align:center">
+    <a href="../tools/gc_recruiting_backend.html" class="btn">採用管理バックエンド版を開く →</a>
+    &nbsp;&nbsp;
+    <a href="../guides/deploy_guide.html" class="btn" style="background:white;color:var(--gc-green);border:1.5px solid var(--gc-green)">Vercelデプロイガイド →</a>
+  </div>
+</div>
+</body>
+</html>

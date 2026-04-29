@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社員名簿 | Green Carbon</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+
+  .toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  input, select { padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); outline: none; }
+  input:focus, select:focus { border-color: var(--gc-light); }
+  .search-input { min-width: 240px; }
+
+  .view-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .view-btn { padding: 7px 14px; background: white; border: none; cursor: pointer; font-size: 14px; color: #666; }
+  .view-btn.active { background: var(--gc-green); color: white; }
+
+  /* Card View */
+  .directory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+  .dir-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border); text-align: center; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+  .dir-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .dir-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; margin: 0 auto 12px; }
+  .dir-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .dir-role { font-size: 13px; color: #666; margin-bottom: 6px; }
+  .dir-dept { display: inline-block; padding: 2px 10px; border-radius: 10px; background: var(--gc-pale); color: var(--gc-dark); font-size: 12px; margin-bottom: 10px; }
+  .dir-email { font-size: 13px; color: var(--gc-green); word-break: break-all; }
+
+  /* List View */
+  .directory-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: none; }
+  .directory-table th { background: var(--gc-pale); color: var(--gc-dark); font-size: 13px; font-weight: 600; padding: 12px 16px; text-align: left; }
+  .directory-table td { padding: 12px 16px; font-size: 14px; border-top: 1px solid #f0f0f0; vertical-align: middle; }
+  .directory-table tr:hover td { background: #f8fff9; }
+  .mini-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .name-cell { display: flex; align-items: center; gap: 10px; }
+
+  /* Modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 0; max-width: 480px; width: 90%; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+  .modal-header { background: var(--gc-dark); color: white; padding: 28px; text-align: center; }
+  .modal-header .big-avatar { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; margin: 0 auto 12px; }
+  .modal-header .m-name { font-size: 22px; font-weight: 700; }
+  .modal-header .m-role { font-size: 14px; opacity: 0.8; margin-top: 4px; }
+  .modal-body { padding: 24px; }
+  .info-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-icon { font-size: 18px; width: 24px; flex-shrink: 0; }
+  .info-label { color: #888; font-size: 12px; width: 70px; flex-shrink: 0; }
+  .info-value { flex: 1; color: var(--text); }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  .edit-form { padding: 24px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 500; color: #444; margin-bottom: 5px; }
+  .form-group input, .form-group select { width: 100%; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">社員名簿</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="container">
+  <h1>社員名簿</h1>
+  <p class="page-sub">全47名の社員情報を管理します</p>
+
+  <div class="toolbar">
+    <input type="text" class="search-input" placeholder="🔍 名前・役職・部門で検索..." id="searchInput" oninput="render()">
+    <select id="deptFilter" onchange="render()"><option value="">すべての部門</option></select>
+    <div class="view-toggle">
+      <button class="view-btn active" id="cardViewBtn" onclick="setView('card')">⊞ カード</button>
+      <button class="view-btn" id="listViewBtn" onclick="setView('list')">≡ リスト</button>
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">+ 社員追加</button>
+  </div>
+
+  <div class="directory-grid" id="cardView"></div>
+  <table class="directory-table" id="listView">
+    <thead><tr><th>名前</th><th>役職</th><th>部門</th><th>メール</th><th>内線</th><th>入社日</th><th>操作</th></tr></thead>
+    <tbody id="listBody"></tbody>
+  </table>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-bg" id="profileModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="big-avatar" id="pmAvatar"></div>
+      <div class="m-name" id="pmName"></div>
+      <div class="m-role" id="pmRole"></div>
+    </div>
+    <div class="modal-body">
+      <div class="info-row"><span class="info-icon">🏢</span><span class="info-label">部門</span><span class="info-value" id="pmDept"></span></div>
+      <div class="info-row"><span class="info-icon">📧</span><span class="info-label">メール</span><span class="info-value" id="pmEmail"></span></div>
+      <div class="info-row"><span class="info-icon">📱</span><span class="info-label">内線</span><span class="info-value" id="pmExt"></span></div>
+      <div class="info-row"><span class="info-icon">📅</span><span class="info-label">入社日</span><span class="info-value" id="pmStart"></span></div>
+      <div class="info-row"><span class="info-icon">🏠</span><span class="info-label">勤務地</span><span class="info-value" id="pmLocation"></span></div>
+      <div class="info-row"><span class="info-icon">👤</span><span class="info-label">上司</span><span class="info-value" id="pmManager"></span></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeProfile()">閉じる</button>
+      <button class="btn btn-primary btn-sm" id="pmEditBtn">編集</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <div class="edit-form">
+      <div style="font-size:17px;font-weight:600;color:var(--gc-dark);margin-bottom:16px" id="editModalTitle">社員追加</div>
+      <div class="form-row">
+        <div class="form-group"><label>氏名 *</label><input type="text" id="eName"></div>
+        <div class="form-group"><label>役職</label><input type="text" id="eRole"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>部門</label><input type="text" id="eDept"></div>
+        <div class="form-group"><label>内線番号</label><input type="text" id="eExt" placeholder="1234"></div>
+      </div>
+      <div class="form-group"><label>メールアドレス</label><input type="text" id="eEmail"></div>
+      <div class="form-row">
+        <div class="form-group"><label>入社日</label><input type="date" id="eStart"></div>
+        <div class="form-group"><label>勤務地</label><input type="text" id="eLocation" placeholder="東京"></div>
+      </div>
+      <div class="form-group"><label>上司</label><input type="text" id="eManager"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+        <button class="btn btn-secondary btn-sm" onclick="closeEdit()">キャンセル</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEmployee()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let employees = JSON.parse(localStorage.getItem('gc_directory') || '[]');
+let viewMode = 'card';
+let selectedIdx = -1;
+let editIdx = -1;
+
+const COLORS = ['#2d6a4f','#40916c','#1b4332','#52b788','#2563eb','#7c3aed','#b45309','#be185d'];
+
+if (!employees.length) {
+  employees = [
+    {name:'野村 裕太', role:'People & Culture Manager', dept:'管理部', email:'y.nomura@green-carbon.inc', ext:'1001', start:'2022-04-01', location:'東京', manager:'CEO'},
+    {name:'田中 美咲', role:'シニアカーボンアナリスト', dept:'ソリューション事業部', email:'m.tanaka@green-carbon.inc', ext:'2001', start:'2023-07-01', location:'東京', manager:'部門長'},
+    {name:'鈴木 健太', role:'フロントエンドエンジニア', dept:'プロダクト部', email:'k.suzuki@green-carbon.inc', ext:'3001', start:'2024-04-01', location:'東京', manager:'CTO'},
+    {name:'佐藤 あい', role:'ESGコンサルタント', dept:'コンサルティング部', email:'a.sato@green-carbon.inc', ext:'4001', start:'2024-10-01', location:'東京', manager:'部門長'},
+    {name:'高橋 隆司', role:'ESGスペシャリスト', dept:'ソリューション事業部', email:'r.takahashi@green-carbon.inc', ext:'2002', start:'2025-07-01', location:'東京', manager:'田中 美咲'},
+    {name:'伊藤 花', role:'カーボンアナリスト', dept:'ソリューション事業部', email:'h.ito@green-carbon.inc', ext:'2003', start:'2026-05-01', location:'東京', manager:'田中 美咲'},
+    {name:'渡辺 涼', role:'エンジニア', dept:'プロダクト部', email:'r.watanabe@green-carbon.inc', ext:'3002', start:'2026-05-15', location:'東京', manager:'CTO'},
+    {name:'山本 誠', role:'CFO', dept:'管理部', email:'m.yamamoto@green-carbon.inc', ext:'1002', start:'2021-01-01', location:'東京', manager:'CEO'},
+    {name:'中村 恵', role:'カーボン取引アナリスト', dept:'ソリューション事業部', email:'m.nakamura@green-carbon.inc', ext:'2004', start:'2023-04-01', location:'東京', manager:'田中 美咲'},
+    {name:'小林 大輔', role:'バックエンドエンジニア', dept:'プロダクト部', email:'d.kobayashi@green-carbon.inc', ext:'3003', start:'2022-10-01', location:'東京', manager:'CTO'},
+    {name:'加藤 智子', role:'経理担当', dept:'管理部', email:'t.kato@green-carbon.inc', ext:'1003', start:'2022-07-01', location:'東京', manager:'山本 誠'},
+    {name:'松田 俊介', role:'プロジェクトマネージャー', dept:'事業開発部', email:'s.matsuda@green-carbon.inc', ext:'5001', start:'2023-10-01', location:'東京', manager:'COO'},
+  ];
+  save();
+}
+
+function save() { localStorage.setItem('gc_directory', JSON.stringify(employees)); }
+
+function initials(name) {
+  const parts = name.trim().split(/\s+/);
+  return parts.map(p=>p[0]).join('').slice(0,2);
+}
+
+function avatarColor(name) {
+  let h = 0;
+  for (let c of name) h = (h*31 + c.charCodeAt(0)) % COLORS.length;
+  return COLORS[Math.abs(h)];
+}
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('cardViewBtn').classList.toggle('active', mode==='card');
+  document.getElementById('listViewBtn').classList.toggle('active', mode==='list');
+  document.getElementById('cardView').style.display = mode==='card' ? 'grid' : 'none';
+  document.getElementById('listView').style.display = mode==='list' ? 'table' : 'none';
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const dept = document.getElementById('deptFilter').value;
+  return employees.filter(e =>
+    (e.name.toLowerCase().includes(q) || (e.role||'').toLowerCase().includes(q) || (e.dept||'').toLowerCase().includes(q)) &&
+    (!dept || e.dept===dept)
+  );
+}
+
+function updateDeptFilter() {
+  const depts = [...new Set(employees.map(e=>e.dept).filter(Boolean))].sort();
+  const sel = document.getElementById('deptFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">すべての部門</option>' + depts.map(d=>`<option${d===cur?' selected':''}>${d}</option>`).join('');
+}
+
+function render() {
+  updateDeptFilter();
+  const filtered = getFiltered();
+  const color = e => avatarColor(e.name);
+
+  // Card view
+  document.getElementById('cardView').innerHTML = filtered.map((e,i)=>{
+    const idx = employees.indexOf(e);
+    return `<div class="dir-card" onclick="showProfile(${idx})">
+      <div class="dir-avatar" style="background:${color(e)}">${initials(e.name)}</div>
+      <div class="dir-name">${e.name}</div>
+      <div class="dir-role">${e.role||''}</div>
+      <div class="dir-dept">${e.dept||''}</div>
+      <div class="dir-email">${e.email||''}</div>
+    </div>`;
+  }).join('') || '<div style="color:#aaa;padding:40px;text-align:center">該当者なし</div>';
+
+  // List view
+  document.getElementById('listBody').innerHTML = filtered.map(e=>{
+    const idx = employees.indexOf(e);
+    return `<tr>
+      <td><div class="name-cell"><div class="mini-avatar" style="background:${color(e)}">${initials(e.name)}</div>${e.name}</div></td>
+      <td>${e.role||'-'}</td>
+      <td>${e.dept||'-'}</td>
+      <td>${e.email||'-'}</td>
+      <td>${e.ext||'-'}</td>
+      <td>${e.start||'-'}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="showProfile(${idx})">詳細</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px">該当者なし</td></tr>';
+}
+
+function showProfile(idx) {
+  selectedIdx = idx;
+  const e = employees[idx];
+  const color = avatarColor(e.name);
+  document.getElementById('pmAvatar').textContent = initials(e.name);
+  document.getElementById('pmAvatar').style.background = color;
+  document.getElementById('pmName').textContent = e.name;
+  document.getElementById('pmRole').textContent = e.role||'';
+  document.getElementById('pmDept').textContent = e.dept||'-';
+  document.getElementById('pmEmail').textContent = e.email||'-';
+  document.getElementById('pmExt').textContent = e.ext ? '内線 '+e.ext : '-';
+  document.getElementById('pmStart').textContent = e.start||'-';
+  document.getElementById('pmLocation').textContent = e.location||'-';
+  document.getElementById('pmManager').textContent = e.manager||'-';
+  document.getElementById('pmEditBtn').onclick = () => { closeProfile(); openEditModal(idx); };
+  document.getElementById('profileModal').classList.add('open');
+}
+
+function closeProfile() { document.getElementById('profileModal').classList.remove('open'); }
+
+function openAddModal() {
+  editIdx = -1;
+  document.getElementById('editModalTitle').textContent = '社員追加';
+  ['eName','eRole','eDept','eExt','eEmail','eStart','eLocation','eManager'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('editModal').classList.add('open');
+}
+
+function openEditModal(idx) {
+  editIdx = idx;
+  const e = employees[idx];
+  document.getElementById('editModalTitle').textContent = '社員情報編集';
+  document.getElementById('eName').value = e.name;
+  document.getElementById('eRole').value = e.role||'';
+  document.getElementById('eDept').value = e.dept||'';
+  document.getElementById('eExt').value = e.ext||'';
+  document.getElementById('eEmail').value = e.email||'';
+  document.getElementById('eStart').value = e.start||'';
+  document.getElementById('eLocation').value = e.location||'';
+  document.getElementById('eManager').value = e.manager||'';
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
+
+function saveEmployee() {
+  const name = document.getElementById('eName').value.trim();
+  if (!name) { alert('氏名を入力してください'); return; }
+  const e = {
+    name, role: document.getElementById('eRole').value,
+    dept: document.getElementById('eDept').value,
+    ext: document.getElementById('eExt').value,
+    email: document.getElementById('eEmail').value,
+    start: document.getElementById('eStart').value,
+    location: document.getElementById('eLocation').value,
+    manager: document.getElementById('eManager').value
+  };
+  if (editIdx >= 0) employees[editIdx] = e;
+  else employees.push(e);
+  save(); closeEdit(); render();
+}
+
+render();
+setView('card');
+</script>
+</body>
+</html>

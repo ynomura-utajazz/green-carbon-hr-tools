@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パッケージ情報 | Green Carbon HR Tools</title>
+<style>
+  :root { --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc; --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: #1a1a2e; min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 26px; color: var(--gc-dark); margin-bottom: 6px; }
+  .subtitle-text { font-size: 14px; color: #666; margin-bottom: 28px; }
+  h2 { font-size: 18px; color: var(--gc-dark); margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; margin-bottom: 28px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  thead th { background: var(--gc-pale); color: var(--gc-dark); font-size: 13px; font-weight: 600; padding: 12px 16px; text-align: left; }
+  td { padding: 12px 16px; font-size: 14px; border-top: 1px solid #f0f0f0; vertical-align: top; line-height: 1.6; }
+  tr:hover td { background: #f8fff9; }
+  td a { color: var(--gc-green); text-decoration: none; font-weight: 500; }
+  td a:hover { text-decoration: underline; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+  .badge-ok { background: var(--gc-pale); color: var(--gc-dark); }
+  .badge-gas { background: #e3f2fd; color: #1565c0; }
+  .badge-local { background: #fff3e0; color: #e65100; }
+  .deploy-steps { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 24px; margin-bottom: 28px; }
+  .deploy-step { display: flex; gap: 16px; margin-bottom: 18px; align-items: flex-start; }
+  .step-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+  .step-content h3 { font-size: 15px; color: var(--gc-dark); margin-bottom: 4px; }
+  .step-content p { font-size: 14px; color: #555; line-height: 1.6; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-top: 8px; overflow-x: auto; }
+  .summary-box { background: var(--gc-pale); border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; border: 1px solid var(--gc-light); }
+  .summary-box h3 { color: var(--gc-dark); font-size: 16px; margin-bottom: 10px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .summary-item { background: white; border-radius: 8px; padding: 12px 16px; text-align: center; }
+  .summary-item .num { font-size: 28px; font-weight: 700; color: var(--gc-green); }
+  .summary-item .label { font-size: 12px; color: #888; margin-top: 4px; }
+  .btn { display: inline-block; padding: 9px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; background: var(--gc-green); color: white; text-decoration: none; border: none; cursor: pointer; margin-right: 8px; }
+  .btn-outline { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">パッケージ情報</div>
+  </div>
+  <a href="./index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="container">
+  <h1>📦 Green Carbon HRツール パッケージ情報</h1>
+  <p class="subtitle-text">バージョン 1.0 | 作成日: 2026年4月29日 | 担当: 野村 裕太</p>
+
+  <div class="summary-box">
+    <h3>📊 パッケージサマリー</h3>
+    <div class="summary-grid">
+      <div class="summary-item"><div class="num">10</div><div class="label">ツール数</div></div>
+      <div class="summary-item"><div class="num">2</div><div class="label">ガイド数</div></div>
+      <div class="summary-item"><div class="num">0</div><div class="label">外部依存</div></div>
+      <div class="summary-item"><div class="num">100%</div><div class="label">オフライン動作</div></div>
+    </div>
+  </div>
+
+  <h2>🔧 ツール一覧</h2>
+  <table>
+    <thead>
+      <tr><th>ツール名</th><th>説明</th><th>データ保存</th><th>GAS接続</th><th>リンク</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>🏠 HRポータル</strong></td>
+        <td>全ツールへのクイックリンク、会社スナップショット、お知らせ、HRカレンダー、制度ポリシー一覧</td>
+        <td><span class="badge badge-local">なし</span></td>
+        <td>—</td>
+        <td><a href="./tools/gc_hr_portal.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>📋 採用管理（ローカル）</strong></td>
+        <td>候補者パイプライン（カンバン）、一覧、求人ポジション管理。データはブラウザに保存</td>
+        <td><span class="badge badge-local">localStorage</span></td>
+        <td>❌</td>
+        <td><a href="./tools/gc_recruiting.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>🔗 採用管理（GAS版）</strong></td>
+        <td>採用管理のGoogle Apps Script連携版。チームでリアルタイムにデータ共有が可能</td>
+        <td><span class="badge badge-gas">GAS/Sheets</span></td>
+        <td>✅ 接続可能</td>
+        <td><a href="./tools/gc_recruiting_backend.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>📊 離職リスクモニター</strong></td>
+        <td>給与・上司関係・成長感・エンゲージ・ストレスの5指標でリスクスコアを算出・可視化</td>
+        <td><span class="badge badge-local">localStorage</span></td>
+        <td>❌</td>
+        <td><a href="./tools/retention_risk_monitor.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>💬 1on1マネージャー</strong></td>
+        <td>メンバー別に1on1の日付・アジェンダ・メモ・アクションアイテムを記録・追跡</td>
+        <td><span class="badge badge-local">localStorage</span></td>
+        <td>❌</td>
+        <td><a href="./tools/oneonone_manager.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>✅ オンボーディングチェックリスト</strong></td>
+        <td>入社前〜90日まで6フェーズ・30項目のチェックリスト。複数新入社員の進捗を管理</td>
+        <td><span class="badge badge-local">localStorage</span></td>
+        <td>❌</td>
+        <td><a href="./tools/onboarding_checklist.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>📄 オファーレター生成</strong></td>
+        <td>フォーム入力でリアルタイムプレビュー。日本語内定通知書を生成してPDF印刷</td>
+        <td><span class="badge badge-ok">なし（生成のみ）</span></td>
+        <td>—</td>
+        <td><a href="./tools/offer_letter_generator.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>📚 社内Wiki</strong></td>
+        <td>Markdown対応の社内ナレッジベース。カテゴリ管理・全文検索・ページの追加・編集</td>
+        <td><span class="badge badge-local">localStorage</span></td>
+        <td>❌</td>
+        <td><a href="./tools/gc_wiki.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>👤 社員名簿</strong></td>
+        <td>全社員の名前・役職・部門・連絡先をカード/リスト形式で管理。検索・部門フィルター付き</td>
+        <td><span class="badge badge-local">localStorage</span></td>
+        <td>❌</td>
+        <td><a href="./tools/gc_directory.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>🌿 組織図</strong></td>
+        <td>ツリー表示と部門別表示を切り替え。各メンバーをクリックで詳細確認</td>
+        <td><span class="badge badge-ok">なし（静的）</span></td>
+        <td>—</td>
+        <td><a href="./tools/gc_orgchart.html">開く</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>📖 ガイド・ドキュメント</h2>
+  <table>
+    <thead><tr><th>ガイド名</th><th>内容</th><th>対象者</th><th>リンク</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>⚙️ GASバックエンドセットアップガイド</strong></td>
+        <td>Google Apps ScriptとGoogle Sheetsを使ったバックエンドの構築・接続手順。所要時間約30分。</td>
+        <td>HR担当者 / 管理者</td>
+        <td><a href="./guides/backend_setup_guide.html">開く</a></td>
+      </tr>
+      <tr>
+        <td><strong>🚀 Vercelデプロイガイド</strong></td>
+        <td>GitHub連携・Vercel CLI・ドラッグ&ドロップの3方法でVercelにデプロイする手順。</td>
+        <td>IT担当者 / 管理者</td>
+        <td><a href="./guides/deploy_guide.html">開く</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>🚀 Vercelデプロイ 手順サマリー</h2>
+  <div class="deploy-steps">
+    <div class="deploy-step">
+      <div class="step-circle">1</div>
+      <div class="step-content">
+        <h3>GitHubリポジトリを作成</h3>
+        <p><a href="https://github.com/new" target="_blank">github.com/new</a> でプライベートリポジトリを作成（名前例: <code>gc-hr-tools</code>）</p>
+      </div>
+    </div>
+    <div class="deploy-step">
+      <div class="step-circle">2</div>
+      <div class="step-content">
+        <h3>このフォルダをプッシュ</h3>
+        <pre>cd gc_package && git init && git add . && git commit -m "Initial"
+git remote add origin https://github.com/YOUR_ORG/gc-hr-tools.git
+git push -u origin main</pre>
+      </div>
+    </div>
+    <div class="deploy-step">
+      <div class="step-circle">3</div>
+      <div class="step-content">
+        <h3>Vercelでインポート</h3>
+        <p><a href="https://vercel.com/new" target="_blank">vercel.com/new</a> → 「Import Git Repository」→ <code>gc-hr-tools</code> を選択 → Deploy</p>
+      </div>
+    </div>
+    <div class="deploy-step">
+      <div class="step-circle">4</div>
+      <div class="step-content">
+        <h3>URLをチームに共有</h3>
+        <p>デプロイ完了後、<code>https://gc-hr-tools-xxxx.vercel.app</code> のURLをSlackなどで共有</p>
+      </div>
+    </div>
+    <div class="deploy-step" style="margin-bottom:0">
+      <div class="step-circle">5</div>
+      <div class="step-content">
+        <h3>（任意）GASバックエンドを接続</h3>
+        <p>採用管理バックエンド版からGAS Web App URLを設定してチームデータを共有</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>💾 技術仕様</h2>
+  <table>
+    <thead><tr><th>項目</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>フロントエンド</td><td>Pure HTML5 / CSS3 / Vanilla JavaScript（フレームワーク不使用）</td></tr>
+      <tr><td>外部ライブラリ</td><td>なし（完全に自己完結）</td></tr>
+      <tr><td>データ保存</td><td>ブラウザ localStorage（GAS連携時は Google Sheets）</td></tr>
+      <tr><td>オフライン動作</td><td>完全対応（インターネット接続不要）</td></tr>
+      <tr><td>対応ブラウザ</td><td>Chrome / Safari / Firefox / Edge（最新版推奨）</td></tr>
+      <tr><td>モバイル対応</td><td>レスポンシブデザイン対応</td></tr>
+      <tr><td>ホスティング</td><td>Vercel（静的サイト）/ GitHub Pages / 任意のWebサーバー</td></tr>
+      <tr><td>GASバックエンド</td><td>Google Apps Script + Google Sheets（チーム共有時）</td></tr>
+    </tbody>
+  </table>
+
+  <div style="text-align:center;margin-top:32px">
+    <a href="./index.html" class="btn">🏠 ランチャーに戻る</a>
+    <a href="./guides/deploy_guide.html" class="btn btn-outline">🚀 デプロイガイド</a>
+    <a href="./guides/backend_setup_guide.html" class="btn btn-outline">⚙️ GASガイド</a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オファーレター生成 | Green Carbon HR</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 380px 1fr; gap: 24px; }
+  @media(max-width:900px) { .container { grid-template-columns: 1fr; } }
+
+  h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; grid-column: 1/-1; }
+  .page-sub { font-size: 14px; color: #666; margin-bottom: 0; grid-column: 1/-1; }
+
+  .form-panel { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); height: fit-content; }
+  .form-panel h2 { font-size: 16px; color: var(--gc-dark); margin-bottom: 20px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); outline: none; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gc-light); }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+  .section-title { font-size: 14px; font-weight: 600; color: var(--gc-dark); margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+
+  .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; width: 100%; margin-top: 8px; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+
+  .preview-panel { background: white; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; }
+  .preview-toolbar { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+  .preview-toolbar h2 { font-size: 16px; color: var(--gc-dark); flex: 1; }
+
+  .letter-preview { padding: 40px 48px; flex: 1; }
+  .letter-paper { max-width: 680px; margin: 0 auto; font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.8; color: #1a1a1a; }
+  .letter-header { border-bottom: 3px solid var(--gc-dark); padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .company-logo { font-size: 22px; font-weight: 700; color: var(--gc-dark); }
+  .company-logo .tagline { font-size: 11px; color: var(--gc-green); font-weight: 400; display: block; }
+  .letter-date { font-size: 13px; color: #555; }
+  .letter-title { font-size: 20px; font-weight: 700; text-align: center; color: var(--gc-dark); margin: 24px 0 20px; letter-spacing: 2px; }
+  .letter-section { margin-bottom: 20px; }
+  .letter-section .s-label { font-size: 11px; font-weight: 600; color: var(--gc-green); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .letter-section .s-value { font-size: 16px; font-weight: 600; color: var(--gc-dark); }
+  .conditions-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  .conditions-table th { background: var(--gc-pale); color: var(--gc-dark); font-size: 13px; padding: 10px 14px; text-align: left; }
+  .conditions-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  .conditions-table tr:nth-child(even) td { background: #f9fff9; }
+  .signature-block { margin-top: 40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+  .sig-col { flex: 1; min-width: 200px; }
+  .sig-col .sig-label { font-size: 12px; color: #888; margin-bottom: 30px; }
+  .sig-line { border-top: 1px solid #aaa; padding-top: 6px; font-size: 13px; color: #555; }
+  .letter-footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid #eee; font-size: 11px; color: #999; text-align: center; }
+  .acceptance-box { border: 2px dashed var(--gc-green); border-radius: 8px; padding: 16px; margin-top: 24px; background: #f9fff9; }
+  .acceptance-box p { font-size: 13px; color: #555; margin-bottom: 8px; }
+
+  @media print {
+    header, .form-panel, .preview-toolbar { display: none; }
+    .container { display: block; padding: 0; }
+    .preview-panel { border: none; }
+    .letter-preview { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">オファーレター生成ツール</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div style="max-width:1100px;margin:0 auto;padding:24px">
+  <h1 style="font-size:22px;color:var(--gc-dark);margin-bottom:4px">オファーレター生成</h1>
+  <p style="font-size:14px;color:#666;margin-bottom:24px">候補者情報を入力するとオファーレターが自動生成されます</p>
+
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:24px">
+    <!-- Form -->
+    <div class="form-panel">
+      <h2>候補者・条件入力</h2>
+
+      <div class="section-title">候補者情報</div>
+      <div class="form-group"><label>候補者氏名 *</label><input type="text" id="fName" oninput="update()" placeholder="山田 太郎"></div>
+      <div class="form-group"><label>敬称</label>
+        <select id="fTitle" onchange="update()"><option>様</option><option>さん</option></select>
+      </div>
+      <div class="form-group"><label>住所（任意）</label><input type="text" id="fAddress" oninput="update()" placeholder="東京都渋谷区..."></div>
+
+      <div class="section-title">ポジション</div>
+      <div class="form-group"><label>役職・ポジション名 *</label><input type="text" id="fPosition" oninput="update()" placeholder="カーボンアナリスト"></div>
+      <div class="form-group"><label>部門</label><input type="text" id="fDept" oninput="update()" placeholder="ソリューション事業部"></div>
+      <div class="form-group"><label>雇用形態</label>
+        <select id="fEmpType" onchange="update()">
+          <option>正社員（無期雇用）</option><option>契約社員</option><option>業務委託</option>
+        </select>
+      </div>
+
+      <div class="section-title">労働条件</div>
+      <div class="form-row">
+        <div class="form-group"><label>月給（万円）</label><input type="text" id="fSalary" oninput="update()" placeholder="50"></div>
+        <div class="form-group"><label>年収（万円）</label><input type="text" id="fAnnual" oninput="update()" placeholder="700"></div>
+      </div>
+      <div class="form-group"><label>試用期間</label><input type="text" id="fProbation" oninput="update()" placeholder="3ヶ月"></div>
+      <div class="form-group"><label>入社日 *</label><input type="date" id="fStartDate" oninput="update()"></div>
+      <div class="form-group"><label>勤務場所</label><input type="text" id="fLocation" oninput="update()" placeholder="東京オフィス（リモート可）"></div>
+      <div class="form-group"><label>勤務時間</label><input type="text" id="fHours" oninput="update()" placeholder="フレックスタイム制（コアタイム 10:00〜15:00）"></div>
+      <div class="form-group"><label>有給日数</label><input type="text" id="fVacation" oninput="update()" placeholder="入社後6ヶ月 10日〜（法定通り）"></div>
+      <div class="form-group"><label>ボーナス・その他手当</label><textarea id="fBonus" oninput="update()" placeholder="業績連動ボーナス（年2回）&#10;リモートワーク手当 月5,000円"></textarea></div>
+
+      <div class="section-title">オファー期限</div>
+      <div class="form-group"><label>回答期限</label><input type="date" id="fDeadline" oninput="update()"></div>
+      <div class="form-group"><label>担当者名</label><input type="text" id="fIssuer" oninput="update()" placeholder="野村 裕太"></div>
+      <div class="form-group"><label>担当者役職</label><input type="text" id="fIssuerRole" oninput="update()" placeholder="People & Culture Manager"></div>
+
+      <button class="btn btn-primary" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-panel">
+      <div class="preview-toolbar">
+        <h2>📄 プレビュー</h2>
+        <button class="btn btn-secondary" onclick="window.print()">印刷</button>
+      </div>
+      <div class="letter-preview" id="letterPreview"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function v(id) { return document.getElementById(id).value || ''; }
+
+function update() {
+  const name = v('fName') || '＿＿＿＿＿';
+  const title = v('fTitle') || '様';
+  const position = v('fPosition') || '＿＿＿＿＿';
+  const dept = v('fDept');
+  const empType = v('fEmpType') || '正社員（無期雇用）';
+  const salary = v('fSalary');
+  const annual = v('fAnnual');
+  const probation = v('fProbation') || '3ヶ月';
+  const startDate = v('fStartDate') ? formatDate(v('fStartDate')) : '＿＿年＿＿月＿＿日';
+  const location = v('fLocation') || '東京オフィス';
+  const hours = v('fHours') || 'フレックスタイム制';
+  const vacation = v('fVacation') || '法定通り';
+  const bonus = v('fBonus');
+  const deadline = v('fDeadline') ? formatDate(v('fDeadline')) : '＿＿年＿＿月＿＿日';
+  const issuer = v('fIssuer') || '野村 裕太';
+  const issuerRole = v('fIssuerRole') || 'People & Culture Manager';
+  const address = v('fAddress');
+  const today = formatDate(new Date().toISOString().slice(0,10));
+
+  const bonusRows = bonus ? bonus.split('\n').filter(Boolean).map(b=>`
+    <tr><td>賞与・手当</td><td>${b}</td></tr>`).join('') : '';
+
+  document.getElementById('letterPreview').innerHTML = `
+    <div class="letter-paper">
+      <div class="letter-header">
+        <div class="company-logo">
+          🌿 Green Carbon
+          <span class="tagline">Carbon Credit &amp; ESG Solutions</span>
+        </div>
+        <div class="letter-date">${today}</div>
+      </div>
+
+      ${address ? `<div style="margin-bottom:16px;font-size:14px;color:#555">${address}</div>` : ''}
+      <div style="font-size:16px;margin-bottom:24px">${name} ${title}</div>
+
+      <div class="letter-title">内定通知書</div>
+
+      <div class="letter-section">
+        <p style="font-size:14px;line-height:1.9;color:#333">
+          このたびは、株式会社Green Carbonの採用選考にご参加いただき、誠にありがとうございます。
+          慎重な選考の結果、${name}${title}に以下の条件にてご入社いただきたく、内定のご通知を申し上げます。
+        </p>
+      </div>
+
+      <table class="conditions-table">
+        <thead><tr><th colspan="2">労働条件</th></tr></thead>
+        <tbody>
+          <tr><td style="width:35%">ポジション</td><td><strong>${position}</strong>${dept?`（${dept}）`:''}</td></tr>
+          <tr><td>雇用形態</td><td>${empType}</td></tr>
+          <tr><td>入社予定日</td><td><strong>${startDate}</strong></td></tr>
+          <tr><td>試用期間</td><td>${probation}（条件同一）</td></tr>
+          ${salary?`<tr><td>月給</td><td><strong>${salary}万円</strong>（固定残業代を含む場合は別途明記）</td></tr>`:''}
+          ${annual?`<tr><td>年収モデル</td><td>約 ${annual}万円</td></tr>`:''}
+          ${bonusRows}
+          <tr><td>勤務地</td><td>${location}</td></tr>
+          <tr><td>勤務時間</td><td>${hours}</td></tr>
+          <tr><td>有給休暇</td><td>${vacation}</td></tr>
+          <tr><td>その他福利厚生</td><td>健康保険・厚生年金・雇用保険・労災保険（各種社会保険完備）</td></tr>
+        </tbody>
+      </table>
+
+      <div style="margin:20px 0;font-size:14px;line-height:1.9;color:#333">
+        <p>なお、本内定通知は<strong>${deadline}</strong>までにご承諾の意思をお知らせいただくことを条件とします。</p>
+        <p style="margin-top:12px">正式な雇用契約書は入社日前にお送りします。ご不明な点がございましたら、下記担当者までお気軽にお問い合わせください。</p>
+      </div>
+
+      <div class="acceptance-box">
+        <p style="font-weight:600;color:var(--gc-dark)">✅ 内定承諾確認欄</p>
+        <p>上記の条件に同意し、入社を承諾します。</p>
+        <div style="display:flex;gap:40px;margin-top:12px">
+          <div>承諾日：　　年　　月　　日</div>
+          <div>署名：＿＿＿＿＿＿＿＿＿＿</div>
+        </div>
+      </div>
+
+      <div class="signature-block">
+        <div class="sig-col">
+          <div class="sig-label">発行者</div>
+          <div class="sig-line">
+            株式会社Green Carbon<br>
+            ${issuerRole}<br>
+            <strong>${issuer}</strong>
+          </div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-label">会社情報</div>
+          <div class="sig-line">
+            📧 y.nomura@green-carbon.inc<br>
+            🌐 green-carbon.inc
+          </div>
+        </div>
+      </div>
+
+      <div class="letter-footer">
+        本書面は内定通知を目的としたものです。正式な雇用条件は雇用契約書に記載されます。<br>
+        株式会社Green Carbon ｜ Carbon Credit &amp; ESG Solutions
+      </div>
+    </div>
+  `;
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+// Initialize with defaults
+document.getElementById('fStartDate').value = '2026-06-01';
+document.getElementById('fDeadline').value = '2026-05-15';
+document.getElementById('fPosition').value = 'カーボンアナリスト';
+document.getElementById('fDept').value = 'ソリューション事業部';
+document.getElementById('fSalary').value = '50';
+document.getElementById('fAnnual').value = '700';
+document.getElementById('fProbation').value = '3ヶ月';
+document.getElementById('fLocation').value = '東京オフィス（週2リモート可）';
+document.getElementById('fHours').value = 'フレックスタイム制（コアタイム 10:00〜15:00）';
+document.getElementById('fVacation').value = '入社後6ヶ月から10日（法定通り）';
+document.getElementById('fBonus').value = '業績連動ボーナス（年2回）\nリモートワーク手当 月5,000円';
+document.getElementById('fIssuer').value = '野村 裕太';
+document.getElementById('fIssuerRole').value = 'People & Culture Manager';
+update();
+</script>
+</body>
+</html>

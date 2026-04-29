@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vercelデプロイガイド | Green Carbon HR</title>
+<style>
+  :root { --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc; --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: #1a1a2e; line-height: 1.7; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+  .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 26px; color: var(--gc-dark); margin-bottom: 8px; }
+  .intro { font-size: 15px; color: #555; margin-bottom: 32px; padding: 16px; background: var(--gc-pale); border-radius: 10px; border-left: 4px solid var(--gc-green); }
+  h2 { font-size: 20px; color: var(--gc-dark); margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 16px; color: var(--gc-dark); margin: 18px 0 8px; }
+  p { margin-bottom: 12px; color: #333; font-size: 15px; }
+  ul, ol { padding-left: 22px; margin-bottom: 14px; }
+  li { margin-bottom: 8px; font-size: 15px; color: #333; }
+  .step { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; position: relative; }
+  .step-num { position: absolute; top: -14px; left: 20px; background: var(--gc-green); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 16px 20px; border-radius: 10px; overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.7; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #c0392b; }
+  .tip { background: #e8f5e9; border-left: 4px solid var(--gc-green); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 14px; color: #2e7d32; }
+  .warn { background: #fff3e0; border-left: 4px solid #f4a261; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 14px; color: #e65100; }
+  .method-card { background: white; border: 2px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .method-card.recommended { border-color: var(--gc-green); }
+  .method-card h3 { color: var(--gc-dark); display: flex; align-items: center; gap: 8px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; background: var(--gc-green); color: white; vertical-align: middle; }
+  .btn { display: inline-block; padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 500; background: var(--gc-green); color: white; text-decoration: none; border: none; cursor: pointer; }
+  .btn-outline { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+  th { background: var(--gc-pale); padding: 10px 14px; text-align: left; font-size: 13px; color: var(--gc-dark); }
+  td { padding: 10px 14px; border-top: 1px solid #f0f0f0; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">Vercelデプロイガイド</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="container">
+  <h1>🚀 Vercelデプロイガイド</h1>
+  <div class="intro">
+    Green Carbon HRツールパッケージを <strong>Vercel</strong> にデプロイして、チーム全員がブラウザからアクセスできるようにする手順です。GitHubアカウントがあれば無料で完了できます。
+  </div>
+
+  <h2>📋 デプロイ方法の選択</h2>
+
+  <div class="method-card recommended">
+    <h3>⭐ 方法A: GitHub + Vercel連携（推奨）<span class="badge">おすすめ</span></h3>
+    <p>GitHubにファイルをプッシュするだけで自動デプロイ。ファイルを変更するたびに自動で更新されます。</p>
+    <p><strong>メリット:</strong> 自動デプロイ、バージョン管理、チームでの共同編集が容易</p>
+  </div>
+
+  <div class="method-card">
+    <h3>🖱️ 方法B: Vercel CLIでローカルデプロイ</h3>
+    <p>コマンドラインから直接デプロイ。GitHubを使わずに素早くデプロイできます。</p>
+  </div>
+
+  <div class="method-card">
+    <h3>📁 方法C: ドラッグ&ドロップ（最も簡単）</h3>
+    <p>Vercelのダッシュボードにフォルダをドラッグするだけ。最も手軽ですが、更新の都度手動操作が必要です。</p>
+  </div>
+
+  <h2>🅰️ 方法A: GitHub + Vercel連携</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <h3>GitHubリポジトリの作成</h3>
+    <ol>
+      <li><a href="https://github.com/new" target="_blank">GitHub</a> で新規リポジトリを作成</li>
+      <li>リポジトリ名: <code>gc-hr-tools</code></li>
+      <li>Visibility: <strong>Private</strong>（社内情報のため）</li>
+      <li>「Create repository」をクリック</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <h3>ファイルをGitHubにアップロード</h3>
+    <p>ターミナルで以下を実行（gc_packageフォルダ内から）：</p>
+    <pre>
+cd /path/to/gc_package
+git init
+git add .
+git commit -m "Initial commit: Green Carbon HR Tools"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/gc-hr-tools.git
+git push -u origin main</pre>
+    <div class="tip">💡 GitHubのリポジトリ画面から「uploading an existing file」でファイルをアップロードすることも可能です（コマンドライン不要）。</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <h3>Vercelでプロジェクトをインポート</h3>
+    <ol>
+      <li><a href="https://vercel.com" target="_blank">vercel.com</a> にGitHubアカウントでログイン</li>
+      <li>「Add New Project」→「Import Git Repository」</li>
+      <li><code>gc-hr-tools</code> を選択</li>
+      <li>Framework Preset: <strong>Other</strong></li>
+      <li>Root Directory: そのまま（<code>./</code>）</li>
+      <li>「Deploy」をクリック</li>
+    </ol>
+    <div class="tip">✅ デプロイ完了後、<code>https://gc-hr-tools-xxxx.vercel.app</code> のようなURLが発行されます。</div>
+  </div>
+
+  <h2>🅱️ 方法B: Vercel CLIデプロイ</h2>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <h3>Vercel CLIのインストール</h3>
+    <pre>npm install -g vercel</pre>
+    <h3>デプロイ実行</h3>
+    <pre>
+cd /path/to/gc_package
+vercel login    # Vercelアカウントでログイン
+vercel          # デプロイ開始
+# 質問に答える:
+# Set up and deploy: Y
+# Which scope: (あなたのアカウントを選択)
+# Project name: gc-hr-tools
+# Directory: ./
+# Override settings: N</pre>
+    <pre>vercel --prod   # 本番URLでデプロイ</pre>
+  </div>
+
+  <h2>🅲️ 方法C: ドラッグ&ドロップ</h2>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <h3>最も手軽な方法</h3>
+    <ol>
+      <li><a href="https://vercel.com/new" target="_blank">vercel.com/new</a> を開く</li>
+      <li>「Deploy」セクションにある <strong>「Browse」またはドラッグエリア</strong> に <code>gc_package</code> フォルダをドラッグ</li>
+      <li>プロジェクト名を入力して「Deploy」</li>
+    </ol>
+  </div>
+
+  <h2>⚙️ Vercel設定（vercel.json）</h2>
+  <p>パッケージに含まれる <code>vercel.json</code> には以下の設定が入っています：</p>
+  <pre>
+{
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    }
+  ]
+}</pre>
+
+  <h2>🔒 アクセス制限（Vercel Pro）</h2>
+  <div class="warn">⚠️ 無料プランではURLを知っていれば誰でもアクセス可能です。社内限定にするには以下を検討：</div>
+  <table>
+    <thead><tr><th>方法</th><th>難易度</th><th>コスト</th></tr></thead>
+    <tbody>
+      <tr><td>Vercel Password Protection</td><td>★☆☆</td><td>Proプラン（$20/月）</td></tr>
+      <tr><td>VercelのTeam機能 + SSO</td><td>★★☆</td><td>Teamプラン</td></tr>
+      <tr><td>URLを内部共有のみ</td><td>★☆☆</td><td>無料</td></tr>
+      <tr><td>Cloudflare Access</td><td>★★★</td><td>無料〜</td></tr>
+    </tbody>
+  </table>
+
+  <h2>📦 デプロイ後の確認</h2>
+  <div class="step">
+    <div class="step-num">6</div>
+    <h3>動作確認チェックリスト</h3>
+    <ul>
+      <li>☐ ランチャー（index.html）が表示される</li>
+      <li>☐ 各ツールへのリンクが動作する</li>
+      <li>☐ データの保存・読み込みが動作する（localStorage）</li>
+      <li>☐ モバイルブラウザで表示される</li>
+      <li>☐ GASバックエンドのURLを接続する（任意）</li>
+    </ul>
+  </div>
+
+  <div style="margin-top:32px;text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="../index.html" class="btn">ランチャーを開く</a>
+    <a href="../guides/backend_setup_guide.html" class="btn btn-outline">GASセットアップガイド</a>
+    <a href="../package-info.html" class="btn btn-outline">パッケージ情報</a>
+  </div>
+</div>
+</body>
+</html>

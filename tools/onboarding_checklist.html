@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オンボーディングチェックリスト | Green Carbon HR</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f8fffe; --card: #fff; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  input, select, textarea {
+    padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; background: white; color: var(--text); outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gc-light); }
+
+  .employee-selector { background: white; border-radius: 12px; padding: 20px 24px; border: 1px solid var(--border); margin-bottom: 24px; display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 500; color: #444; }
+  .field input, .field select { min-width: 180px; }
+
+  .progress-bar-bg { height: 12px; background: #e8e8e8; border-radius: 6px; overflow: hidden; margin: 16px 0 8px; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--gc-green), var(--gc-light)); border-radius: 6px; transition: width 0.4s; }
+  .progress-text { font-size: 14px; color: #555; margin-bottom: 20px; }
+  .progress-text strong { color: var(--gc-green); }
+
+  .phase-block { background: white; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; }
+  .phase-header { background: var(--gc-pale); padding: 14px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .phase-header h3 { font-size: 15px; color: var(--gc-dark); flex: 1; }
+  .phase-progress { font-size: 13px; color: var(--gc-green); font-weight: 500; }
+  .phase-toggle { font-size: 16px; transition: transform 0.2s; }
+  .phase-toggle.open { transform: rotate(90deg); }
+
+  .phase-body { padding: 8px 0; }
+  .checklist-item { display: flex; align-items: flex-start; gap: 14px; padding: 12px 20px; border-top: 1px solid #f5f5f5; transition: background 0.15s; }
+  .checklist-item:hover { background: #f9fff9; }
+  .checklist-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--gc-green); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+  .item-content { flex: 1; }
+  .item-text { font-size: 14px; color: var(--text); }
+  .item-text.done { text-decoration: line-through; color: #aaa; }
+  .item-meta { font-size: 12px; color: #aaa; margin-top: 3px; }
+  .item-owner { display: inline-block; padding: 1px 7px; border-radius: 10px; background: #f0f0f0; color: #666; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 32px; max-width: 480px; width: 90%; max-height: 85vh; overflow-y: auto; }
+  .modal h2 { font-size: 18px; color: var(--gc-dark); margin-bottom: 20px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  .toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+
+  .employees-list { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .emp-chip { padding: 8px 16px; border-radius: 20px; background: white; border: 1.5px solid var(--border); cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  .emp-chip:hover { background: var(--gc-pale); border-color: var(--gc-green); }
+  .emp-chip.active { background: var(--gc-green); color: white; border-color: var(--gc-green); }
+
+  @media print {
+    header a, .toolbar, .employee-selector .btn { display: none; }
+    .phase-body { display: block !important; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">オンボーディングチェックリスト</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="container">
+  <h1>オンボーディングチェックリスト</h1>
+  <p class="page-sub">新入社員の入社前〜3ヶ月のオンボーディングタスクを管理します</p>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openNewEmpModal()">+ 新入社員を追加</button>
+    <button class="btn btn-secondary" onclick="window.print()">印刷</button>
+  </div>
+
+  <div class="employees-list" id="employeeList"></div>
+  <div id="checklistArea"></div>
+</div>
+
+<div class="modal-bg" id="newEmpModal">
+  <div class="modal">
+    <h2>新入社員追加</h2>
+    <div class="form-group"><label>氏名 *</label><input type="text" id="neName"></div>
+    <div class="form-group"><label>役職</label><input type="text" id="neRole"></div>
+    <div class="form-group"><label>部門</label><input type="text" id="neDept"></div>
+    <div class="form-group"><label>入社日 *</label><input type="date" id="neStartDate"></div>
+    <div class="form-group"><label>バディ（担当者）</label><input type="text" id="neBuddy"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeNewEmpModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="addEmployee()">追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_CHECKLIST = [
+  { phase: '入社前（Preboarding）', items: [
+    {text:'オファーレターの署名確認', owner:'HR', daysRelative: -14},
+    {text:'雇用契約書の締結', owner:'HR', daysRelative: -10},
+    {text:'PC・ツールの手配', owner:'IT', daysRelative: -7},
+    {text:'Slackアカウント作成', owner:'IT', daysRelative: -5},
+    {text:'入社案内メールの送付', owner:'HR', daysRelative: -3},
+    {text:'バッジ・IDカードの準備', owner:'総務', daysRelative: -1},
+  ]},
+  { phase: 'Day 1', items: [
+    {text:'オフィス案内・席の案内', owner:'バディ', daysRelative: 0},
+    {text:'社内ツールのログイン確認', owner:'IT', daysRelative: 0},
+    {text:'チームメンバーへの紹介', owner:'マネジャー', daysRelative: 0},
+    {text:'就業規則・ハンドブックの説明', owner:'HR', daysRelative: 0},
+    {text:'ランチ（バディと）', owner:'バディ', daysRelative: 0},
+  ]},
+  { phase: '1週目', items: [
+    {text:'業務概要レクチャー', owner:'マネジャー', daysRelative: 3},
+    {text:'主要ステークホルダーとの1on1', owner:'マネジャー', daysRelative: 5},
+    {text:'30日目標の設定', owner:'マネジャー', daysRelative: 7},
+    {text:'セキュリティ研修完了', owner:'本人', daysRelative: 7},
+    {text:'会社概要・戦略説明（CEO面談）', owner:'HR', daysRelative: 5},
+  ]},
+  { phase: '30日目標', items: [
+    {text:'主要プロジェクトの把握', owner:'本人', daysRelative: 30},
+    {text:'チームの業務フロー理解', owner:'本人', daysRelative: 30},
+    {text:'初回1on1（マネジャーと）', owner:'マネジャー', daysRelative: 14},
+    {text:'最初のタスク完了', owner:'本人', daysRelative: 30},
+  ]},
+  { phase: '60日目標', items: [
+    {text:'独立してタスクを遂行できる', owner:'本人', daysRelative: 60},
+    {text:'チームへの貢献が見える', owner:'本人', daysRelative: 60},
+    {text:'60日フィードバック面談', owner:'マネジャー', daysRelative: 60},
+  ]},
+  { phase: '90日目標', items: [
+    {text:'90日目標のレビュー', owner:'マネジャー', daysRelative: 90},
+    {text:'次のクォーター目標設定', owner:'マネジャー', daysRelative: 90},
+    {text:'オンボーディング完了確認', owner:'HR', daysRelative: 90},
+  ]},
+];
+
+let employees = JSON.parse(localStorage.getItem('gc_onboarding_emps') || '[]');
+let progress = JSON.parse(localStorage.getItem('gc_onboarding_progress') || '{}');
+let selectedEmp = null;
+let openPhases = {};
+
+if (!employees.length) {
+  employees = [
+    {id:'e1', name:'伊藤 花', role:'カーボンアナリスト', dept:'ソリューション事業部', startDate:'2026-05-01', buddy:'田中 美咲'},
+    {id:'e2', name:'渡辺 涼', role:'エンジニア', dept:'プロダクト部', startDate:'2026-05-15', buddy:'鈴木 健太'},
+  ];
+  progress['e1'] = {'入社前（Preboarding）_0':true,'入社前（Preboarding）_1':true,'入社前（Preboarding）_2':true};
+  saveAll();
+}
+
+function saveAll() {
+  localStorage.setItem('gc_onboarding_emps', JSON.stringify(employees));
+  localStorage.setItem('gc_onboarding_progress', JSON.stringify(progress));
+}
+
+function isItemDone(empId, phase, idx) {
+  return !!(progress[empId] && progress[empId][phase+'_'+idx]);
+}
+
+function toggleItem(empId, phase, idx) {
+  if (!progress[empId]) progress[empId] = {};
+  const key = phase+'_'+idx;
+  progress[empId][key] = !progress[empId][key];
+  saveAll();
+  renderChecklist();
+}
+
+function calcProgress(empId) {
+  let total = 0, done = 0;
+  DEFAULT_CHECKLIST.forEach(p=>{ p.items.forEach((_,i)=>{ total++; if(isItemDone(empId,p.phase,i)) done++; }); });
+  return {total, done, pct: total?Math.round(done/total*100):0};
+}
+
+function renderEmployeeList() {
+  const el = document.getElementById('employeeList');
+  if (!employees.length) { el.innerHTML = '<div style="color:#aaa;font-size:14px">新入社員を追加してください</div>'; return; }
+  el.innerHTML = employees.map(e=>`
+    <div class="emp-chip ${selectedEmp===e.id?'active':''}" onclick="selectEmployee('${e.id}')">
+      ${e.name} <span style="font-size:11px;opacity:0.8">(${e.startDate}入社)</span>
+    </div>`).join('');
+}
+
+function selectEmployee(id) {
+  selectedEmp = id;
+  openPhases = {};
+  renderEmployeeList();
+  renderChecklist();
+}
+
+function renderChecklist() {
+  const area = document.getElementById('checklistArea');
+  if (!selectedEmp) { area.innerHTML = ''; return; }
+  const emp = employees.find(e=>e.id===selectedEmp);
+  if (!emp) return;
+  const prog = calcProgress(selectedEmp);
+
+  let html = `
+    <div style="background:white;border-radius:12px;padding:20px 24px;border:1px solid var(--border);margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:18px;font-weight:600;color:var(--gc-dark)">${emp.name}</div>
+          <div style="font-size:13px;color:#666">${emp.role} · ${emp.dept} · 入社日: ${emp.startDate}${emp.buddy?` · バディ: ${emp.buddy}`:''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:28px;font-weight:700;color:var(--gc-green)">${prog.pct}%</div>
+          <div style="font-size:12px;color:#aaa">${prog.done}/${prog.total} 完了</div>
+        </div>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar" style="width:${prog.pct}%"></div></div>
+    </div>
+  `;
+
+  DEFAULT_CHECKLIST.forEach(phase=>{
+    const phaseItems = phase.items;
+    const doneCnt = phaseItems.filter((_,i)=>isItemDone(selectedEmp,phase.phase,i)).length;
+    const isOpen = openPhases[phase.phase] !== false;
+    html += `<div class="phase-block">
+      <div class="phase-header" onclick="togglePhase('${phase.phase}')">
+        <h3>${phase.phase}</h3>
+        <span class="phase-progress">${doneCnt}/${phaseItems.length}</span>
+        <span class="phase-toggle ${isOpen?'open':''}">▶</span>
+      </div>
+      <div class="phase-body" style="${isOpen?'':'display:none'}">
+        ${phaseItems.map((item,i)=>{
+          const done = isItemDone(selectedEmp, phase.phase, i);
+          return `<div class="checklist-item">
+            <input type="checkbox" ${done?'checked':''} onchange="toggleItem('${selectedEmp}','${phase.phase}',${i})">
+            <div class="item-content">
+              <div class="item-text ${done?'done':''}">${item.text}</div>
+              <div class="item-meta">
+                <span class="item-owner">担当: ${item.owner}</span>
+                ${item.daysRelative>0?' · 入社'+item.daysRelative+'日目':item.daysRelative===0?' · 入社当日':' · 入社'+Math.abs(item.daysRelative)+'日前'}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  area.innerHTML = html;
+}
+
+function togglePhase(phase) {
+  openPhases[phase] = openPhases[phase] === false ? true : false;
+  renderChecklist();
+}
+
+function openNewEmpModal() {
+  document.getElementById('neStartDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('newEmpModal').classList.add('open');
+}
+function closeNewEmpModal() { document.getElementById('newEmpModal').classList.remove('open'); }
+
+function addEmployee() {
+  const name = document.getElementById('neName').value.trim();
+  const startDate = document.getElementById('neStartDate').value;
+  if (!name || !startDate) { alert('氏名と入社日は必須です'); return; }
+  const emp = {
+    id: 'e'+Date.now(), name,
+    role: document.getElementById('neRole').value,
+    dept: document.getElementById('neDept').value,
+    startDate, buddy: document.getElementById('neBuddy').value
+  };
+  employees.push(emp);
+  saveAll();
+  closeNewEmpModal();
+  selectedEmp = emp.id;
+  renderEmployeeList();
+  renderChecklist();
+}
+
+renderEmployeeList();
+if (employees.length) selectEmployee(employees[0].id);
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社内Wiki | Green Carbon</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+  header { background: var(--gc-dark); color: white; padding: 14px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header .logo { font-size: 18px; font-weight: 700; }
+  header .subtitle { font-size: 13px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+
+  .layout { display: flex; flex: 1; overflow: hidden; }
+  .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-search { padding: 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-search input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+  .sidebar-search input:focus { border-color: var(--gc-light); }
+  .sidebar-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .cat-header { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; }
+  .page-item { padding: 8px 16px; cursor: pointer; font-size: 14px; color: #444; transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; }
+  .page-item:hover { background: var(--gc-pale); color: var(--gc-dark); }
+  .page-item.active { background: var(--gc-pale); color: var(--gc-dark); font-weight: 600; border-left: 3px solid var(--gc-green); }
+  .page-item .tag { font-size: 10px; background: #f0f0f0; padding: 1px 6px; border-radius: 8px; color: #888; }
+
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .wiki-toolbar { padding: 12px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; background: white; }
+  .wiki-content { padding: 32px 48px; max-width: 800px; flex: 1; }
+  @media(max-width:900px) { .wiki-content { padding: 20px; } }
+
+  .btn { padding: 7px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-danger { background: white; color: #e63946; border: 1.5px solid #e63946; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .article-title { font-size: 28px; font-weight: 700; color: var(--gc-dark); margin-bottom: 8px; }
+  .article-meta { font-size: 12px; color: #999; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .article-body { font-size: 15px; line-height: 1.8; color: #333; }
+  .article-body h2 { font-size: 20px; color: var(--gc-dark); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .article-body h3 { font-size: 16px; color: var(--gc-dark); margin: 20px 0 8px; }
+  .article-body p { margin-bottom: 14px; }
+  .article-body ul, .article-body ol { margin: 10px 0 14px 24px; }
+  .article-body li { margin-bottom: 6px; }
+  .article-body table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  .article-body th { background: var(--gc-pale); padding: 10px 14px; text-align: left; font-size: 13px; color: var(--gc-dark); }
+  .article-body td { padding: 10px 14px; border-top: 1px solid #f0f0f0; font-size: 14px; }
+  .article-body blockquote { border-left: 4px solid var(--gc-light); padding: 10px 16px; background: var(--gc-pale); border-radius: 0 8px 8px 0; margin: 16px 0; color: #444; }
+  .article-body code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+
+  .editor-area { display: none; flex-direction: column; padding: 24px 48px; flex: 1; }
+  .editor-area.active { display: flex; }
+  .editor-toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .editor-toolbar button { padding: 5px 10px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .editor-toolbar button:hover { background: var(--gc-pale); }
+  .editor-area input[type=text] { font-size: 22px; font-weight: 700; color: var(--gc-dark); border: none; border-bottom: 2px solid var(--border); padding: 8px 0; margin-bottom: 16px; outline: none; width: 100%; }
+  .editor-area input[type=text]:focus { border-bottom-color: var(--gc-green); }
+  .editor-area textarea { flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 16px; font-size: 14px; font-family: monospace; resize: none; outline: none; min-height: 400px; }
+  .editor-area textarea:focus { border-color: var(--gc-light); }
+  .editor-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; max-width: 420px; width: 90%; }
+  .modal h2 { font-size: 16px; color: var(--gc-dark); margin-bottom: 16px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 500; color: #444; margin-bottom: 5px; }
+  .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  .empty-state { text-align: center; padding: 80px 40px; color: #aaa; }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">社内Wiki</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-search">
+      <input type="text" placeholder="🔍 記事を検索..." id="searchInput" oninput="renderSidebar()">
+    </div>
+    <div class="sidebar-list" id="sidebarList"></div>
+    <div style="padding:12px;border-top:1px solid var(--border)">
+      <button class="btn btn-primary" style="width:100%" onclick="newPage()">+ 新規ページ</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="wiki-toolbar" id="wikiToolbar" style="display:none">
+      <span id="breadcrumb" style="font-size:13px;color:#888;flex:1"></span>
+      <button class="btn btn-secondary btn-sm" onclick="startEdit()">✏️ 編集</button>
+      <button class="btn btn-danger btn-sm" onclick="deletePage()">削除</button>
+    </div>
+
+    <div id="articleArea" class="wiki-content">
+      <div class="empty-state">
+        <div class="icon">📚</div>
+        <div>ページを選択するか、新規ページを作成してください</div>
+      </div>
+    </div>
+
+    <div class="editor-area" id="editorArea">
+      <input type="text" id="editorTitle" placeholder="ページタイトル...">
+      <div class="editor-toolbar">
+        <button onclick="ins('## ')">H2</button>
+        <button onclick="ins('### ')">H3</button>
+        <button onclick="ins('**','**')">太字</button>
+        <button onclick="ins('- ')">リスト</button>
+        <button onclick="ins('1. ')">番号付き</button>
+        <button onclick="ins('> ')">引用</button>
+        <button onclick="ins('`','`')">コード</button>
+      </div>
+      <textarea id="editorBody" placeholder="Markdown形式で記述してください..."></textarea>
+      <div class="editor-footer">
+        <button class="btn btn-secondary" onclick="cancelEdit()">キャンセル</button>
+        <button class="btn btn-primary" onclick="savePage()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="newPageModal">
+  <div class="modal">
+    <h2>新規ページ作成</h2>
+    <div class="form-group"><label>ページタイトル</label><input type="text" id="npTitle" placeholder="例: 経費精算ガイド"></div>
+    <div class="form-group"><label>カテゴリ</label>
+      <select id="npCat">
+        <option>会社情報</option><option>HR・制度</option><option>プロセス・手順</option>
+        <option>プロジェクト</option><option>技術・ツール</option><option>その他</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeNewPage()">キャンセル</button>
+      <button class="btn btn-primary" onclick="createPage()">作成</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let pages = JSON.parse(localStorage.getItem('gc_wiki_pages') || '[]');
+let selectedId = null;
+let editingNew = false;
+
+function md2html(md) {
+  return md
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hulo]|<block)(.+)$/gm, (m,s)=>s.trim()?s:'')
+    .replace(/<p><\/p>/g, '');
+}
+
+if (!pages.length) {
+  pages = [
+    {id:'p1', title:'Green Carbon について', cat:'会社情報', body:`## 会社概要\n\nGreen Carbonは、カーボンクレジット取引とESGソリューションを提供する企業です。\n\n## ミッション\n\n気候変動対策を事業を通じて加速し、持続可能な社会の実現に貢献します。\n\n## 事業内容\n\n- カーボンクレジットの発行・取引支援\n- 企業向けESG戦略コンサルティング\n- 環境データ分析・レポーティング\n- サステナビリティ認証支援\n\n## オフィス\n\n東京都渋谷区（本社）`, updated:'2026-04-15'},
+    {id:'p2', title:'入社時の手続き一覧', cat:'HR・制度', body:`## 入社手続きチェックリスト\n\n### 入社前に準備するもの\n\n- マイナンバーカード（またはマイナンバー通知カード）\n- 源泉徴収票（前職がある場合）\n- 銀行口座情報（給与振込先）\n- 年金手帳\n\n### 入社当日に提出するもの\n\n- 誓約書\n- 身元保証書\n- 緊急連絡先届\n\n## 社会保険\n\n入社日から健康保険・厚生年金に加入します。手続きはHRが行います。`, updated:'2026-04-10'},
+    {id:'p3', title:'経費精算ガイド', cat:'プロセス・手順', body:`## 経費精算の基本ルール\n\n経費は業務上必要と認められるもののみ申請できます。\n\n## 申請方法\n\n1. 領収書を保管する（電子可）\n2. 経費精算システムにアクセス\n3. 必要事項を入力・領収書をアップロード\n4. 上長承認後、翌月給与と合わせて支払い\n\n## 承認フロー\n\n- 3万円未満: 直属マネジャー\n- 3万円以上: 部門長 + 経理\n\n## 交通費\n\n実費精算。ICカードの履歴または領収書が必要です。`, updated:'2026-04-12'},
+    {id:'p4', title:'リモートワークポリシー', cat:'HR・制度', body:`## リモートワーク制度\n\n週3日まで在宅勤務可（ポジションによる）。\n\n## ルール\n\n- コアタイム（10:00〜15:00）はオンライン状態を維持\n- Slackで始業・終業報告\n- 月1回の出社は必須\n\n## 設備補助\n\nリモートワーク手当として月5,000円支給。\n\n## セキュリティ\n\n- VPNを必ず使用\n- 公共のWi-Fiでの業務は原則禁止`, updated:'2026-04-08'},
+    {id:'p5', title:'Slackの使い方ガイド', cat:'技術・ツール', body:`## チャンネル一覧\n\n- **#general** — 全社アナウンス\n- **#random** — 雑談\n- **#hr** — HR関連\n- **#engineering** — エンジニアチーム\n\n## マナー\n\n- @channel、@here は緊急時のみ使用\n- DM多用より公開チャンネルを優先\n- 既読スタンプで確認を示す\n\n## 通知設定\n\n就業時間外の通知はオフに設定することを推奨します。`, updated:'2026-04-05'},
+  ];
+  savePages();
+}
+
+function savePages() { localStorage.setItem('gc_wiki_pages', JSON.stringify(pages)); }
+
+function getCategories() {
+  return [...new Set(pages.map(p=>p.cat))];
+}
+
+function renderSidebar() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const cats = getCategories();
+  let html = '';
+  cats.forEach(cat => {
+    const filtered = pages.filter(p=>p.cat===cat && (p.title.toLowerCase().includes(q)||p.body.toLowerCase().includes(q)));
+    if (!filtered.length) return;
+    html += `<div class="cat-header">${cat}</div>`;
+    filtered.forEach(p=>{
+      html += `<div class="page-item ${p.id===selectedId?'active':''}" onclick="selectPage('${p.id}')">${p.title}</div>`;
+    });
+  });
+  if (!html) html = '<div style="padding:16px;color:#aaa;font-size:13px;text-align:center">ページが見つかりません</div>';
+  document.getElementById('sidebarList').innerHTML = html;
+}
+
+function selectPage(id) {
+  selectedId = id;
+  cancelEdit();
+  renderSidebar();
+  const p = pages.find(x=>x.id===id);
+  if (!p) return;
+  document.getElementById('wikiToolbar').style.display = 'flex';
+  document.getElementById('breadcrumb').textContent = p.cat + ' › ' + p.title;
+  document.getElementById('articleArea').innerHTML = `
+    <div class="article-title">${p.title}</div>
+    <div class="article-meta">カテゴリ: ${p.cat} ｜ 最終更新: ${p.updated}</div>
+    <div class="article-body">${md2html(p.body)}</div>
+  `;
+}
+
+function startEdit() {
+  const p = pages.find(x=>x.id===selectedId);
+  if (!p) return;
+  document.getElementById('editorTitle').value = p.title;
+  document.getElementById('editorBody').value = p.body;
+  document.getElementById('articleArea').style.display = 'none';
+  document.getElementById('editorArea').classList.add('active');
+}
+
+function cancelEdit() {
+  document.getElementById('articleArea').style.display = '';
+  document.getElementById('editorArea').classList.remove('active');
+  editingNew = false;
+}
+
+function savePage() {
+  const title = document.getElementById('editorTitle').value.trim();
+  const body = document.getElementById('editorBody').value;
+  if (!title) { alert('タイトルを入力してください'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  if (editingNew) {
+    const p = {id:'p'+Date.now(), title, cat: editingNew, body, updated:today};
+    pages.unshift(p);
+    selectedId = p.id;
+  } else {
+    const p = pages.find(x=>x.id===selectedId);
+    if (p) { p.title = title; p.body = body; p.updated = today; }
+  }
+  savePages();
+  cancelEdit();
+  renderSidebar();
+  selectPage(selectedId);
+}
+
+function deletePage() {
+  if (!selectedId) return;
+  const p = pages.find(x=>x.id===selectedId);
+  if (!p) return;
+  if (!confirm(`「${p.title}」を削除しますか？`)) return;
+  pages = pages.filter(x=>x.id!==selectedId);
+  selectedId = null;
+  savePages();
+  document.getElementById('wikiToolbar').style.display = 'none';
+  document.getElementById('articleArea').innerHTML = '<div class="empty-state"><div class="icon">📚</div><div>ページを選択してください</div></div>';
+  renderSidebar();
+}
+
+function newPage() { document.getElementById('newPageModal').classList.add('open'); }
+function closeNewPage() { document.getElementById('newPageModal').classList.remove('open'); }
+
+function createPage() {
+  const title = document.getElementById('npTitle').value.trim();
+  const cat = document.getElementById('npCat').value;
+  if (!title) { alert('タイトルを入力してください'); return; }
+  closeNewPage();
+  document.getElementById('editorTitle').value = title;
+  document.getElementById('editorBody').value = `## ${title}\n\nここに内容を記述してください。`;
+  editingNew = cat;
+  document.getElementById('articleArea').style.display = 'none';
+  document.getElementById('editorArea').classList.add('active');
+  document.getElementById('wikiToolbar').style.display = 'none';
+}
+
+function ins(before, after='') {
+  const ta = document.getElementById('editorBody');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.substring(s, e);
+  ta.value = ta.value.substring(0,s) + before + sel + after + ta.value.substring(e);
+  ta.focus();
+  ta.selectionStart = s + before.length;
+  ta.selectionEnd = e + before.length;
+}
+
+renderSidebar();
+</script>
+</body>
+</html>

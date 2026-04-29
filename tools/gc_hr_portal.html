@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HRポータル | Green Carbon</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f0fdf4; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a.back { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+
+  .hero { background: linear-gradient(135deg, var(--gc-dark) 0%, var(--gc-green) 100%); color: white; padding: 40px 32px; }
+  .hero h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .hero p { font-size: 15px; opacity: 0.85; }
+  .hero-date { font-size: 13px; opacity: 0.7; margin-top: 8px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-bottom: 28px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; margin-bottom: 28px; }
+  @media(max-width:900px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+  .section-title { font-size: 18px; font-weight: 700; color: var(--gc-dark); margin-bottom: 16px; padding-left: 10px; border-left: 4px solid var(--gc-green); }
+
+  .card { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .card h3 { font-size: 14px; font-weight: 600; color: var(--gc-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  .stat-icon { font-size: 28px; margin-bottom: 6px; }
+  .stat-num { font-size: 36px; font-weight: 700; color: var(--gc-green); }
+  .stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+  .stat-trend { font-size: 12px; margin-top: 6px; }
+  .stat-trend.up { color: #2e7d32; }
+  .stat-trend.down { color: #c62828; }
+
+  .quick-links { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .ql-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--bg); border-radius: 8px; cursor: pointer; border: 1px solid var(--border); transition: all 0.2s; text-decoration: none; color: var(--text); }
+  .ql-item:hover { background: var(--gc-pale); border-color: var(--gc-green); }
+  .ql-item .icon { font-size: 20px; }
+  .ql-item .ql-text { font-size: 13px; font-weight: 500; }
+
+  .announce-list { display: flex; flex-direction: column; gap: 10px; }
+  .announce-item { padding: 14px; background: var(--bg); border-radius: 8px; border-left: 4px solid var(--gc-green); }
+  .announce-item .a-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .announce-item .a-body { font-size: 13px; color: #555; line-height: 1.6; }
+  .announce-item .a-date { font-size: 11px; color: #aaa; margin-top: 6px; }
+
+  .calendar-list { display: flex; flex-direction: column; gap: 8px; }
+  .cal-item { display: flex; gap: 14px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .cal-item:last-child { border-bottom: none; }
+  .cal-date { min-width: 42px; text-align: center; background: var(--gc-pale); border-radius: 8px; padding: 6px 8px; }
+  .cal-date .month { font-size: 10px; color: var(--gc-green); font-weight: 600; text-transform: uppercase; }
+  .cal-date .day { font-size: 18px; font-weight: 700; color: var(--gc-dark); }
+  .cal-info .event { font-size: 14px; font-weight: 500; }
+  .cal-info .desc { font-size: 12px; color: #888; margin-top: 2px; }
+
+  .task-list { display: flex; flex-direction: column; gap: 6px; }
+  .task-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: 8px; font-size: 14px; }
+  .task-item input[type=checkbox] { accent-color: var(--gc-green); width: 16px; height: 16px; }
+  .task-item .task-text { flex: 1; }
+  .task-item .task-text.done { text-decoration: line-through; color: #aaa; }
+  .task-item .task-due { font-size: 11px; color: #aaa; }
+
+  .policy-list { display: flex; flex-direction: column; gap: 6px; }
+  .policy-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg); border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+  .policy-item:hover { border-color: var(--gc-green); background: var(--gc-pale); }
+  .policy-icon { font-size: 18px; }
+  .policy-text { font-size: 14px; font-weight: 500; flex: 1; }
+  .policy-arrow { color: #ccc; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+  .modal h2 { font-size: 18px; color: var(--gc-dark); margin-bottom: 16px; }
+  .modal p, .modal li { font-size: 14px; line-height: 1.8; color: #333; margin-bottom: 8px; }
+  .modal ul { padding-left: 20px; }
+  .modal-footer { margin-top: 20px; text-align: right; }
+  .btn { padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; background: var(--gc-green); color: white; }
+  .btn:hover { background: var(--gc-dark); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">HRポータル</div>
+  </div>
+  <a class="back" href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="hero">
+  <h1>こんにちは、Yutaさん 👋</h1>
+  <p>Green Carbon HRポータルへようこそ。人事・制度・お知らせをまとめて確認できます。</p>
+  <div class="hero-date" id="heroDate"></div>
+</div>
+
+<div class="container">
+  <!-- Stats -->
+  <div class="section-title" style="margin-bottom:20px">📊 会社スナップショット</div>
+  <div class="grid-3" style="margin-bottom:32px">
+    <div class="card" style="text-align:center">
+      <div class="stat-icon">👥</div>
+      <div class="stat-num">47</div>
+      <div class="stat-label">総従業員数</div>
+      <div class="stat-trend up">↑ 今月3名入社</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-num">92%</div>
+      <div class="stat-label">エンゲージメントスコア</div>
+      <div class="stat-trend up">↑ 前月比 +3pt</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="stat-icon">📅</div>
+      <div class="stat-num">12</div>
+      <div class="stat-label">残有給日数（あなた）</div>
+      <div class="stat-trend" style="color:#888">有効期限: 2027/3/31</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Quick Links -->
+    <div class="card">
+      <h3>🔗 クイックリンク</h3>
+      <div class="quick-links">
+        <a class="ql-item" href="gc_recruiting.html"><span class="icon">📋</span><span class="ql-text">採用管理</span></a>
+        <a class="ql-item" href="retention_risk_monitor.html"><span class="icon">📊</span><span class="ql-text">離職リスク</span></a>
+        <a class="ql-item" href="onboarding_checklist.html"><span class="icon">✅</span><span class="ql-text">オンボーディング</span></a>
+        <a class="ql-item" href="oneonone_manager.html"><span class="icon">💬</span><span class="ql-text">1on1管理</span></a>
+        <a class="ql-item" href="offer_letter_generator.html"><span class="icon">📄</span><span class="ql-text">オファーレター</span></a>
+        <a class="ql-item" href="gc_wiki.html"><span class="icon">📚</span><span class="ql-text">社内Wiki</span></a>
+        <a class="ql-item" href="gc_directory.html"><span class="icon">👤</span><span class="ql-text">社員名簿</span></a>
+        <a class="ql-item" href="gc_orgchart.html"><span class="icon">🌿</span><span class="ql-text">組織図</span></a>
+      </div>
+    </div>
+
+    <!-- Announcements -->
+    <div class="card">
+      <h3>📢 お知らせ</h3>
+      <div class="announce-list">
+        <div class="announce-item">
+          <div class="a-title">🎉 5月の新入社員を歓迎します</div>
+          <div class="a-body">5月1日に伊藤 花さん（カーボンアナリスト）が入社します。ウェルカムランチを5月2日(金)に予定しています。</div>
+          <div class="a-date">2026-04-25</div>
+        </div>
+        <div class="announce-item">
+          <div class="a-title">📝 Q1評価フィードバックの提出期限</div>
+          <div class="a-body">Q1のパフォーマンスフィードバック入力期限は5月15日です。マネジャーの方は部下分も忘れずに提出してください。</div>
+          <div class="a-date">2026-04-20</div>
+        </div>
+        <div class="announce-item">
+          <div class="a-title">🏥 健康診断のご案内</div>
+          <div class="a-body">6月の定期健康診断の日程調整を開始します。5月末までに希望日を回答してください。</div>
+          <div class="a-date">2026-04-18</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- HR Calendar -->
+    <div class="card">
+      <h3>📅 HRカレンダー</h3>
+      <div class="calendar-list">
+        <div class="cal-item">
+          <div class="cal-date"><div class="month">MAY</div><div class="day">1</div></div>
+          <div class="cal-info"><div class="event">伊藤 花 入社</div><div class="desc">Day 1 オリエンテーション 10:00〜</div></div>
+        </div>
+        <div class="cal-item">
+          <div class="cal-date"><div class="month">MAY</div><div class="day">15</div></div>
+          <div class="cal-info"><div class="event">Q1評価提出締切</div><div class="desc">全マネジャー対象</div></div>
+        </div>
+        <div class="cal-item">
+          <div class="cal-date"><div class="month">MAY</div><div class="day">15</div></div>
+          <div class="cal-info"><div class="event">渡辺 涼 入社</div><div class="desc">プロダクト部 エンジニア</div></div>
+        </div>
+        <div class="cal-item">
+          <div class="cal-date"><div class="month">JUN</div><div class="day">5</div></div>
+          <div class="cal-info"><div class="event">定期健康診断</div><div class="desc">渋谷クリニック（全員）</div></div>
+        </div>
+        <div class="cal-item">
+          <div class="cal-date"><div class="month">JUN</div><div class="day">30</div></div>
+          <div class="cal-info"><div class="event">上半期レビュー</div><div class="desc">全社目標振り返り</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Policies -->
+    <div class="card">
+      <h3>📋 制度・ポリシー</h3>
+      <div class="policy-list">
+        <div class="policy-item" onclick="showPolicy('remote')">
+          <span class="policy-icon">🏠</span>
+          <span class="policy-text">リモートワーク制度</span>
+          <span class="policy-arrow">›</span>
+        </div>
+        <div class="policy-item" onclick="showPolicy('leave')">
+          <span class="policy-icon">🌴</span>
+          <span class="policy-text">休暇制度</span>
+          <span class="policy-arrow">›</span>
+        </div>
+        <div class="policy-item" onclick="showPolicy('expense')">
+          <span class="policy-icon">💰</span>
+          <span class="policy-text">経費精算ポリシー</span>
+          <span class="policy-arrow">›</span>
+        </div>
+        <div class="policy-item" onclick="showPolicy('parental')">
+          <span class="policy-icon">👶</span>
+          <span class="policy-text">育児休業・育休支援</span>
+          <span class="policy-arrow">›</span>
+        </div>
+        <div class="policy-item" onclick="showPolicy('learning')">
+          <span class="policy-icon">📚</span>
+          <span class="policy-text">学習・自己研鑽支援</span>
+          <span class="policy-arrow">›</span>
+        </div>
+        <div class="policy-item" onclick="showPolicy('code')">
+          <span class="policy-icon">⚖️</span>
+          <span class="policy-text">行動規範・倫理ポリシー</span>
+          <span class="policy-arrow">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Policy Modal -->
+<div class="modal-bg" id="policyModal">
+  <div class="modal">
+    <h2 id="policyTitle"></h2>
+    <div id="policyBody"></div>
+    <div class="modal-footer"><button class="btn" onclick="document.getElementById('policyModal').classList.remove('open')">閉じる</button></div>
+  </div>
+</div>
+
+<script>
+const policies = {
+  remote: {
+    title: '🏠 リモートワーク制度',
+    body: '<p><strong>基本ルール:</strong> 週3日まで在宅勤務可（部門・ポジションによる相談制）。</p><ul><li>コアタイム（10:00〜15:00）はオンライン状態を維持</li><li>Slackで始業・終業を報告</li><li>月1回以上の出社を推奨</li></ul><p><strong>補助:</strong> リモートワーク手当として月5,000円支給。</p><p><strong>セキュリティ:</strong> VPN必須使用。公共Wi-Fiでの業務は禁止。</p>'
+  },
+  leave: {
+    title: '🌴 休暇制度',
+    body: '<ul><li><strong>年次有給:</strong> 入社6ヶ月後 10日〜（継続年数により増加）</li><li><strong>夏季休暇:</strong> 5日（7〜9月に取得推奨）</li><li><strong>慶弔休暇:</strong> 結婚5日、忌引1〜5日</li><li><strong>特別休暇:</strong> 子の看護等（法定通り）</li></ul><p>有給は半日単位での取得可能。事前にSlackと勤怠システムで申請。</p>'
+  },
+  expense: {
+    title: '💰 経費精算ポリシー',
+    body: '<p>業務上必要と認められる経費は精算可能です。</p><ul><li><strong>申請期限:</strong> 発生月の翌月末まで</li><li><strong>承認フロー:</strong> 3万円未満→直属マネジャー / 3万円以上→部門長+経理</li><li><strong>交通費:</strong> 実費精算（ICカード履歴または領収書必要）</li><li><strong>接待:</strong> 事前申請が必要（目的・参加者明記）</li></ul>'
+  },
+  parental: {
+    title: '👶 育児休業・育休支援',
+    body: '<ul><li><strong>育児休業:</strong> 法定通り（最大2年）</li><li><strong>育休取得支援:</strong> 男性育休取得推奨（会社目標80%）</li><li><strong>復職支援:</strong> 復帰前面談、時短勤務（最長子が小3まで）</li><li><strong>保育補助:</strong> ベビーシッター費用補助制度あり</li></ul>'
+  },
+  learning: {
+    title: '📚 学習・自己研鑽支援',
+    body: '<ul><li><strong>学習費用補助:</strong> 年間最大15万円（書籍・研修・資格取得）</li><li><strong>対象:</strong> 業務に関連する学習（領収書提出必要）</li><li><strong>資格取得ボーナス:</strong> 一部資格に取得報奨金あり</li><li><strong>社内勉強会:</strong> 月2回開催（自由参加）</li></ul>'
+  },
+  code: {
+    title: '⚖️ 行動規範・倫理ポリシー',
+    body: '<p>Green Carbonは誠実さと持続可能性を核とした企業文化を大切にします。</p><ul><li>ハラスメント・差別の禁止（ゼロトレランス）</li><li>利益相反の開示義務</li><li>機密情報の適切な管理</li><li>環境・社会へのポジティブな貢献</li></ul><p>違反・懸念事項は匿名ホットライン（hr@green-carbon.inc）へ。</p>'
+  }
+};
+
+function showPolicy(key) {
+  const p = policies[key];
+  document.getElementById('policyTitle').textContent = p.title;
+  document.getElementById('policyBody').innerHTML = p.body;
+  document.getElementById('policyModal').classList.add('open');
+}
+
+// Date display
+const d = new Date();
+const days = ['日','月','火','水','木','金','土'];
+document.getElementById('heroDate').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+</script>
+</body>
+</html>

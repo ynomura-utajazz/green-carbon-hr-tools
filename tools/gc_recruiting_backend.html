@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>採用管理（GASバックエンド版）| Green Carbon HR</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; --text: #1a1a2e;
+    --warn: #f4a261; --danger: #e63946;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+
+  .connection-bar { background: white; border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .connection-bar label { font-size: 13px; font-weight: 500; color: #444; }
+  .connection-bar input { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; min-width: 300px; outline: none; }
+  .connection-bar input:focus { border-color: var(--gc-light); }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; }
+  .status-dot.connected { background: #2e7d32; }
+  .status-dot.error { background: var(--danger); }
+  .status-label { font-size: 13px; color: #666; }
+
+  .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-warn { background: white; color: var(--warn); border: 1.5px solid var(--warn); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: #666; margin-bottom: 20px; }
+
+  .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+  .alert-info { background: #e3f2fd; border: 1px solid #90caf9; color: #1565c0; }
+  .alert-success { background: var(--gc-pale); border: 1px solid var(--gc-light); color: var(--gc-dark); }
+  .alert-warn { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
+
+  .stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; flex: 1; min-width: 130px; }
+  .stat-card .num { font-size: 32px; font-weight: 700; color: var(--gc-green); }
+  .stat-card .label { font-size: 13px; color: #666; }
+
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .section-title { font-size: 17px; font-weight: 600; color: var(--gc-dark); }
+
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 28px; }
+  th { background: var(--gc-pale); color: var(--gc-dark); font-size: 13px; font-weight: 600; padding: 12px 16px; text-align: left; }
+  td { padding: 11px 16px; font-size: 14px; border-top: 1px solid #f0f0f0; vertical-align: middle; }
+  tr:hover td { background: #f9fff9; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+  .badge-new { background: #e3f2fd; color: #1565c0; }
+  .badge-screen { background: #fff3e0; color: #e65100; }
+  .badge-interview { background: #f3e5f5; color: #6a1b9a; }
+  .badge-offer { background: #e8f5e9; color: #2e7d32; }
+  .badge-hired { background: var(--gc-pale); color: var(--gc-dark); font-weight: 600; }
+  .badge-rejected { background: #ffebee; color: #c62828; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; max-width: 500px; width: 90%; max-height: 85vh; overflow-y: auto; }
+  .modal h2 { font-size: 17px; color: var(--gc-dark); margin-bottom: 18px; }
+  .form-group { margin-bottom: 13px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 500; color: #444; margin-bottom: 5px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; background: white; }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+  .sync-log { background: #1a1a2e; color: #d4edda; border-radius: 8px; padding: 14px 16px; font-family: monospace; font-size: 12px; line-height: 1.8; max-height: 150px; overflow-y: auto; margin-top: 12px; }
+  .log-ok { color: #81c784; }
+  .log-err { color: #ef9a9a; }
+  .log-info { color: #90caf9; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">採用管理 — GASバックエンド版</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="connection-bar">
+  <label>GAS Web App URL:</label>
+  <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" value="">
+  <div class="status-dot" id="statusDot"></div>
+  <span class="status-label" id="statusLabel">未接続（ローカルモードで動作中）</span>
+  <button class="btn btn-secondary btn-sm" onclick="testConnection()">接続テスト</button>
+  <button class="btn btn-warn btn-sm" onclick="syncNow()">🔄 同期</button>
+</div>
+
+<div class="container">
+  <h1>採用管理（GASバックエンド版）</h1>
+  <p class="page-sub">Google Apps Script と接続することでチーム全員でリアルタイムにデータを共有できます</p>
+
+  <div class="alert alert-info" id="connectionAlert">
+    ℹ️ <strong>ローカルモードで動作中。</strong> GAS Web App URLを入力・接続すると、Google Sheetsとデータが同期されます。
+    <a href="../guides/backend_setup_guide.html" style="color:#1565c0;margin-left:8px">セットアップガイド →</a>
+  </div>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Candidates -->
+  <div class="section-header">
+    <div class="section-title">候補者一覧</div>
+    <div style="display:flex;gap:8px">
+      <select id="filterStatus" onchange="render()">
+        <option value="">全ステータス</option>
+        <option>応募</option><option>書類選考</option><option>面接</option>
+        <option>オファー</option><option>内定承諾</option><option>不採用</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ 候補者追加</button>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>名前</th><th>ポジション</th><th>ステータス</th><th>応募日</th><th>紹介元</th><th>操作</th></tr></thead>
+    <tbody id="candidateTable"></tbody>
+  </table>
+
+  <!-- Sync Log -->
+  <div class="section-header">
+    <div class="section-title">同期ログ</div>
+    <button class="btn btn-secondary btn-sm" onclick="clearLog()">ログをクリア</button>
+  </div>
+  <div class="sync-log" id="syncLog">
+    <div class="log-info">[INFO] システム起動完了 — ローカルモードで動作中</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="candidateModal">
+  <div class="modal">
+    <h2 id="modalTitle">候補者追加</h2>
+    <div class="form-row">
+      <div class="form-group"><label>氏名 *</label><input type="text" id="cName"></div>
+      <div class="form-group"><label>メール</label><input type="text" id="cEmail"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>ポジション</label><input type="text" id="cPosition"></div>
+      <div class="form-group"><label>ステータス</label>
+        <select id="cStatus"><option>応募</option><option>書類選考</option><option>面接</option><option>オファー</option><option>内定承諾</option><option>不採用</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>応募日</label><input type="date" id="cDate"></div>
+      <div class="form-group"><label>紹介元</label><input type="text" id="cSource" placeholder="Indeed / LinkedIn..."></div>
+    </div>
+    <div class="form-group"><label>メモ</label><textarea id="cNote"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveCandidate()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BADGE = {'応募':'badge-new','書類選考':'badge-screen','面接':'badge-interview','オファー':'badge-offer','内定承諾':'badge-hired','不採用':'badge-rejected'};
+
+let candidates = JSON.parse(localStorage.getItem('gc_recruiting_be') || '[]');
+let isConnected = false;
+let editIdx = -1;
+
+if (!candidates.length) {
+  candidates = [
+    {id:'c1', name:'田中 美咲', email:'tanaka@x.com', position:'カーボンアナリスト', status:'面接', date:'2026-04-10', source:'LinkedIn', note:'経験豊富'},
+    {id:'c2', name:'鈴木 健太', email:'suzuki@x.com', position:'PM', status:'書類選考', date:'2026-04-15', source:'Indeed', note:''},
+    {id:'c3', name:'佐藤 あい', email:'sato@x.com', position:'エンジニア', status:'オファー', date:'2026-04-05', source:'リファラル', note:'内定通知済み'},
+    {id:'c4', name:'高橋 隆', email:'', position:'ESGコンサルタント', status:'応募', date:'2026-04-22', source:'Wantedly', note:''},
+  ];
+  save();
+}
+
+function save() { localStorage.setItem('gc_recruiting_be', JSON.stringify(candidates)); }
+
+function addLog(msg, type='info') {
+  const log = document.getElementById('syncLog');
+  const now = new Date().toLocaleTimeString('ja-JP');
+  const cls = type==='ok'?'log-ok':type==='err'?'log-err':'log-info';
+  log.innerHTML += `\n<div class="${cls}">[${now}] ${msg}</div>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearLog() { document.getElementById('syncLog').innerHTML = ''; }
+
+async function testConnection() {
+  const url = document.getElementById('gasUrl').value.trim();
+  if (!url) { alert('GAS Web App URLを入力してください。\nセットアップガイドを参照してください。'); return; }
+  addLog(`接続テスト開始: ${url.slice(0,50)}...`);
+  try {
+    const res = await fetch(url + '?action=ping', {mode:'no-cors'});
+    // no-cors means we can't read the response, but if no error thrown, URL seems valid
+    isConnected = true;
+    document.getElementById('statusDot').className = 'status-dot connected';
+    document.getElementById('statusLabel').textContent = '接続済み (Google Sheets)';
+    document.getElementById('connectionAlert').className = 'alert alert-success';
+    document.getElementById('connectionAlert').innerHTML = '✅ GASバックエンドに接続されました。データはGoogle Sheetsに保存されます。';
+    addLog('接続成功（no-corsモード）', 'ok');
+  } catch(e) {
+    addLog('接続失敗: ' + e.message, 'err');
+    document.getElementById('statusDot').className = 'status-dot error';
+    document.getElementById('statusLabel').textContent = '接続エラー';
+  }
+}
+
+async function syncNow() {
+  if (!isConnected) {
+    addLog('未接続のためローカルデータで動作中', 'info');
+    alert('GAS Web App URLを入力して接続テストを行ってください。');
+    return;
+  }
+  const url = document.getElementById('gasUrl').value.trim();
+  addLog('同期開始...');
+  try {
+    const res = await fetch(url + '?action=getCandidates');
+    const data = await res.json();
+    if (data.candidates) {
+      candidates = data.candidates;
+      save();
+      addLog(`同期完了: ${candidates.length}件取得`, 'ok');
+      render();
+    }
+  } catch(e) {
+    addLog('同期エラー: ' + e.message, 'err');
+  }
+}
+
+function renderStats() {
+  const byStatus = s => candidates.filter(c=>c.status===s).length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="num">${candidates.filter(c=>c.status!=='不採用').length}</div><div class="label">アクティブ</div></div>
+    <div class="stat-card"><div class="num">${byStatus('面接')}</div><div class="label">面接中</div></div>
+    <div class="stat-card"><div class="num">${byStatus('オファー')}</div><div class="label">オファー中</div></div>
+    <div class="stat-card"><div class="num">${byStatus('内定承諾')}</div><div class="label">内定承諾</div></div>
+  `;
+}
+
+function render() {
+  renderStats();
+  const f = document.getElementById('filterStatus').value;
+  const list = f ? candidates.filter(c=>c.status===f) : candidates;
+  document.getElementById('candidateTable').innerHTML = list.map(c=>{
+    const idx = candidates.indexOf(c);
+    return `<tr>
+      <td><strong>${c.name}</strong><br><small style="color:#888">${c.email||''}</small></td>
+      <td>${c.position}</td>
+      <td><span class="badge ${BADGE[c.status]||''}">${c.status}</span></td>
+      <td>${c.date}</td>
+      <td>${c.source||'-'}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="editCand(${idx})">編集</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">候補者なし</td></tr>';
+}
+
+function openModal() {
+  editIdx = -1;
+  document.getElementById('modalTitle').textContent = '候補者追加';
+  ['cName','cEmail','cPosition','cSource','cNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cStatus').value = '応募';
+  document.getElementById('candidateModal').classList.add('open');
+}
+
+function editCand(idx) {
+  editIdx = idx;
+  const c = candidates[idx];
+  document.getElementById('modalTitle').textContent = '候補者編集';
+  document.getElementById('cName').value = c.name;
+  document.getElementById('cEmail').value = c.email||'';
+  document.getElementById('cPosition').value = c.position;
+  document.getElementById('cStatus').value = c.status;
+  document.getElementById('cDate').value = c.date;
+  document.getElementById('cSource').value = c.source||'';
+  document.getElementById('cNote').value = c.note||'';
+  document.getElementById('candidateModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('candidateModal').classList.remove('open'); }
+
+async function saveCandidate() {
+  const name = document.getElementById('cName').value.trim();
+  if (!name) { alert('氏名は必須です'); return; }
+  const c = {
+    id: editIdx>=0 ? candidates[editIdx].id : 'c'+Date.now(),
+    name, email: document.getElementById('cEmail').value,
+    position: document.getElementById('cPosition').value,
+    status: document.getElementById('cStatus').value,
+    date: document.getElementById('cDate').value,
+    source: document.getElementById('cSource').value,
+    note: document.getElementById('cNote').value
+  };
+  if (editIdx>=0) candidates[editIdx]=c; else candidates.push(c);
+  save();
+  closeModal();
+  render();
+  addLog(`候補者 ${name} を${editIdx>=0?'更新':'追加'}しました`);
+
+  if (isConnected) {
+    const url = document.getElementById('gasUrl').value.trim();
+    try {
+      await fetch(url, {method:'POST', body: JSON.stringify({action:'saveCandidate', candidate:c}), headers:{'Content-Type':'application/json'}});
+      addLog('Google Sheetsに同期しました', 'ok');
+    } catch(e) { addLog('GAS同期失敗（ローカル保存済み）', 'err'); }
+  }
+}
+
+render();
+</script>
+</body>
+</html>

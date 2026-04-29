@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>採用管理 | Green Carbon HR</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f;
+    --gc-light: #52b788;
+    --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332;
+    --gc-accent: #40916c;
+    --text: #1a1a2e;
+    --bg: #f8fffe;
+    --card: #ffffff;
+    --border: #b7e4c7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+  header a:hover { color: white; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+
+  .stats-row { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 28px; min-width: 150px; flex: 1; }
+  .stat-card .num { font-size: 36px; font-weight: 700; color: var(--gc-green); }
+  .stat-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 10px 20px; cursor: pointer; font-size: 14px; border-radius: 8px 8px 0 0; border: 1px solid transparent; color: #666; transition: all 0.2s; }
+  .tab.active { background: white; border-color: var(--border); border-bottom-color: white; color: var(--gc-dark); font-weight: 600; margin-bottom: -2px; }
+  .tab:hover:not(.active) { background: var(--gc-pale); color: var(--gc-dark); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-danger { background: white; color: #e63946; border: 1.5px solid #e63946; }
+  .btn-danger:hover { background: #fff0f0; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  input[type=text], input[type=email], input[type=date], select, textarea {
+    padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px;
+    background: white; color: var(--text); outline: none; transition: border 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gc-light); }
+  .search-input { min-width: 220px; }
+
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  th { background: var(--gc-pale); color: var(--gc-dark); font-size: 13px; font-weight: 600; padding: 12px 16px; text-align: left; }
+  td { padding: 12px 16px; font-size: 14px; border-top: 1px solid #f0f0f0; vertical-align: middle; }
+  tr:hover td { background: #f8fff9; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .badge-new { background: #e3f2fd; color: #1565c0; }
+  .badge-screen { background: #fff3e0; color: #e65100; }
+  .badge-interview { background: #f3e5f5; color: #6a1b9a; }
+  .badge-offer { background: #e8f5e9; color: #2e7d32; }
+  .badge-hired { background: var(--gc-pale); color: var(--gc-dark); font-weight: 600; }
+  .badge-rejected { background: #ffebee; color: #c62828; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 32px; max-width: 520px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+  .modal h2 { font-size: 18px; color: var(--gc-dark); margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .form-group { flex: 1; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  .pipeline { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+  .pipeline-col { background: #f5f5f5; border-radius: 12px; padding: 16px; min-width: 200px; flex-shrink: 0; }
+  .pipeline-col h3 { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .pipeline-col h3 .cnt { background: var(--gc-pale); color: var(--gc-dark); padding: 2px 8px; border-radius: 10px; }
+  .pipeline-card { background: white; border-radius: 8px; padding: 12px; margin-bottom: 8px; border: 1px solid #e8e8e8; cursor: pointer; transition: box-shadow 0.2s; }
+  .pipeline-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .pipeline-card .name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .pipeline-card .role { font-size: 12px; color: #888; }
+  .pipeline-card .days { font-size: 11px; color: #aaa; margin-top: 6px; }
+
+  .empty { text-align: center; padding: 48px; color: #aaa; font-size: 15px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">採用管理システム</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="container">
+  <h1>採用管理</h1>
+  <p class="page-sub">候補者パイプライン・選考状況・求人ポジション管理</p>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('pipeline')">パイプライン</div>
+    <div class="tab" onclick="switchTab('list')">候補者一覧</div>
+    <div class="tab" onclick="switchTab('positions')">求人ポジション</div>
+  </div>
+
+  <!-- Pipeline Tab -->
+  <div class="tab-content active" id="tab-pipeline">
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="openModal()">+ 候補者追加</button>
+    </div>
+    <div class="pipeline" id="pipelineView"></div>
+  </div>
+
+  <!-- List Tab -->
+  <div class="tab-content" id="tab-list">
+    <div class="toolbar">
+      <input type="text" class="search-input" placeholder="名前・ポジション検索..." id="searchInput" oninput="renderList()">
+      <select id="filterStatus" onchange="renderList()">
+        <option value="">すべてのステータス</option>
+        <option value="応募">応募</option>
+        <option value="書類選考">書類選考</option>
+        <option value="面接">面接</option>
+        <option value="オファー">オファー</option>
+        <option value="内定承諾">内定承諾</option>
+        <option value="不採用">不採用</option>
+      </select>
+      <button class="btn btn-primary" onclick="openModal()">+ 候補者追加</button>
+    </div>
+    <table>
+      <thead><tr><th>名前</th><th>ポジション</th><th>ステータス</th><th>応募日</th><th>メモ</th><th>操作</th></tr></thead>
+      <tbody id="candidateTable"></tbody>
+    </table>
+  </div>
+
+  <!-- Positions Tab -->
+  <div class="tab-content" id="tab-positions">
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="openPositionModal()">+ ポジション追加</button>
+    </div>
+    <table>
+      <thead><tr><th>ポジション名</th><th>部門</th><th>優先度</th><th>応募数</th><th>目標人数</th><th>操作</th></tr></thead>
+      <tbody id="positionTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Candidate Modal -->
+<div class="modal-bg" id="candidateModal">
+  <div class="modal">
+    <h2 id="modalTitle">候補者追加</h2>
+    <div class="form-row">
+      <div class="form-group"><label>氏名 *</label><input type="text" id="cName" placeholder="山田 太郎"></div>
+      <div class="form-group"><label>メール</label><input type="email" id="cEmail" placeholder="taro@example.com"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>応募ポジション *</label>
+        <select id="cPosition"></select>
+      </div>
+      <div class="form-group">
+        <label>ステータス</label>
+        <select id="cStatus">
+          <option>応募</option><option>書類選考</option><option>面接</option>
+          <option>オファー</option><option>内定承諾</option><option>不採用</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>応募日</label><input type="date" id="cDate"></div>
+      <div class="form-group"><label>紹介元</label><input type="text" id="cSource" placeholder="Indeed / LinkedIn / リファラル"></div>
+    </div>
+    <div class="form-group"><label>メモ</label><textarea id="cNote" placeholder="選考メモ・印象など"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveCandidate()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Position Modal -->
+<div class="modal-bg" id="positionModal">
+  <div class="modal">
+    <h2>ポジション追加</h2>
+    <div class="form-group"><label>ポジション名 *</label><input type="text" id="pName" placeholder="例: カーボンアナリスト"></div>
+    <div class="form-row">
+      <div class="form-group"><label>部門</label><input type="text" id="pDept" placeholder="例: ソリューション事業部"></div>
+      <div class="form-group">
+        <label>優先度</label>
+        <select id="pPriority"><option>高</option><option>中</option><option>低</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>目標採用人数</label><input type="text" id="pTarget" placeholder="1"></div>
+      <div class="form-group"><label>雇用形態</label>
+        <select id="pType"><option>正社員</option><option>契約社員</option><option>業務委託</option><option>インターン</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePosModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="savePosition()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STAGES = ['応募','書類選考','面接','オファー','内定承諾','不採用'];
+const BADGE_MAP = {'応募':'badge-new','書類選考':'badge-screen','面接':'badge-interview','オファー':'badge-offer','内定承諾':'badge-hired','不採用':'badge-rejected'};
+
+let candidates = JSON.parse(localStorage.getItem('gc_candidates') || '[]');
+let positions = JSON.parse(localStorage.getItem('gc_positions') || '[]');
+let editIdx = -1;
+
+// Seed data
+if (!candidates.length) {
+  const today = new Date().toISOString().slice(0,10);
+  positions = [
+    {name:'カーボンアナリスト', dept:'ソリューション事業部', priority:'高', target:2, type:'正社員'},
+    {name:'プロジェクトマネージャー', dept:'事業開発部', priority:'高', target:1, type:'正社員'},
+    {name:'フロントエンドエンジニア', dept:'プロダクト部', priority:'中', target:2, type:'正社員'},
+    {name:'ESGコンサルタント', dept:'コンサルティング部', priority:'中', target:3, type:'正社員'},
+  ];
+  candidates = [
+    {name:'田中 美咲', email:'tanaka@example.com', position:'カーボンアナリスト', status:'面接', date:'2026-04-10', source:'LinkedIn', note:'経験5年、技術力高い'},
+    {name:'鈴木 健太', email:'suzuki@example.com', position:'プロジェクトマネージャー', status:'書類選考', date:'2026-04-15', source:'Indeed', note:''},
+    {name:'佐藤 あい', email:'sato@example.com', position:'フロントエンドエンジニア', status:'オファー', date:'2026-04-05', source:'リファラル', note:'内定通知済み'},
+    {name:'高橋 隆', email:'takahashi@example.com', position:'ESGコンサルタント', status:'応募', date:'2026-04-22', source:'Wantedly', note:''},
+    {name:'伊藤 花', email:'ito@example.com', position:'カーボンアナリスト', status:'内定承諾', date:'2026-03-28', source:'リファラル', note:'5月1日入社予定'},
+    {name:'渡辺 誠', email:'watanabe@example.com', position:'ESGコンサルタント', status:'不採用', date:'2026-04-01', source:'Indeed', note:'スキル不足'},
+  ];
+  save();
+}
+
+function save() {
+  localStorage.setItem('gc_candidates', JSON.stringify(candidates));
+  localStorage.setItem('gc_positions', JSON.stringify(positions));
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active', ['pipeline','list','positions'][i]===t);
+  });
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  renderAll();
+}
+
+function renderStats() {
+  const active = candidates.filter(c=>c.status!=='不採用');
+  const hired = candidates.filter(c=>c.status==='内定承諾').length;
+  const interviews = candidates.filter(c=>c.status==='面接').length;
+  const offers = candidates.filter(c=>c.status==='オファー').length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="num">${active.length}</div><div class="label">アクティブ候補者</div></div>
+    <div class="stat-card"><div class="num">${interviews}</div><div class="label">面接中</div></div>
+    <div class="stat-card"><div class="num">${offers}</div><div class="label">オファー中</div></div>
+    <div class="stat-card"><div class="num">${hired}</div><div class="label">内定承諾</div></div>
+    <div class="stat-card"><div class="num">${positions.length}</div><div class="label">求人ポジション</div></div>
+  `;
+}
+
+function renderPipeline() {
+  const stages = ['応募','書類選考','面接','オファー','内定承諾'];
+  let html = stages.map(s => {
+    const items = candidates.filter(c=>c.status===s);
+    const cards = items.length ? items.map((c,i)=>`
+      <div class="pipeline-card" onclick="editCandidate(${candidates.indexOf(c)})">
+        <div class="name">${c.name}</div>
+        <div class="role">${c.position}</div>
+        <div class="days">${c.source} | ${c.date}</div>
+      </div>`).join('') : '<div style="color:#bbb;font-size:12px;text-align:center;padding:12px">なし</div>';
+    return `<div class="pipeline-col">
+      <h3>${s} <span class="cnt">${items.length}</span></h3>
+      ${cards}
+    </div>`;
+  }).join('');
+  document.getElementById('pipelineView').innerHTML = html;
+}
+
+function renderList() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const fStatus = document.getElementById('filterStatus').value;
+  const filtered = candidates.filter(c=>{
+    const matchSearch = c.name.toLowerCase().includes(search) || c.position.toLowerCase().includes(search);
+    const matchStatus = !fStatus || c.status===fStatus;
+    return matchSearch && matchStatus;
+  });
+  if (!filtered.length) {
+    document.getElementById('candidateTable').innerHTML = '<tr><td colspan="6" class="empty">候補者が見つかりません</td></tr>';
+    return;
+  }
+  document.getElementById('candidateTable').innerHTML = filtered.map(c=>{
+    const idx = candidates.indexOf(c);
+    return `<tr>
+      <td><strong>${c.name}</strong><br><small style="color:#888">${c.email}</small></td>
+      <td>${c.position}</td>
+      <td><span class="badge ${BADGE_MAP[c.status]||''}">${c.status}</span></td>
+      <td>${c.date}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.note||'-'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="editCandidate(${idx})">編集</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCandidate(${idx})">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPositions() {
+  if (!positions.length) {
+    document.getElementById('positionTable').innerHTML = '<tr><td colspan="6" class="empty">ポジションがありません</td></tr>';
+    return;
+  }
+  document.getElementById('positionTable').innerHTML = positions.map((p,i)=>{
+    const cnt = candidates.filter(c=>c.position===p.name && c.status!=='不採用').length;
+    return `<tr>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.dept}</td>
+      <td><span class="badge ${p.priority==='高'?'badge-interview':p.priority==='中'?'badge-screen':'badge-new'}">${p.priority}</span></td>
+      <td>${cnt}名</td>
+      <td>${p.target}名</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deletePosition(${i})">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updatePositionSelect() {
+  const sel = document.getElementById('cPosition');
+  sel.innerHTML = positions.map(p=>`<option>${p.name}</option>`).join('');
+}
+
+function openModal() {
+  editIdx = -1;
+  document.getElementById('modalTitle').textContent = '候補者追加';
+  document.getElementById('cName').value = '';
+  document.getElementById('cEmail').value = '';
+  document.getElementById('cStatus').value = '応募';
+  document.getElementById('cDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cSource').value = '';
+  document.getElementById('cNote').value = '';
+  updatePositionSelect();
+  document.getElementById('candidateModal').classList.add('open');
+}
+
+function editCandidate(idx) {
+  editIdx = idx;
+  const c = candidates[idx];
+  document.getElementById('modalTitle').textContent = '候補者編集';
+  updatePositionSelect();
+  document.getElementById('cName').value = c.name;
+  document.getElementById('cEmail').value = c.email;
+  document.getElementById('cPosition').value = c.position;
+  document.getElementById('cStatus').value = c.status;
+  document.getElementById('cDate').value = c.date;
+  document.getElementById('cSource').value = c.source;
+  document.getElementById('cNote').value = c.note;
+  document.getElementById('candidateModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('candidateModal').classList.remove('open'); }
+
+function saveCandidate() {
+  const name = document.getElementById('cName').value.trim();
+  if (!name) { alert('氏名を入力してください'); return; }
+  const c = {
+    name, email: document.getElementById('cEmail').value,
+    position: document.getElementById('cPosition').value,
+    status: document.getElementById('cStatus').value,
+    date: document.getElementById('cDate').value,
+    source: document.getElementById('cSource').value,
+    note: document.getElementById('cNote').value
+  };
+  if (editIdx >= 0) candidates[editIdx] = c;
+  else candidates.push(c);
+  save(); closeModal(); renderAll();
+}
+
+function deleteCandidate(idx) {
+  if (confirm('この候補者を削除しますか？')) {
+    candidates.splice(idx,1); save(); renderAll();
+  }
+}
+
+function openPositionModal() { document.getElementById('positionModal').classList.add('open'); }
+function closePosModal() { document.getElementById('positionModal').classList.remove('open'); }
+
+function savePosition() {
+  const name = document.getElementById('pName').value.trim();
+  if (!name) { alert('ポジション名を入力してください'); return; }
+  positions.push({
+    name, dept: document.getElementById('pDept').value,
+    priority: document.getElementById('pPriority').value,
+    target: parseInt(document.getElementById('pTarget').value)||1,
+    type: document.getElementById('pType').value
+  });
+  save(); closePosModal(); renderAll();
+}
+
+function deletePosition(idx) {
+  if (confirm('このポジションを削除しますか？')) {
+    positions.splice(idx,1); save(); renderAll();
+  }
+}
+
+function renderAll() {
+  renderStats(); renderPipeline(); renderList(); renderPositions();
+}
+
+renderAll();
+</script>
+</body>
+</html>

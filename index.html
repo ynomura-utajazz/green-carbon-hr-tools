@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Green Carbon HR Tools</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f0fdf4; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .hero { background: linear-gradient(135deg, var(--gc-dark) 0%, #40916c 60%, var(--gc-light) 100%); color: white; padding: 56px 32px; text-align: center; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  .hero .logo { font-size: 48px; margin-bottom: 8px; }
+  .hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .hero p { font-size: 16px; opacity: 0.85; max-width: 480px; margin: 0 auto 20px; }
+  .hero-meta { font-size: 13px; opacity: 0.65; }
+  .hero-search { max-width: 400px; margin: 20px auto 0; display: flex; gap: 0; }
+  .hero-search input { flex: 1; padding: 12px 18px; border: none; border-radius: 10px 0 0 10px; font-size: 14px; outline: none; color: var(--text); }
+  .hero-search button { padding: 12px 18px; background: var(--gc-light); color: white; border: none; border-radius: 0 10px 10px 0; cursor: pointer; font-size: 14px; }
+  .hero-search button:hover { background: var(--gc-green); }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  .section-title { font-size: 20px; font-weight: 700; color: var(--gc-dark); margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
+  .section-title::after { content: ''; flex: 1; height: 2px; background: var(--border); border-radius: 1px; }
+
+  .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; margin-bottom: 40px; }
+  .tool-card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 22px; text-decoration: none; color: var(--text); transition: all 0.25s; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden; }
+  .tool-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--gc-light); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
+  .tool-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(45,106,79,0.15); border-color: var(--gc-light); }
+  .tool-card:hover::before { transform: scaleX(1); }
+  .tool-icon { font-size: 36px; }
+  .tool-name { font-size: 17px; font-weight: 700; color: var(--gc-dark); }
+  .tool-desc { font-size: 13px; color: #666; line-height: 1.6; flex: 1; }
+  .tool-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: var(--gc-pale); color: var(--gc-dark); }
+  .tag.backend { background: #e3f2fd; color: #1565c0; }
+  .tool-arrow { align-self: flex-end; font-size: 18px; color: var(--gc-light); opacity: 0; transition: opacity 0.2s; }
+  .tool-card:hover .tool-arrow { opacity: 1; }
+
+  .guides-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 40px; }
+  .guide-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 18px 20px; text-decoration: none; color: var(--text); transition: all 0.2s; display: flex; align-items: center; gap: 14px; }
+  .guide-card:hover { background: var(--gc-pale); border-color: var(--gc-green); }
+  .guide-icon { font-size: 28px; flex-shrink: 0; }
+  .guide-name { font-size: 15px; font-weight: 600; color: var(--gc-dark); margin-bottom: 2px; }
+  .guide-desc { font-size: 13px; color: #777; }
+
+  .info-bar { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 18px 24px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; font-size: 14px; color: #555; margin-bottom: 20px; }
+  .info-bar strong { color: var(--gc-dark); }
+  .info-bar a { color: var(--gc-green); text-decoration: none; }
+
+  footer { text-align: center; padding: 24px; font-size: 13px; color: #999; border-top: 1px solid var(--border); margin-top: 20px; }
+  footer a { color: var(--gc-green); text-decoration: none; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="logo">🌿</div>
+  <h1>Green Carbon HR Tools</h1>
+  <p>採用・オンボーディング・社員管理をひとつの場所で。チームの力を最大化するHRツール集。</p>
+  <div class="hero-meta" id="heroMeta">Green Carbon Inc. | People & Culture</div>
+  <div class="hero-search">
+    <input type="text" placeholder="ツールを検索..." id="searchInput" oninput="filterTools()">
+    <button onclick="filterTools()">🔍</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="info-bar">
+    <span>📦 ツール数: <strong>10</strong></span>
+    <span>🗃️ データ: <strong>ブラウザ保存（localStorage）</strong></span>
+    <span>🔗 GASバックエンド: <a href="./tools/gc_recruiting_backend.html">設定して共有可能</a></span>
+    <span style="margin-left:auto"><a href="./package-info.html">📋 パッケージ情報</a></span>
+  </div>
+
+  <div class="section-title">🔧 HRコアツール</div>
+  <div class="tools-grid" id="toolsGrid">
+
+    <a class="tool-card" href="./tools/gc_hr_portal.html" data-name="HRポータル ダッシュボード">
+      <div class="tool-icon">🏠</div>
+      <div class="tool-name">HRポータル</div>
+      <div class="tool-desc">会社スナップショット・お知らせ・HRカレンダー・制度ポリシーをまとめて確認できるダッシュボード。</div>
+      <div class="tool-tags"><span class="tag">ダッシュボード</span><span class="tag">制度</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/gc_recruiting.html" data-name="採用管理 候補者 パイプライン">
+      <div class="tool-icon">📋</div>
+      <div class="tool-name">採用管理</div>
+      <div class="tool-desc">候補者パイプライン・選考状況・求人ポジションをカンバン形式で管理。ローカル保存版。</div>
+      <div class="tool-tags"><span class="tag">採用</span><span class="tag">候補者</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/gc_recruiting_backend.html" data-name="採用管理 バックエンド GAS Google Sheets">
+      <div class="tool-icon">🔗</div>
+      <div class="tool-name">採用管理（GAS版）</div>
+      <div class="tool-desc">Google Sheets連携でチーム全員がリアルタイムに候補者情報を共有できる採用管理ツール。</div>
+      <div class="tool-tags"><span class="tag">採用</span><span class="tag backend">GAS連携</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/retention_risk_monitor.html" data-name="離職リスク モニター エンゲージメント">
+      <div class="tool-icon">📊</div>
+      <div class="tool-name">離職リスクモニター</div>
+      <div class="tool-desc">給与満足・マネジャー関係・エンゲージメントなど5指標から離職リスクを可視化・早期対応。</div>
+      <div class="tool-tags"><span class="tag">リテンション</span><span class="tag">分析</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/oneonone_manager.html" data-name="1on1 マネージャー アクションアイテム">
+      <div class="tool-icon">💬</div>
+      <div class="tool-name">1on1マネージャー</div>
+      <div class="tool-desc">メンバーとの定期1on1を記録・管理。アクションアイテムのトラッキング、気分チェックも。</div>
+      <div class="tool-tags"><span class="tag">1on1</span><span class="tag">記録</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/onboarding_checklist.html" data-name="オンボーディング チェックリスト 新入社員">
+      <div class="tool-icon">✅</div>
+      <div class="tool-name">オンボーディングチェックリスト</div>
+      <div class="tool-desc">入社前〜90日目まで6フェーズのチェックリストで新入社員の定着を管理。担当者・期日付き。</div>
+      <div class="tool-tags"><span class="tag">オンボーディング</span><span class="tag">入社</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/offer_letter_generator.html" data-name="オファーレター 内定通知書 生成">
+      <div class="tool-icon">📄</div>
+      <div class="tool-name">オファーレター生成</div>
+      <div class="tool-desc">候補者情報と条件を入力するだけで日本語の内定通知書が自動生成。PDF印刷対応。</div>
+      <div class="tool-tags"><span class="tag">採用</span><span class="tag">文書</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/gc_wiki.html" data-name="社内Wiki 社内情報 ナレッジ">
+      <div class="tool-icon">📚</div>
+      <div class="tool-name">社内Wiki</div>
+      <div class="tool-desc">会社情報・HR制度・手順書をMarkdown形式で管理。カテゴリ分類・全文検索機能付き。</div>
+      <div class="tool-tags"><span class="tag">Wiki</span><span class="tag">ナレッジ</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/gc_directory.html" data-name="社員名簿 ディレクトリ メンバー">
+      <div class="tool-icon">👤</div>
+      <div class="tool-name">社員名簿</div>
+      <div class="tool-desc">全社員の名前・役職・部門・連絡先をカードリスト形式で管理。部門フィルター・検索付き。</div>
+      <div class="tool-tags"><span class="tag">名簿</span><span class="tag">メンバー</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/gc_orgchart.html" data-name="組織図 オルグチャート 部門">
+      <div class="tool-icon">🌿</div>
+      <div class="tool-name">組織図</div>
+      <div class="tool-desc">ツリー表示と部門別表示を切り替えられるインタラクティブな組織図。各メンバーの詳細確認も可能。</div>
+      <div class="tool-tags"><span class="tag">組織図</span><span class="tag">構造</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+  </div>
+
+  <div class="section-title">📖 ガイド・ドキュメント</div>
+  <div class="guides-grid">
+    <a class="guide-card" href="./guides/backend_setup_guide.html">
+      <div class="guide-icon">⚙️</div>
+      <div>
+        <div class="guide-name">GASバックエンドセットアップガイド</div>
+        <div class="guide-desc">Google Apps ScriptでチームデータをGoogle Sheetsに同期</div>
+      </div>
+    </a>
+    <a class="guide-card" href="./guides/deploy_guide.html">
+      <div class="guide-icon">🚀</div>
+      <div>
+        <div class="guide-name">Vercelデプロイガイド</div>
+        <div class="guide-desc">GitHub連携・CLI・ドラッグ&ドロップでデプロイする手順</div>
+      </div>
+    </a>
+    <a class="guide-card" href="./package-info.html">
+      <div class="guide-icon">📋</div>
+      <div>
+        <div class="guide-name">パッケージ情報</div>
+        <div class="guide-desc">全ツールの説明・接続状況・デプロイ手順サマリー</div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
+<footer>
+  <p>🌿 <strong>Green Carbon HR Tools</strong> v1.0 | 担当: 野村 裕太 (<a href="mailto:y.nomura@green-carbon.inc">y.nomura@green-carbon.inc</a>)</p>
+  <p style="margin-top:6px">データはすべてブラウザのlocalStorageに保存されています。GASバックエンド接続でチーム共有が可能です。</p>
+</footer>
+
+<script>
+// Date
+const d = new Date();
+document.getElementById('heroMeta').textContent =
+  `Green Carbon Inc. | ${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日現在`;
+
+function filterTools() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.tool-card').forEach(card => {
+    const name = card.dataset.name || card.textContent;
+    card.classList.toggle('hidden', q.length > 0 && !name.toLowerCase().includes(q));
+  });
+}
+</script>
+</body>
+</html>

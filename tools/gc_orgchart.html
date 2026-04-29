@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>組織図 | Green Carbon</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f8fffe; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+
+  .toolbar { padding: 16px 24px; background: white; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .btn { padding: 7px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  select { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+
+  .chart-wrapper { padding: 32px; overflow: auto; min-height: calc(100vh - 120px); }
+
+  /* Tree layout */
+  .org-tree { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .level { display: flex; justify-content: center; gap: 20px; position: relative; }
+  .level::before { content:''; position:absolute; left:50%; top:-24px; width:2px; height:24px; background:var(--border); transform:translateX(-50%); }
+  .level:first-child::before { display:none; }
+
+  .branch { display: flex; flex-direction: column; align-items: center; }
+  .branch-line { width: 2px; height: 24px; background: var(--border); margin: 0 auto; }
+  .branch-connector { position: relative; }
+  .branch-connector::before {
+    content:''; position:absolute; top:0; left:50%; width:100%;
+    height:2px; background:var(--border); transform:translateX(-50%);
+  }
+
+  .node { background: white; border: 2px solid var(--border); border-radius: 12px; padding: 14px 18px; min-width: 160px; max-width: 180px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; z-index:1; }
+  .node:hover { border-color: var(--gc-green); box-shadow: 0 4px 12px rgba(45,106,79,0.2); }
+  .node.ceo { border-color: var(--gc-dark); background: var(--gc-dark); color: white; }
+  .node.dept-head { border-color: var(--gc-green); border-width: 2.5px; }
+  .node .node-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; margin: 0 auto 8px; }
+  .node.ceo .node-avatar { background: rgba(255,255,255,0.25); }
+  .node .node-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .node .node-role { font-size: 11px; color: #888; }
+  .node.ceo .node-role { color: rgba(255,255,255,0.7); }
+  .node .node-dept { font-size: 10px; padding: 2px 8px; border-radius: 8px; background: var(--gc-pale); color: var(--gc-dark); margin-top: 6px; display: inline-block; }
+  .node.ceo .node-dept { display: none; }
+  .node .headcount { font-size: 10px; color: #aaa; margin-top: 4px; }
+
+  /* Department view */
+  .dept-view { display: none; padding: 8px; }
+  .dept-section { background: white; border-radius: 12px; border: 2px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+  .dept-header { background: var(--gc-green); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .dept-header h3 { font-size: 16px; font-weight: 600; }
+  .dept-header .dept-count { font-size: 13px; opacity: 0.8; }
+  .dept-members { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .member-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
+  .member-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .member-info .m-name { font-size: 14px; font-weight: 500; }
+  .member-info .m-role { font-size: 12px; color: #888; }
+
+  .detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
+  .detail-modal.open { display: flex; }
+  .detail-panel { background: white; border-radius: 16px; padding: 28px; max-width: 360px; width: 90%; text-align: center; }
+  .dp-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; margin: 0 auto 12px; }
+  .dp-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .dp-role { font-size: 14px; color: #666; margin-bottom: 12px; }
+  .dp-info { display: flex; flex-direction: column; gap: 6px; text-align: left; margin-top: 14px; }
+  .dp-row { display: flex; gap: 10px; font-size: 13px; }
+  .dp-label { color: #888; width: 60px; flex-shrink: 0; }
+
+  .toggle-view { margin-left: auto; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">組織図</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="toolbar">
+  <span style="font-size:14px;color:#666">社員数: <strong style="color:var(--gc-dark)">47名</strong></span>
+  <span style="font-size:14px;color:#666">部門数: <strong style="color:var(--gc-dark)">5</strong></span>
+  <div class="toggle-view" style="display:flex;gap:8px">
+    <button class="btn btn-secondary" id="treeBtn" onclick="setView('tree')">🌳 ツリー表示</button>
+    <button class="btn btn-secondary" id="deptBtn" onclick="setView('dept')">🏢 部門別</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨️ 印刷</button>
+  </div>
+</div>
+
+<div class="chart-wrapper" id="chartWrapper">
+  <!-- Tree View -->
+  <div id="treeView" class="org-tree">
+    <!-- CEO -->
+    <div class="node ceo" onclick="showDetail('CEO','最高経営責任者','GreenCarbon創業者。気候変動ソリューションのビジョナリー。','管理部','2021-01-01')">
+      <div class="node-avatar">GC</div>
+      <div class="node-name">代表取締役 CEO</div>
+      <div class="node-role">Green Carbon Inc.</div>
+    </div>
+    <div class="branch-line"></div>
+
+    <!-- Level 2 -->
+    <div style="position:relative;display:flex;gap:0;justify-content:center;width:100%">
+      <div style="position:absolute;top:0;left:25%;right:25%;height:2px;background:var(--border)"></div>
+      <div style="display:flex;gap:0;justify-content:space-around;width:80%">
+        <div class="branch" style="align-items:center">
+          <div class="branch-line"></div>
+          <div class="node dept-head" onclick="showDetail('山本 誠','CFO / 管理部長','財務・経理・人事を統括。上場準備の責任者。','管理部','2021-01-01')">
+            <div class="node-avatar">山</div>
+            <div class="node-name">山本 誠</div>
+            <div class="node-role">CFO</div>
+            <div class="node-dept">管理部</div>
+            <div class="headcount">8名</div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="branch-line"></div>
+          <div class="node dept-head" onclick="showDetail('CTO','最高技術責任者','プロダクト・エンジニアリング全体を統括。','プロダクト部','2021-06-01')">
+            <div class="node-avatar">CT</div>
+            <div class="node-name">CTO</div>
+            <div class="node-role">Chief Technology Officer</div>
+            <div class="node-dept">プロダクト部</div>
+            <div class="headcount">12名</div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="branch-line"></div>
+          <div class="node dept-head" onclick="showDetail('ソリューション部長','部門長','カーボンクレジット・ESG分析事業を統括。','ソリューション事業部','2022-01-01')">
+            <div class="node-avatar">ソ</div>
+            <div class="node-name">ソリューション部長</div>
+            <div class="node-role">事業部長</div>
+            <div class="node-dept">ソリューション事業部</div>
+            <div class="headcount">15名</div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="branch-line"></div>
+          <div class="node dept-head" onclick="showDetail('コンサルティング部長','部門長','企業向けESGコンサルティングを統括。','コンサルティング部','2022-06-01')">
+            <div class="node-avatar">コ</div>
+            <div class="node-name">コンサル部長</div>
+            <div class="node-role">事業部長</div>
+            <div class="node-dept">コンサルティング部</div>
+            <div class="headcount">8名</div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="branch-line"></div>
+          <div class="node dept-head" onclick="showDetail('COO','最高執行責任者','事業開発・パートナーシップを統括。','事業開発部','2022-01-01')">
+            <div class="node-avatar">CO</div>
+            <div class="node-name">COO</div>
+            <div class="node-role">Chief Operating Officer</div>
+            <div class="node-dept">事業開発部</div>
+            <div class="headcount">4名</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="branch-line" style="height:32px"></div>
+
+    <!-- Level 3 examples -->
+    <div style="display:flex;gap:40px;justify-content:center;flex-wrap:wrap">
+      <div class="node" onclick="showDetail('野村 裕太','People & Culture Manager','HR全般・採用・オンボーディングを担当。','管理部','2022-04-01')">
+        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">野</div>
+        <div class="node-name" style="font-size:13px">野村 裕太</div>
+        <div class="node-role">P&C Manager</div>
+        <div class="node-dept">管理部</div>
+      </div>
+      <div class="node" onclick="showDetail('田中 美咲','シニアカーボンアナリスト','J-クレジット・Verra認証プロジェクトを担当。','ソリューション事業部','2023-07-01')">
+        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">田</div>
+        <div class="node-name" style="font-size:13px">田中 美咲</div>
+        <div class="node-role">Sr. アナリスト</div>
+        <div class="node-dept">ソリューション事業部</div>
+      </div>
+      <div class="node" onclick="showDetail('鈴木 健太','フロントエンドエンジニア','プロダクトのUI/UX開発を担当。','プロダクト部','2024-04-01')">
+        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">鈴</div>
+        <div class="node-name" style="font-size:13px">鈴木 健太</div>
+        <div class="node-role">FE Engineer</div>
+        <div class="node-dept">プロダクト部</div>
+      </div>
+      <div class="node" onclick="showDetail('佐藤 あい','ESGコンサルタント','企業のCO2排出量削減計画を支援。','コンサルティング部','2024-10-01')">
+        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">佐</div>
+        <div class="node-name" style="font-size:13px">佐藤 あい</div>
+        <div class="node-role">ESGコンサルタント</div>
+        <div class="node-dept">コンサルティング部</div>
+      </div>
+      <div class="node" onclick="showDetail('松田 俊介','プロジェクトマネージャー','新規事業パートナーシップを推進。','事業開発部','2023-10-01')">
+        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">松</div>
+        <div class="node-name" style="font-size:13px">松田 俊介</div>
+        <div class="node-role">PM</div>
+        <div class="node-dept">事業開発部</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dept View -->
+  <div id="deptView" class="dept-view">
+    <div class="dept-section">
+      <div class="dept-header"><h3>🏢 管理部</h3><span class="dept-count">8名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">山</div><div class="member-info"><div class="m-name">山本 誠</div><div class="m-role">CFO</div></div></div>
+        <div class="member-card"><div class="member-avatar">野</div><div class="member-info"><div class="m-name">野村 裕太</div><div class="m-role">P&C Manager</div></div></div>
+        <div class="member-card"><div class="member-avatar">加</div><div class="member-info"><div class="m-name">加藤 智子</div><div class="m-role">経理担当</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>💻 プロダクト部</h3><span class="dept-count">12名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">鈴</div><div class="member-info"><div class="m-name">鈴木 健太</div><div class="m-role">FEエンジニア</div></div></div>
+        <div class="member-card"><div class="member-avatar">小</div><div class="member-info"><div class="m-name">小林 大輔</div><div class="m-role">BEエンジニア</div></div></div>
+        <div class="member-card"><div class="member-avatar">渡</div><div class="member-info"><div class="m-name">渡辺 涼</div><div class="m-role">エンジニア</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🌱 ソリューション事業部</h3><span class="dept-count">15名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">田</div><div class="member-info"><div class="m-name">田中 美咲</div><div class="m-role">Srアナリスト</div></div></div>
+        <div class="member-card"><div class="member-avatar">高</div><div class="member-info"><div class="m-name">高橋 隆司</div><div class="m-role">ESGスペシャリスト</div></div></div>
+        <div class="member-card"><div class="member-avatar">中</div><div class="member-info"><div class="m-name">中村 恵</div><div class="m-role">取引アナリスト</div></div></div>
+        <div class="member-card"><div class="member-avatar">伊</div><div class="member-info"><div class="m-name">伊藤 花</div><div class="m-role">カーボンアナリスト</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🤝 コンサルティング部</h3><span class="dept-count">8名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">佐</div><div class="member-info"><div class="m-name">佐藤 あい</div><div class="m-role">ESGコンサルタント</div></div></div>
+      </div>
+    </div>
+    <div class="dept-section">
+      <div class="dept-header"><h3>🚀 事業開発部</h3><span class="dept-count">4名</span></div>
+      <div class="dept-members">
+        <div class="member-card"><div class="member-avatar">松</div><div class="member-info"><div class="m-name">松田 俊介</div><div class="m-role">PM</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="detail-modal" id="detailModal">
+  <div class="detail-panel">
+    <div class="dp-avatar" id="dpAvatar"></div>
+    <div class="dp-name" id="dpName"></div>
+    <div class="dp-role" id="dpRole"></div>
+    <div style="font-size:13px;color:#555;margin-top:8px;line-height:1.6" id="dpBio"></div>
+    <div class="dp-info">
+      <div class="dp-row"><span class="dp-label">部門</span><span id="dpDept"></span></div>
+      <div class="dp-row"><span class="dp-label">入社日</span><span id="dpStart"></span></div>
+    </div>
+    <button class="btn" style="margin-top:20px;background:var(--gc-green);color:white;border:none;padding:9px 24px;border-radius:8px;cursor:pointer" onclick="document.getElementById('detailModal').classList.remove('open')">閉じる</button>
+  </div>
+</div>
+
+<script>
+function initials(name) {
+  return name.trim().split(/\s+/).map(p=>p[0]).join('').slice(0,2);
+}
+
+function showDetail(name, role, bio, dept, start) {
+  document.getElementById('dpAvatar').textContent = initials(name);
+  document.getElementById('dpName').textContent = name;
+  document.getElementById('dpRole').textContent = role;
+  document.getElementById('dpBio').textContent = bio;
+  document.getElementById('dpDept').textContent = dept;
+  document.getElementById('dpStart').textContent = start;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function setView(mode) {
+  document.getElementById('treeView').style.display = mode==='tree' ? 'flex' : 'none';
+  document.getElementById('deptView').style.display = mode==='dept' ? 'block' : 'none';
+  document.getElementById('treeBtn').style.background = mode==='tree' ? 'var(--gc-pale)' : 'white';
+  document.getElementById('deptBtn').style.background = mode==='dept' ? 'var(--gc-pale)' : 'white';
+}
+
+setView('tree');
+</script>
+</body>
+</html>

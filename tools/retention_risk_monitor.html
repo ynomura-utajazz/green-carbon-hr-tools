@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>離職リスクモニター | Green Carbon HR</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --gc-accent: #40916c;
+    --risk-high: #e63946; --risk-mid: #f4a261; --risk-low: #2d6a4f;
+    --bg: #f8fffe; --card: #ffffff; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 20px; font-weight: 700; }
+  header .subtitle { font-size: 14px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+  header a:hover { color: white; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+
+  .risk-summary { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .risk-card { flex: 1; min-width: 160px; background: white; border-radius: 12px; padding: 20px 24px; border-left: 5px solid; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .risk-card.high { border-color: var(--risk-high); }
+  .risk-card.mid { border-color: var(--risk-mid); }
+  .risk-card.low { border-color: var(--risk-low); }
+  .risk-card .num { font-size: 36px; font-weight: 700; }
+  .risk-card.high .num { color: var(--risk-high); }
+  .risk-card.mid .num { color: var(--risk-mid); }
+  .risk-card.low .num { color: var(--risk-low); }
+  .risk-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+
+  .toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  input[type=text], input[type=number], select, textarea {
+    padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; background: white; color: var(--text); outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gc-light); }
+
+  .employee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .emp-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-top: 4px solid; transition: transform 0.2s, box-shadow 0.2s; }
+  .emp-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+  .emp-card.high { border-color: var(--risk-high); }
+  .emp-card.mid { border-color: var(--risk-mid); }
+  .emp-card.low { border-color: var(--risk-low); }
+
+  .emp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .emp-name { font-size: 16px; font-weight: 600; }
+  .emp-role { font-size: 13px; color: #666; margin-top: 2px; }
+  .risk-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .risk-badge.high { background: #ffebee; color: var(--risk-high); }
+  .risk-badge.mid { background: #fff3e0; color: var(--risk-mid); }
+  .risk-badge.low { background: var(--gc-pale); color: var(--gc-dark); }
+
+  .risk-factors { margin: 12px 0; }
+  .risk-factor { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+  .risk-factor .factor-label { flex: 1; color: #555; }
+  .risk-bar-bg { flex: 2; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+  .risk-bar { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .bar-high { background: var(--risk-high); }
+  .bar-mid { background: var(--risk-mid); }
+  .bar-low { background: var(--risk-low); }
+
+  .emp-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+
+  .score-total { font-size: 18px; font-weight: 700; }
+  .score-label { font-size: 11px; color: #aaa; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 32px; max-width: 560px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+  .modal h2 { font-size: 18px; color: var(--gc-dark); margin-bottom: 20px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .form-group { flex: 1; }
+  .slider-group { display: flex; align-items: center; gap: 12px; }
+  .slider-group input[type=range] { flex: 1; accent-color: var(--gc-green); }
+  .slider-val { min-width: 30px; text-align: right; font-weight: 600; color: var(--gc-green); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .section-title { font-size: 15px; font-weight: 600; color: var(--gc-dark); margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">離職リスクモニター</div>
+  </div>
+  <a href="../index.html">← ランチャーに戻る</a>
+</header>
+
+<div class="container">
+  <h1>離職リスクモニター</h1>
+  <p class="page-sub">社員ごとの離職リスクを可視化し、早期対応につなげます</p>
+
+  <div class="risk-summary" id="riskSummary"></div>
+
+  <div class="toolbar">
+    <select id="filterRisk" onchange="renderCards()">
+      <option value="">すべてのリスク</option>
+      <option value="high">高リスク</option>
+      <option value="mid">中リスク</option>
+      <option value="low">低リスク</option>
+    </select>
+    <select id="filterDept" onchange="renderCards()">
+      <option value="">すべての部門</option>
+    </select>
+    <button class="btn btn-primary" onclick="openModal()">+ 社員追加</button>
+  </div>
+
+  <div class="employee-grid" id="employeeGrid"></div>
+</div>
+
+<div class="modal-bg" id="empModal">
+  <div class="modal">
+    <h2 id="modalTitle">社員追加</h2>
+    <div class="form-row">
+      <div class="form-group"><label>氏名 *</label><input type="text" id="eName"></div>
+      <div class="form-group"><label>役職</label><input type="text" id="eRole"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>部門</label><input type="text" id="eDept"></div>
+      <div class="form-group"><label>在籍年数</label><input type="number" id="eYears" min="0" step="0.5"></div>
+    </div>
+
+    <div class="section-title">リスク要因スコア（0=低 / 10=高）</div>
+    <div class="form-group">
+      <label>給与満足度（低いほどリスク高）</label>
+      <div class="slider-group">
+        <input type="range" id="rSalary" min="0" max="10" value="5" oninput="updateSliders()">
+        <span class="slider-val" id="vSalary">5</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>マネジャー関係（低いほどリスク高）</label>
+      <div class="slider-group">
+        <input type="range" id="rManager" min="0" max="10" value="5" oninput="updateSliders()">
+        <span class="slider-val" id="vManager">5</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>キャリア成長感（低いほどリスク高）</label>
+      <div class="slider-group">
+        <input type="range" id="rCareer" min="0" max="10" value="5" oninput="updateSliders()">
+        <span class="slider-val" id="vCareer">5</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>エンゲージメント（低いほどリスク高）</label>
+      <div class="slider-group">
+        <input type="range" id="rEngage" min="0" max="10" value="5" oninput="updateSliders()">
+        <span class="slider-val" id="vEngage">5</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>残業・ストレス（高いほどリスク高）</label>
+      <div class="slider-group">
+        <input type="range" id="rStress" min="0" max="10" value="3" oninput="updateSliders()">
+        <span class="slider-val" id="vStress">3</span>
+      </div>
+    </div>
+    <div class="form-group"><label>備考</label><textarea id="eNote" rows="3"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let employees = JSON.parse(localStorage.getItem('gc_retention') || '[]');
+let editIdx = -1;
+
+if (!employees.length) {
+  employees = [
+    {name:'山田 花子', role:'シニアアナリスト', dept:'ソリューション事業部', years:3.5, salary:4, manager:7, career:3, engage:4, stress:8, note:'昇給交渉中、キャリアパスに不満'},
+    {name:'田中 一郎', role:'エンジニア', dept:'プロダクト部', years:1.5, salary:7, manager:8, career:6, engage:7, stress:4, note:''},
+    {name:'佐藤 美咲', role:'コンサルタント', dept:'コンサルティング部', years:2, salary:5, manager:4, career:5, engage:5, stress:7, note:'マネジャーとの関係に課題'},
+    {name:'鈴木 健', role:'PM', dept:'事業開発部', years:4, salary:8, manager:8, career:7, engage:8, stress:5, note:''},
+    {name:'高橋 隆司', role:'ESGスペシャリスト', dept:'ソリューション事業部', years:0.8, salary:6, manager:7, career:8, engage:8, stress:3, note:'入社間もないが定着率良好'},
+    {name:'伊藤 直子', role:'バックオフィス', dept:'管理部', years:5, salary:5, manager:6, career:3, engage:4, stress:6, note:'キャリアチェンジを検討中'},
+  ];
+  localStorage.setItem('gc_retention', JSON.stringify(employees));
+}
+
+function calcRisk(e) {
+  // Score: invert satisfaction scores, add stress
+  const raw = (10-e.salary) + (10-e.manager) + (10-e.career) + (10-e.engage) + e.stress;
+  const max = 50;
+  const pct = raw / max;
+  if (pct >= 0.55) return {level:'high', score: Math.round(pct*100), label:'高リスク'};
+  if (pct >= 0.35) return {level:'mid', score: Math.round(pct*100), label:'中リスク'};
+  return {level:'low', score: Math.round(pct*100), label:'低リスク'};
+}
+
+function barClass(val, inverted=true) {
+  const v = inverted ? 10-val : val;
+  if (v >= 7) return 'bar-high';
+  if (v >= 4) return 'bar-mid';
+  return 'bar-low';
+}
+
+function renderSummary() {
+  const high = employees.filter(e=>calcRisk(e).level==='high').length;
+  const mid = employees.filter(e=>calcRisk(e).level==='mid').length;
+  const low = employees.filter(e=>calcRisk(e).level==='low').length;
+  document.getElementById('riskSummary').innerHTML = `
+    <div class="risk-card high"><div class="num">${high}</div><div class="label">🔴 高リスク</div></div>
+    <div class="risk-card mid"><div class="num">${mid}</div><div class="label">🟡 中リスク</div></div>
+    <div class="risk-card low"><div class="num">${low}</div><div class="label">🟢 低リスク</div></div>
+    <div class="risk-card" style="border-left:5px solid #ccc"><div class="num">${employees.length}</div><div class="label">モニター中</div></div>
+  `;
+}
+
+function renderDeptFilter() {
+  const depts = [...new Set(employees.map(e=>e.dept))];
+  const sel = document.getElementById('filterDept');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">すべての部門</option>' + depts.map(d=>`<option${d===cur?' selected':''}>${d}</option>`).join('');
+}
+
+function renderCards() {
+  renderSummary();
+  renderDeptFilter();
+  const fRisk = document.getElementById('filterRisk').value;
+  const fDept = document.getElementById('filterDept').value;
+  const filtered = employees.filter(e=>{
+    const r = calcRisk(e);
+    return (!fRisk || r.level===fRisk) && (!fDept || e.dept===fDept);
+  });
+  if (!filtered.length) {
+    document.getElementById('employeeGrid').innerHTML = '<div style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px">該当する社員がいません</div>';
+    return;
+  }
+  document.getElementById('employeeGrid').innerHTML = filtered.map(e=>{
+    const r = calcRisk(e);
+    const idx = employees.indexOf(e);
+    return `<div class="emp-card ${r.level}">
+      <div class="emp-header">
+        <div>
+          <div class="emp-name">${e.name}</div>
+          <div class="emp-role">${e.role} · ${e.dept} · ${e.years}年</div>
+        </div>
+        <div style="text-align:right">
+          <div class="risk-badge ${r.level}">${r.label}</div>
+          <div style="margin-top:4px"><span class="score-total">${r.score}</span><span class="score-label">/100</span></div>
+        </div>
+      </div>
+      <div class="risk-factors">
+        ${factor('給与満足', e.salary, true)}
+        ${factor('上司関係', e.manager, true)}
+        ${factor('成長感', e.career, true)}
+        ${factor('エンゲージ', e.engage, true)}
+        ${factor('ストレス', e.stress, false)}
+      </div>
+      ${e.note?`<div style="font-size:12px;color:#777;background:#f9f9f9;padding:8px 10px;border-radius:6px;margin-bottom:10px">${e.note}</div>`:''}
+      <div class="emp-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editEmployee(${idx})">編集</button>
+        <button class="btn btn-primary btn-sm" onclick="alert('1on1を設定: '+employees[${idx}].name)">1on1設定</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function factor(label, val, inverted) {
+  const displayVal = inverted ? val : 10-val;
+  const pct = (inverted ? 10-val : val) * 10;
+  const cls = pct >= 70 ? 'bar-high' : pct >= 40 ? 'bar-mid' : 'bar-low';
+  return `<div class="risk-factor">
+    <span class="factor-label">${label}</span>
+    <div class="risk-bar-bg"><div class="risk-bar ${cls}" style="width:${pct}%"></div></div>
+    <span style="font-size:11px;color:#999;min-width:20px;text-align:right">${val}</span>
+  </div>`;
+}
+
+function updateSliders() {
+  ['Salary','Manager','Career','Engage','Stress'].forEach(k=>{
+    document.getElementById('v'+k).textContent = document.getElementById('r'+k).value;
+  });
+}
+
+function openModal(idx=-1) {
+  editIdx = idx;
+  if (idx >= 0) {
+    const e = employees[idx];
+    document.getElementById('modalTitle').textContent = '社員編集';
+    document.getElementById('eName').value = e.name;
+    document.getElementById('eRole').value = e.role;
+    document.getElementById('eDept').value = e.dept;
+    document.getElementById('eYears').value = e.years;
+    document.getElementById('rSalary').value = e.salary;
+    document.getElementById('rManager').value = e.manager;
+    document.getElementById('rCareer').value = e.career;
+    document.getElementById('rEngage').value = e.engage;
+    document.getElementById('rStress').value = e.stress;
+    document.getElementById('eNote').value = e.note;
+  } else {
+    document.getElementById('modalTitle').textContent = '社員追加';
+    ['eName','eRole','eDept','eNote'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('eYears').value = 1;
+    ['rSalary','rManager','rCareer','rEngage'].forEach(id=>document.getElementById(id).value=5);
+    document.getElementById('rStress').value = 3;
+  }
+  updateSliders();
+  document.getElementById('empModal').classList.add('open');
+}
+
+function editEmployee(idx) { openModal(idx); }
+function closeModal() { document.getElementById('empModal').classList.remove('open'); }
+
+function saveEmployee() {
+  const name = document.getElementById('eName').value.trim();
+  if (!name) { alert('氏名を入力してください'); return; }
+  const e = {
+    name, role: document.getElementById('eRole').value,
+    dept: document.getElementById('eDept').value,
+    years: parseFloat(document.getElementById('eYears').value)||0,
+    salary: parseInt(document.getElementById('rSalary').value),
+    manager: parseInt(document.getElementById('rManager').value),
+    career: parseInt(document.getElementById('rCareer').value),
+    engage: parseInt(document.getElementById('rEngage').value),
+    stress: parseInt(document.getElementById('rStress').value),
+    note: document.getElementById('eNote').value
+  };
+  if (editIdx >= 0) employees[editIdx] = e;
+  else employees.push(e);
+  localStorage.setItem('gc_retention', JSON.stringify(employees));
+  closeModal(); renderCards();
+}
+
+renderCards();
+</script>
+</body>
+</html>

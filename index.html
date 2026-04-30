@@ -59,6 +59,71 @@
 </style>
 </head>
 <body>
+<style>
+  #gc-auth-overlay {
+    position: fixed; inset: 0; z-index: 99999;
+    background: linear-gradient(135deg, #1b4332 0%, #40916c 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+  }
+  #gc-auth-box {
+    background: white; border-radius: 16px; padding: 48px 40px;
+    width: 360px; max-width: 90vw; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  #gc-auth-box .logo { font-size: 40px; margin-bottom: 12px; }
+  #gc-auth-box h2 { color: #1b4332; font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+  #gc-auth-box p { color: #666; font-size: 13px; margin-bottom: 28px; }
+  #gc-auth-box input {
+    width: 100%; padding: 12px 16px; border: 2px solid #b7e4c7;
+    border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 12px;
+    color: #1a1a2e; transition: border-color 0.2s;
+  }
+  #gc-auth-box input:focus { border-color: #40916c; }
+  #gc-auth-box button {
+    width: 100%; padding: 13px; background: #2d6a4f; color: white;
+    border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background 0.2s;
+  }
+  #gc-auth-box button:hover { background: #1b4332; }
+  #gc-auth-error { color: #c62828; font-size: 13px; margin-top: 10px; display: none; }
+  #gc-auth-hint { color: #999; font-size: 12px; margin-top: 16px; }
+</style>
+<div id="gc-auth-overlay">
+  <div id="gc-auth-box">
+    <div class="logo">🌿</div>
+    <h2>Green Carbon HR Tools</h2>
+    <p>社内専用システム — ログインしてください</p>
+    <input type="text" id="gc-user" placeholder="ユーザー名" autocomplete="username" />
+    <input type="password" id="gc-pass" placeholder="パスワード" autocomplete="current-password" />
+    <button onclick="gcLogin()">ログイン</button>
+    <div id="gc-auth-error">ユーザー名またはパスワードが違います</div>
+    <div id="gc-auth-hint">ID・PWは管理者にお問い合わせください</div>
+  </div>
+</div>
+<script>
+  (function() {
+    if (sessionStorage.getItem('gc-auth') === 'ok') {
+      document.getElementById('gc-auth-overlay').style.display = 'none';
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') gcLogin();
+    });
+  })();
+  function gcLogin() {
+    var u = document.getElementById('gc-user').value;
+    var p = document.getElementById('gc-pass').value;
+    if (u === 'greencarbon' && p === 'GC-HR-2024') {
+      sessionStorage.setItem('gc-auth', 'ok');
+      document.getElementById('gc-auth-overlay').style.display = 'none';
+    } else {
+      document.getElementById('gc-auth-error').style.display = 'block';
+      document.getElementById('gc-pass').value = '';
+      document.getElementById('gc-pass').focus();
+    }
+  }
+</script>
+
 
 <div class="hero">
   <div class="logo">🌿</div>

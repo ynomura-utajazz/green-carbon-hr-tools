@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAS セットアップガイド | Green Carbon HR Tools</title>
+<style>
+:root{--gc-green:#2d6a4f;--gc-dark:#1b4332;--gc-pale:#d8f3dc;--gc-light:#52b788;--border:#b7e4c7;--bg:#f0faf4}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:#1a1a2e;line-height:1.6}
+header{background:linear-gradient(135deg,var(--gc-dark),var(--gc-green));color:#fff;padding:24px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:20px;font-weight:700}
+header p{font-size:13px;opacity:.8;margin-top:2px}
+.hdr-home{margin-left:auto;color:rgba(255,255,255,.75);text-decoration:none;font-size:13px}
+.hdr-home:hover{color:#fff}
+.container{max-width:860px;margin:0 auto;padding:32px 24px}
+.step-card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(27,67,50,.08);border-left:4px solid var(--gc-green)}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--gc-green);color:#fff;border-radius:50%;font-size:13px;font-weight:700;margin-right:10px;flex-shrink:0}
+.step-title{font-size:16px;font-weight:700;color:var(--gc-dark);display:flex;align-items:center;margin-bottom:12px}
+.step-body{font-size:14px;color:#444;line-height:1.7}
+.step-body p{margin-bottom:8px}
+.step-body ul{padding-left:20px}
+.step-body li{margin-bottom:4px}
+.img-hint{background:#f8f8f8;border:1px dashed #ccc;border-radius:8px;padding:12px 16px;font-size:13px;color:#666;margin:12px 0;display:flex;align-items:flex-start;gap:8px}
+.code-block{position:relative;background:#1e1e2e;color:#cdd6f4;border-radius:10px;padding:20px;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:14px 0}
+.code-block .copy-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.15);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;transition:.2s}
+.code-block .copy-btn:hover{background:rgba(255,255,255,.3)}
+.code-block .copy-btn.copied{background:rgba(82,183,136,.5)}
+/* syntax colors */
+.kw{color:#cba6f7}.fn{color:#89b4fa}.str{color:#a6e3a1}.cm{color:#6c7086;font-style:italic}.num{color:#fab387}.op{color:#89dceb}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-orange{background:#fef3db;color:#c78000}
+.sheet-table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+.sheet-table th{background:var(--gc-dark);color:#fff;padding:8px 12px;text-align:left;font-weight:600}
+.sheet-table td{padding:8px 12px;border-bottom:1px solid #f0f0f0}
+.sheet-table tr:hover td{background:var(--gc-pale)}
+.warning{background:#fff8e1;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:0 8px 8px 0;font-size:13px;color:#92400e;margin:12px 0}
+.success{background:#ecfdf5;border-left:4px solid #10b981;padding:12px 16px;border-radius:0 8px 8px 0;font-size:13px;color:#065f46;margin:12px 0}
+.toc{background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:24px;box-shadow:0 2px 12px rgba(27,67,50,.08)}
+.toc-title{font-size:14px;font-weight:700;color:var(--gc-dark);margin-bottom:10px}
+.toc ol{padding-left:20px}
+.toc li{font-size:13px;margin-bottom:4px}
+.toc a{color:var(--gc-green);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌿 GAS バックエンド セットアップガイド</h1>
+    <p>Google Apps Script を使ってチーム全員でデータを共有する設定手順</p>
+  </div>
+  <a href="../index.html" class="hdr-home">← ホームに戻る</a>
+</header>
+
+<div class="container">
+
+  <div class="toc">
+    <div class="toc-title">📋 目次</div>
+    <ol>
+      <li><a href="#s1">Google スプレッドシートを作成する</a></li>
+      <li><a href="#s2">Apps Script エディタを開く</a></li>
+      <li><a href="#s3">スクリプトをコピー&ペーストする</a></li>
+      <li><a href="#s4">ウェブアプリとしてデプロイする</a></li>
+      <li><a href="#s5">URLをツールに設定する</a></li>
+      <li><a href="#s6">動作確認</a></li>
+    </ol>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step-card" id="s1">
+    <div class="step-title"><span class="step-num">1</span>Google スプレッドシートを作成する</div>
+    <div class="step-body">
+      <p><a href="https://sheets.new" target="_blank" style="color:var(--gc-green);font-weight:600">sheets.new</a> を開いて新しいスプレッドシートを作成してください。</p>
+      <p>シート名は何でもOKです（例：<strong>「GC採用管理DB」</strong>）。</p>
+      <div class="img-hint">💡 シートのタブ名（下部）は変えなくてOKです。スクリプトが自動で <code>Candidates</code>・<code>Jobs</code>・<code>TeamMembers</code> シートを作成します。</div>
+      <p>作成したら、スプレッドシートを <strong>社内のHRメンバーと共有</strong>（閲覧権限）しておくと、データをスプレッドシートで直接確認できます。</p>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card" id="s2">
+    <div class="step-title"><span class="step-num">2</span>Apps Script エディタを開く</div>
+    <div class="step-body">
+      <p>スプレッドシートのメニューから：</p>
+      <p><strong>「拡張機能」→「Apps Script」</strong> をクリック</p>
+      <div class="img-hint">💡 Apps Script のエディタが別タブで開きます。左側に <code>コード.gs</code> というファイルがあります。</div>
+      <p>既存の内容（<code>function myFunction() {}</code> など）は<strong>すべて削除</strong>して、次のステップのコードを貼り付けます。</p>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card" id="s3">
+    <div class="step-title"><span class="step-num">3</span>スクリプトをコピー&ペーストする</div>
+    <div class="step-body">
+      <p>以下のコードを<strong>まるごとコピー</strong>して、Apps Script エディタに貼り付けてください。</p>
+      <div class="warning">⚠️ 既存のコードはすべて削除してから貼り付けてください。</div>
+
+      <div class="code-block" id="gasCode">
+        <button class="copy-btn" onclick="copyCode()">コピー</button>
+<pre id="gasCodePre">
+<span class="cm">// ================================================================
+// Green Carbon HR Tools - GAS バックエンド (完全版)
+// ================================================================
+// 対応API:
+//   GET  ?action=getCandidates    → 候補者一覧取得
+//   GET  ?action=getJobs          → 求人一覧取得
+//   GET  ?action=getTeamMembers   → チームメンバー取得
+//   POST action=saveCandidates    → 候補者データ保存
+//   POST action=saveJob           → 求人追加
+//   POST action=saveTeamMembers   → チームメンバー保存
+// ================================================================</span>
+
+<span class="kw">function</span> <span class="fn">doGet</span>(e) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> action = e.parameter.action;
+    <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
+    <span class="kw">let</span> result;
+
+    <span class="kw">if</span> (action === <span class="str">'getCandidates'</span>) {
+      result = readSheet(ss, <span class="str">'Candidates'</span>,
+        [<span class="str">'evaluations'</span>, <span class="str">'interviews'</span>, <span class="str">'memos'</span>, <span class="str">'reviewers'</span>]);
+
+    } <span class="kw">else if</span> (action === <span class="str">'getJobs'</span>) {
+      result = readSheet(ss, <span class="str">'Jobs'</span>, []);
+
+    } <span class="kw">else if</span> (action === <span class="str">'getTeamMembers'</span>) {
+      result = readSheet(ss, <span class="str">'TeamMembers'</span>, []);
+
+    } <span class="kw">else</span> {
+      result = { error: <span class="str">'Unknown action: '</span> + action };
+    }
+
+    <span class="kw">return</span> buildResponse(result);
+
+  } <span class="kw">catch</span> (err) {
+    <span class="kw">return</span> buildResponse({ error: err.message });
+  }
+}
+
+<span class="kw">function</span> <span class="fn">doPost</span>(e) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> body = JSON.parse(e.postData.contents);
+    <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    <span class="kw">if</span> (body.action === <span class="str">'saveCandidates'</span>) {
+      <span class="kw">const</span> keys = [
+        <span class="str">'id'</span>, <span class="str">'name'</span>, <span class="str">'nationality'</span>, <span class="str">'position'</span>, <span class="str">'stage'</span>,
+        <span class="str">'priority'</span>, <span class="str">'assignee'</span>, <span class="str">'channel'</span>, <span class="str">'email'</span>, <span class="str">'appliedDate'</span>,
+        <span class="str">'dept'</span>, <span class="str">'evaluations'</span>, <span class="str">'interviews'</span>, <span class="str">'memos'</span>, <span class="str">'reviewers'</span>,
+        <span class="str">'activityDate'</span>, <span class="str">'evaluator'</span>, <span class="str">'evalDate'</span>
+      ];
+      writeSheet(ss, <span class="str">'Candidates'</span>, keys, body.data,
+        [<span class="str">'evaluations'</span>, <span class="str">'interviews'</span>, <span class="str">'memos'</span>, <span class="str">'reviewers'</span>]);
+      <span class="kw">return</span> buildResponse({ ok: <span class="kw">true</span>, saved: body.data.length });
+
+    } <span class="kw">else if</span> (body.action === <span class="str">'saveJob'</span>) {
+      <span class="kw">const</span> sheet = getOrCreateSheet(ss, <span class="str">'Jobs'</span>);
+      <span class="kw">const</span> keys = [<span class="str">'id'</span>, <span class="str">'title'</span>, <span class="str">'dept'</span>, <span class="str">'target'</span>, <span class="str">'status'</span>, <span class="str">'desc'</span>];
+      <span class="kw">if</span> (sheet.getLastRow() === <span class="num">0</span>) sheet.appendRow(keys);
+      sheet.appendRow(keys.map(k => body.data[k] || <span class="str">''</span>));
+      <span class="kw">return</span> buildResponse({ ok: <span class="kw">true</span> });
+
+    } <span class="kw">else if</span> (body.action === <span class="str">'saveTeamMembers'</span>) {
+      <span class="kw">const</span> keys = [<span class="str">'id'</span>, <span class="str">'name'</span>, <span class="str">'role'</span>, <span class="str">'initial'</span>, <span class="str">'color'</span>];
+      writeSheet(ss, <span class="str">'TeamMembers'</span>, keys, body.data, []);
+      <span class="kw">return</span> buildResponse({ ok: <span class="kw">true</span>, saved: body.data.length });
+
+    } <span class="kw">else</span> {
+      <span class="kw">return</span> buildResponse({ error: <span class="str">'Unknown action'</span> });
+    }
+
+  } <span class="kw">catch</span> (err) {
+    <span class="kw">return</span> buildResponse({ error: err.message });
+  }
+}
+
+<span class="cm">// CORS プリフライト対応</span>
+<span class="kw">function</span> <span class="fn">doOptions</span>(e) {
+  <span class="kw">return</span> ContentService
+    .createTextOutput(<span class="str">''</span>)
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+<span class="cm">// ── ヘルパー関数 ──────────────────────────────────────────────────</span>
+
+<span class="kw">function</span> <span class="fn">buildResponse</span>(data) {
+  <span class="kw">return</span> ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+<span class="kw">function</span> <span class="fn">getOrCreateSheet</span>(ss, name) {
+  <span class="kw">return</span> ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+<span class="kw">function</span> <span class="fn">readSheet</span>(ss, sheetName, jsonFields) {
+  <span class="kw">const</span> sheet = getOrCreateSheet(ss, sheetName);
+  <span class="kw">const</span> data = sheet.getDataRange().getValues();
+  <span class="kw">if</span> (data.length < <span class="num">2</span>) <span class="kw">return</span> [];
+  <span class="kw">const</span> headers = data[<span class="num">0</span>];
+  <span class="kw">return</span> data.slice(<span class="num">1</span>).map(row => {
+    <span class="kw">const</span> obj = {};
+    headers.forEach((h, i) => {
+      <span class="kw">if</span> (jsonFields.includes(h)) {
+        <span class="kw">try</span> { obj[h] = row[i] ? JSON.parse(row[i]) : []; }
+        <span class="kw">catch</span>(e) { obj[h] = []; }
+      } <span class="kw">else</span> {
+        obj[h] = row[i];
+      }
+    });
+    <span class="kw">return</span> obj;
+  }).filter(row => row.id); <span class="cm">// 空行除去</span>
+}
+
+<span class="kw">function</span> <span class="fn">writeSheet</span>(ss, sheetName, keys, dataArr, jsonFields) {
+  <span class="kw">if</span> (!dataArr || !dataArr.length) <span class="kw">return</span>;
+  <span class="kw">const</span> sheet = getOrCreateSheet(ss, sheetName);
+  sheet.clearContents();
+  sheet.appendRow(keys);
+  <span class="kw">const</span> rows = dataArr.map(item =>
+    keys.map(k => {
+      <span class="kw">const</span> v = item[k];
+      <span class="kw">if</span> (jsonFields.includes(k)) <span class="kw">return</span> JSON.stringify(v || []);
+      <span class="kw">return</span> (v === <span class="kw">undefined</span> || v === <span class="kw">null</span>) ? <span class="str">''</span> : v;
+    })
+  );
+  <span class="kw">if</span> (rows.length) {
+    sheet.getRange(<span class="num">2</span>, <span class="num">1</span>, rows.length, keys.length).setValues(rows);
+  }
+}
+</pre>
+      </div>
+
+      <div class="success">✅ <code>reviewers</code> フィールド（チームチェック）も含む完全版です。コピーしたらそのまま使えます。</div>
+
+      <p>貼り付けたら <strong>Ctrl+S（⌘+S）で保存</strong>してください。</p>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card" id="s4">
+    <div class="step-title"><span class="step-num">4</span>ウェブアプリとしてデプロイする</div>
+    <div class="step-body">
+      <p>Apps Script エディタの右上：</p>
+      <p><strong>「デプロイ」→「新しいデプロイ」</strong> をクリック</p>
+      <div class="img-hint">⚙️ 設定画面が開きます。以下の通りに設定してください：</div>
+
+      <table class="sheet-table">
+        <tr><th>設定項目</th><th>設定値</th></tr>
+        <tr><td>種類の選択</td><td><span class="badge badge-blue">ウェブアプリ</span></td></tr>
+        <tr><td>次のユーザーとして実行</td><td><strong>自分（your-email@...）</strong></td></tr>
+        <tr><td>アクセスできるユーザー</td><td><strong>全員</strong>（Anonymous を含む）</td></tr>
+      </table>
+
+      <div class="warning">⚠️「アクセスできるユーザー：全員」にしないと、ツールからデータを取得できません。スプレッドシート自体は共有設定を変えなくてOKです。</div>
+
+      <p>「デプロイ」をクリック → 権限の確認画面が出たら「アクセスを許可」→ <strong>ウェブアプリのURLが表示されます</strong>。このURLをコピーしてください。</p>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card" id="s5">
+    <div class="step-title"><span class="step-num">5</span>URLをツールに設定する</div>
+    <div class="step-body">
+      <p><code>gc_recruiting.html</code> をテキストエディタで開き、先頭付近の <code>GAS_URL</code> を書き換えます：</p>
+
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyUrl()">コピー</button>
+<pre id="urlCodePre"><span class="cm">// ファイル先頭付近（約10行目）</span>
+<span class="kw">const</span> GAS_URL = <span class="str">'https://script.google.com/macros/s/★ここに新しいURLを貼る★/exec'</span>;</pre>
+      </div>
+
+      <div class="img-hint">💡 Vercel にデプロイしている場合は、ファイルを変更して git push するだけで自動反映されます。</div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card" id="s6">
+    <div class="step-title"><span class="step-num">6</span>動作確認</div>
+    <div class="step-body">
+      <p>ツールを開いたとき、ヘッダーのバッジが以下になれば成功です：</p>
+
+      <table class="sheet-table">
+        <tr><th>バッジ表示</th><th>意味</th></tr>
+        <tr><td>☁️ GAS同期</td><td>✅ GAS接続成功。データはスプレッドシートで共有されます</td></tr>
+        <tr><td>💾 ローカル</td><td>❌ GAS未接続。URLを確認してください</td></tr>
+      </table>
+
+      <div class="success">
+        ✅ GAS同期になれば、チーム全員が同じ採用データ・メンバーリストを共有できます。<br>
+        メンバー管理パネルの「☁️ 同期」ボタンで、メンバー変更を即座に全員に反映できます。
+      </div>
+
+      <p style="margin-top:12px"><strong>スプレッドシートで確認できるシート：</strong></p>
+      <table class="sheet-table">
+        <tr><th>シート名</th><th>内容</th></tr>
+        <tr><td><code>Candidates</code></td><td>全候補者データ（評価・面接記録・チェック含む）</td></tr>
+        <tr><td><code>Jobs</code></td><td>求人データ</td></tr>
+        <tr><td><code>TeamMembers</code></td><td>チームメンバー・役割一覧</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function copyCode(){
+  const text = document.getElementById('gasCodePre').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.querySelector('#gasCode .copy-btn');
+    btn.textContent='コピー済み ✓'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='コピー'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+function copyUrl(){
+  const text = document.getElementById('urlCodePre').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.querySelector('#s5 .copy-btn');
+    btn.textContent='コピー済み ✓'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='コピー'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+</script>
+</body>
+</html>

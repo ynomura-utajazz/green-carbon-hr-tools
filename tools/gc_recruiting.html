@@ -593,7 +593,10 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
 <div class="team-mgmt-panel" id="teamMgmtPanel">
   <div class="team-mgmt-header">
     <span>チームメンバー管理</span>
-    <button onclick="toggleTeamPanel()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px">✕</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="syncTeamToGAS()" style="background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:5px;font-weight:600">☁️ 同期</button>
+      <button onclick="toggleTeamPanel()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px">✕</button>
+    </div>
   </div>
   <div class="team-mgmt-body">
     <div id="memberEditList"></div>
@@ -760,20 +763,27 @@ let gasConnected = false;
 async function loadData(){
   showLoading(true);
   try {
-    const [cr, jr] = await Promise.all([
+    const [cr, jr, tr] = await Promise.all([
       fetch(GAS_URL+'?action=getCandidates').then(r=>r.json()),
-      fetch(GAS_URL+'?action=getJobs').then(r=>r.json())
+      fetch(GAS_URL+'?action=getJobs').then(r=>r.json()),
+      fetch(GAS_URL+'?action=getTeamMembers').then(r=>r.json())
     ]);
     candidates = Array.isArray(cr) ? cr : sampleCandidates;
     jobs = Array.isArray(jr) ? jr : sampleJobs;
+    if(Array.isArray(tr) && tr.length) {
+      teamMembers = tr;
+      localStorage.setItem(LS_TEAM, JSON.stringify(teamMembers));
+    }
     localStorage.setItem(LS_CAND, JSON.stringify(candidates));
     localStorage.setItem(LS_JOBS, JSON.stringify(jobs));
     setSync(true);
+    toast('☁️ GASから最新データを取得しました');
   } catch(e){
     const lc = localStorage.getItem(LS_CAND);
     const lj = localStorage.getItem(LS_JOBS);
     candidates = lc ? JSON.parse(lc) : sampleCandidates;
     jobs = lj ? JSON.parse(lj) : sampleJobs;
+    // teamMembers はLS_TEAMから（上部で既に初期化済み）
     setSync(false);
   }
   showLoading(false);
@@ -787,6 +797,18 @@ async function saveData(){
     try{
       await fetch(GAS_URL, {method:'POST',body:JSON.stringify({action:'saveCandidates',data:candidates})});
     }catch(e){ setSync(false); }
+  }
+}
+
+async function syncTeamToGAS(){
+  localStorage.setItem(LS_TEAM, JSON.stringify(teamMembers));
+  if(!gasConnected) return;
+  try{
+    await fetch(GAS_URL, {method:'POST',body:JSON.stringify({action:'saveTeamMembers',data:teamMembers})});
+    toast('☁️ メンバーリストをGASに保存しました');
+  }catch(e){
+    toast('💾 ローカルに保存しました（GAS接続エラー）');
+    setSync(false);
   }
 }
 
@@ -1299,7 +1321,6 @@ let teamMembers = JSON.parse(localStorage.getItem(LS_TEAM)||'null') || [
   {id:'tm006',name:'鈴木 部長',role:'manager',initial:'鈴',color:'#8b5cf6'}
 ];
 
-function saveTeamMembers(){ localStorage.setItem(LS_TEAM, JSON.stringify(teamMembers)); }
 
 function addTeamMember(){
   const name = document.getElementById('newMemberName').value.trim();
@@ -1307,7 +1328,7 @@ function addTeamMember(){
   const initial = document.getElementById('newMemberInitial').value.trim() || name.slice(0,2);
   if(!name){ toast('氏名を入力してください'); return; }
   teamMembers.push({id:'tm'+Date.now(), name, role, initial, color: ROLE_COLORS[role]});
-  saveTeamMembers();
+  syncTeamToGAS();
   renderTeamMgmtPanel();
   document.getElementById('newMemberName').value='';
   document.getElementById('newMemberInitial').value='';
@@ -1315,9 +1336,11 @@ function addTeamMember(){
 }
 
 function removeTeamMember(id){
+  if(!confirm('このメンバーを削除しますか？')) return;
   teamMembers = teamMembers.filter(m=>m.id!==id);
-  saveTeamMembers();
+  syncTeamToGAS();
   renderTeamMgmtPanel();
+  toast('メンバーを削除しました');
 }
 
 function toggleTeamPanel(){
@@ -1447,6 +1470,32 @@ window.addEventListener('load', loadData);
 /* GAS ADDITIONS NEEDED:
 
 The GAS script at the above URL should handle these endpoints:
+
+// ---- TEAM MEMBERS ----
+// Add these cases inside doGet() and doPost():
+//
+// doGet - getTeamMembers:
+//   if (action === 'getTeamMembers') {
+//     const sheet = ss.getSheetByName('TeamMembers') || ss.insertSheet('TeamMembers');
+//     const data = sheet.getDataRange().getValues();
+//     if (data.length < 2) return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
+//     const headers = data[0];
+//     const rows = data.slice(1).map(row => { const obj={}; headers.forEach((h,i)=>obj[h]=row[i]); return obj; });
+//     return ContentService.createTextOutput(JSON.stringify(rows)).setMimeType(ContentService.MimeType.JSON);
+//   }
+//
+// doPost - saveTeamMembers:
+//   if (body.action === 'saveTeamMembers') {
+//     const sheet = ss.getSheetByName('TeamMembers') || ss.insertSheet('TeamMembers');
+//     sheet.clearContents();
+//     const members = body.data;
+//     if (!members || !members.length) return ContentService.createTextOutput('{}').setMimeType(ContentService.MimeType.JSON);
+//     const keys = ['id','name','role','initial','color'];
+//     sheet.appendRow(keys);
+//     members.forEach(m => sheet.appendRow(keys.map(k => m[k]||'')));
+//     return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+//   }
+//
 
 function doGet(e) {
   const action = e.parameter.action;

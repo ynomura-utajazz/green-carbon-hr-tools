@@ -14,23 +14,31 @@
   header { background: var(--gc-dark); color: white; padding: 14px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
   header .logo { font-size: 18px; font-weight: 700; }
   header .subtitle { font-size: 13px; opacity: 0.8; }
-  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+  header .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  header .header-right a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; }
+  .sync-badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
+  .sync-badge.online { background: rgba(82,183,136,0.3); color: #a8f0c6; border: 1px solid rgba(82,183,136,0.5); }
+  .sync-badge.offline { background: rgba(255,100,100,0.2); color: #ffaaaa; border: 1px solid rgba(255,100,100,0.3); }
+  .sync-badge.syncing { background: rgba(255,200,50,0.2); color: #ffe88a; border: 1px solid rgba(255,200,50,0.3); }
 
   .layout { display: flex; flex: 1; overflow: hidden; }
-  .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar { width: 270px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
   .sidebar-search { padding: 12px; border-bottom: 1px solid var(--border); }
   .sidebar-search input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
   .sidebar-search input:focus { border-color: var(--gc-light); }
   .sidebar-list { flex: 1; overflow-y: auto; padding: 8px 0; }
-  .cat-header { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; }
+  .cat-header { padding: 8px 16px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; display: flex; align-items: center; justify-content: space-between; }
+  .cat-delete-btn { opacity: 0; background: none; border: none; cursor: pointer; color: #e63946; font-size: 13px; padding: 0 4px; transition: opacity 0.2s; }
+  .cat-header:hover .cat-delete-btn { opacity: 1; }
   .page-item { padding: 8px 16px; cursor: pointer; font-size: 14px; color: #444; transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; }
   .page-item:hover { background: var(--gc-pale); color: var(--gc-dark); }
   .page-item.active { background: var(--gc-pale); color: var(--gc-dark); font-weight: 600; border-left: 3px solid var(--gc-green); }
   .page-item .tag { font-size: 10px; background: #f0f0f0; padding: 1px 6px; border-radius: 8px; color: #888; }
+  .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
 
   .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
   .wiki-toolbar { padding: 12px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; background: white; }
-  .wiki-content { padding: 32px 48px; max-width: 800px; flex: 1; }
+  .wiki-content { padding: 32px 48px; max-width: 820px; flex: 1; }
   @media(max-width:900px) { .wiki-content { padding: 20px; } }
 
   .btn { padding: 7px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
@@ -40,9 +48,13 @@
   .btn-secondary:hover { background: var(--gc-pale); }
   .btn-danger { background: white; color: #e63946; border: 1.5px solid #e63946; }
   .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-icon { padding: 5px 9px; background: white; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .btn-icon:hover { background: var(--gc-pale); }
 
   .article-title { font-size: 28px; font-weight: 700; color: var(--gc-dark); margin-bottom: 8px; }
-  .article-meta { font-size: 12px; color: #999; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .article-meta { font-size: 12px; color: #888; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .article-meta .meta-item { display: flex; align-items: center; gap: 4px; }
+  .article-meta .meta-item .icon { font-size: 13px; }
   .article-body { font-size: 15px; line-height: 1.8; color: #333; }
   .article-body h2 { font-size: 20px; color: var(--gc-dark); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
   .article-body h3 { font-size: 16px; color: var(--gc-dark); margin: 20px 0 8px; }
@@ -57,26 +69,97 @@
 
   .editor-area { display: none; flex-direction: column; padding: 24px 48px; flex: 1; }
   .editor-area.active { display: flex; }
+  .editor-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .editor-top input[type=text] { flex: 1; font-size: 22px; font-weight: 700; color: var(--gc-dark); border: none; border-bottom: 2px solid var(--border); padding: 8px 0; outline: none; }
+  .editor-top input[type=text]:focus { border-bottom-color: var(--gc-green); }
+  .editor-top select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; color: var(--gc-dark); }
   .editor-toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .editor-toolbar button { padding: 5px 10px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 13px; }
   .editor-toolbar button:hover { background: var(--gc-pale); }
-  .editor-area input[type=text] { font-size: 22px; font-weight: 700; color: var(--gc-dark); border: none; border-bottom: 2px solid var(--border); padding: 8px 0; margin-bottom: 16px; outline: none; width: 100%; }
-  .editor-area input[type=text]:focus { border-bottom-color: var(--gc-green); }
   .editor-area textarea { flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 16px; font-size: 14px; font-family: monospace; resize: none; outline: none; min-height: 400px; }
   .editor-area textarea:focus { border-color: var(--gc-light); }
-  .editor-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+  .editor-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; align-items: center; }
+  .editor-author { display: flex; align-items: center; gap: 8px; margin-right: auto; font-size: 13px; color: #666; }
+  .editor-author input { padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; width: 160px; }
 
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  /* Toast notification */
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--gc-dark); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
   .modal-bg.open { display: flex; }
-  .modal { background: white; border-radius: 16px; padding: 28px; max-width: 420px; width: 90%; }
+  .modal { background: white; border-radius: 16px; padding: 28px; max-width: 440px; width: 90%; }
   .modal h2 { font-size: 16px; color: var(--gc-dark); margin-bottom: 16px; }
   .form-group { margin-bottom: 12px; }
   .form-group label { display: block; font-size: 12px; font-weight: 500; color: #444; margin-bottom: 5px; }
   .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--gc-light); }
   .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* Category management modal */
+  .cat-list-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  .cat-list-item:last-child { border-bottom: none; }
+  .cat-badge { padding: 2px 10px; border-radius: 10px; background: var(--gc-pale); color: var(--gc-dark); font-size: 13px; font-weight: 500; }
+
+  /* Settings panel */
+  .settings-panel { display: none; position: fixed; top: 0; right: 0; width: 380px; height: 100vh; background: white; border-left: 1px solid var(--border); z-index: 150; box-shadow: -4px 0 20px rgba(0,0,0,0.1); flex-direction: column; }
+  .settings-panel.open { display: flex; }
+  .settings-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .settings-header h2 { font-size: 16px; color: var(--gc-dark); font-weight: 700; }
+  .settings-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .settings-section { margin-bottom: 28px; }
+  .settings-section h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 12px; }
+  .settings-row { margin-bottom: 12px; }
+  .settings-row label { display: block; font-size: 12px; font-weight: 500; color: #444; margin-bottom: 5px; }
+  .settings-row input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; font-family: monospace; }
+  .settings-row input:focus { border-color: var(--gc-light); }
+  .code-block { background: #f4f4f4; border-radius: 8px; padding: 12px; font-size: 11px; font-family: monospace; color: #333; white-space: pre; overflow-x: auto; line-height: 1.6; border: 1px solid #e0e0e0; }
+  .gas-note { font-size: 12px; color: #666; background: #fffbea; border: 1px solid #ffe58f; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.6; }
 
   .empty-state { text-align: center; padding: 80px 40px; color: #aaa; }
   .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* ─── Chat Bot ─── */
+  .chat-fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--gc-green); color: white; border: none; cursor: pointer; font-size: 22px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 300; display: flex; align-items: center; justify-content: center; transition: background 0.2s, transform 0.2s; }
+  .chat-fab:hover { background: var(--gc-dark); transform: scale(1.08); }
+  .chat-fab .chat-badge { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #e63946; border-radius: 50%; font-size: 10px; display: none; align-items: center; justify-content: center; }
+  .chat-panel { position: fixed; bottom: 88px; right: 24px; width: 360px; height: 520px; background: white; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); z-index: 300; display: none; flex-direction: column; border: 1px solid var(--border); overflow: hidden; }
+  .chat-panel.open { display: flex; }
+  .chat-header { background: var(--gc-dark); color: white; padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+  .chat-header .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--gc-light); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .chat-header .info { flex: 1; }
+  .chat-header .info .name { font-size: 14px; font-weight: 700; }
+  .chat-header .info .status { font-size: 11px; opacity: 0.8; }
+  .chat-header .close-btn { background: none; border: none; color: white; cursor: pointer; font-size: 18px; opacity: 0.7; padding: 4px; }
+  .chat-header .close-btn:hover { opacity: 1; }
+  .chat-api-bar { padding: 8px 12px; background: #fffbea; border-bottom: 1px solid #ffe58f; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; }
+  .chat-api-bar input { flex: 1; padding: 5px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; font-family: monospace; outline: none; }
+  .chat-api-bar button { padding: 5px 10px; font-size: 11px; background: var(--gc-green); color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { max-width: 88%; display: flex; flex-direction: column; gap: 4px; }
+  .chat-msg.bot { align-self: flex-start; }
+  .chat-msg.user { align-self: flex-end; }
+  .chat-bubble { padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.6; }
+  .chat-msg.bot .chat-bubble { background: #f0f0f0; color: #333; border-bottom-left-radius: 4px; }
+  .chat-msg.user .chat-bubble { background: var(--gc-green); color: white; border-bottom-right-radius: 4px; }
+  .chat-sources { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .chat-source-link { font-size: 11px; color: var(--gc-green); text-decoration: none; padding: 3px 8px; background: var(--gc-pale); border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; border: 1px solid var(--border); width: fit-content; }
+  .chat-source-link:hover { background: var(--gc-light); color: white; }
+  .chat-input-area { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+  .chat-input-area input { flex: 1; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 20px; font-size: 13px; outline: none; }
+  .chat-input-area input:focus { border-color: var(--gc-light); }
+  .chat-input-area button { width: 36px; height: 36px; border-radius: 50%; background: var(--gc-green); color: white; border: none; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .chat-input-area button:hover { background: var(--gc-dark); }
+  .typing-dots { display: inline-flex; gap: 3px; padding: 4px 0; }
+  .typing-dots span { width: 6px; height: 6px; background: #aaa; border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* API キー設定インジケーター */
+  .api-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #999; margin-right: 4px; }
+  .api-indicator.set { background: #52b788; }
 </style>
 </head>
 <body>
@@ -85,20 +168,27 @@
     <div class="logo">🌿 Green Carbon</div>
     <div class="subtitle">社内Wiki</div>
   </div>
-  <a href="../index.html">← ランチャーに戻る</a>
+  <div class="header-right">
+    <span id="syncBadge" class="sync-badge offline">● オフライン</span>
+    <button class="btn-icon" onclick="openSettings()" title="設定" style="background:transparent;border-color:rgba(255,255,255,0.3);color:white;">⚙️</button>
+    <a href="../index.html">← ランチャーに戻る</a>
+  </div>
 </header>
 
 <div class="layout">
+  <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-search">
       <input type="text" placeholder="🔍 記事を検索..." id="searchInput" oninput="renderSidebar()">
     </div>
     <div class="sidebar-list" id="sidebarList"></div>
-    <div style="padding:12px;border-top:1px solid var(--border)">
-      <button class="btn btn-primary" style="width:100%" onclick="newPage()">+ 新規ページ</button>
+    <div class="sidebar-footer">
+      <button class="btn btn-primary" style="flex:1" onclick="newPage()">+ 新規ページ</button>
+      <button class="btn btn-secondary btn-sm" onclick="openCatModal()" title="カテゴリ管理">🗂</button>
     </div>
   </div>
 
+  <!-- Main -->
   <div class="main">
     <div class="wiki-toolbar" id="wikiToolbar" style="display:none">
       <span id="breadcrumb" style="font-size:13px;color:#888;flex:1"></span>
@@ -114,34 +204,48 @@
     </div>
 
     <div class="editor-area" id="editorArea">
-      <input type="text" id="editorTitle" placeholder="ページタイトル...">
+      <div class="editor-top">
+        <input type="text" id="editorTitle" placeholder="ページタイトル...">
+        <select id="editorCat"></select>
+      </div>
       <div class="editor-toolbar">
         <button onclick="ins('## ')">H2</button>
         <button onclick="ins('### ')">H3</button>
         <button onclick="ins('**','**')">太字</button>
+        <button onclick="ins('*','*')">斜体</button>
         <button onclick="ins('- ')">リスト</button>
         <button onclick="ins('1. ')">番号付き</button>
         <button onclick="ins('> ')">引用</button>
         <button onclick="ins('`','`')">コード</button>
+        <button onclick="ins('\n| 項目 | 内容 |\n| --- | --- |\n| | |\n')">表</button>
       </div>
       <textarea id="editorBody" placeholder="Markdown形式で記述してください..."></textarea>
       <div class="editor-footer">
+        <div class="editor-author">
+          <span>✏️ 更新者:</span>
+          <input type="text" id="authorInput" placeholder="名前を入力">
+        </div>
         <button class="btn btn-secondary" onclick="cancelEdit()">キャンセル</button>
-        <button class="btn btn-primary" onclick="savePage()">保存</button>
+        <button class="btn btn-primary" onclick="savePage()">💾 保存</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- New Page Modal -->
 <div class="modal-bg" id="newPageModal">
   <div class="modal">
-    <h2>新規ページ作成</h2>
-    <div class="form-group"><label>ページタイトル</label><input type="text" id="npTitle" placeholder="例: 経費精算ガイド"></div>
-    <div class="form-group"><label>カテゴリ</label>
-      <select id="npCat">
-        <option>会社情報</option><option>HR・制度</option><option>プロセス・手順</option>
-        <option>プロジェクト</option><option>技術・ツール</option><option>その他</option>
-      </select>
+    <h2>📄 新規ページ作成</h2>
+    <div class="form-group">
+      <label>ページタイトル</label>
+      <input type="text" id="npTitle" placeholder="例: 経費精算ガイド">
+    </div>
+    <div class="form-group">
+      <label>カテゴリ</label>
+      <select id="npCat"></select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeNewPage()">キャンセル</button>
@@ -150,59 +254,438 @@
   </div>
 </div>
 
+<!-- Category Management Modal -->
+<div class="modal-bg" id="catModal">
+  <div class="modal">
+    <h2>🗂 カテゴリ管理</h2>
+    <div id="catList" style="max-height:240px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:8px;margin-bottom:4px;">
+      <input type="text" id="newCatInput" placeholder="新しいカテゴリ名..." style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;">
+      <button class="btn btn-primary" onclick="addCategory()">追加</button>
+    </div>
+    <p style="font-size:11px;color:#aaa;margin-top:6px;">※ 記事が存在するカテゴリは削除できません</p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCatModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Panel -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <h2>⚙️ 設定</h2>
+    <button class="btn-icon" onclick="closeSettings()" style="font-size:16px;">✕</button>
+  </div>
+  <div class="settings-body">
+    <div class="settings-section">
+      <h3>🔗 GAS バックエンド</h3>
+      <div class="gas-note">
+        ⚠️ GASバックエンドを有効にするには、Google Apps ScriptにAPIエンドポイントを追加する必要があります。<br>
+        設定後は下記URLを入力して「接続テスト」を実行してください。
+      </div>
+      <div class="settings-row">
+        <label>GAS デプロイ URL</label>
+        <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/..." oninput="saveSettings()">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="testGasConnection()">接続テスト</button>
+        <button class="btn btn-secondary btn-sm" onclick="syncNow()">🔄 今すぐ同期</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🤖 Claude API（AIボット強化）</h3>
+      <div class="gas-note">
+        APIキーを設定すると、GAS経由でClaude APIを呼び出し、より自然な回答を生成します。<br>
+        未設定の場合はキーワード検索ベースで動作します。
+      </div>
+      <div class="settings-row">
+        <label>Anthropic API キー</label>
+        <input type="password" id="claudeApiKey" placeholder="sk-ant-..." oninput="saveSettings()">
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>📋 GASに追加が必要なコード</h3>
+      <p style="font-size:12px;color:#666;margin-bottom:10px;">以下のコードをGoogle Apps Scriptのスクリプトエディタに追加してください。</p>
+      <div class="code-block" id="gasCodeBlock">読み込み中...</div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="copyGasCode()">📋 コードをコピー</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>🗄️ データ管理</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="exportData()">📥 JSONエクスポート</button>
+        <button class="btn btn-danger btn-sm" onclick="clearLocalData()">🗑 ローカルデータ消去</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat FAB & Panel -->
+<button class="chat-fab" onclick="toggleChat()" id="chatFab">
+  <span id="chatFabIcon">💬</span>
+</button>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <div class="avatar">🤖</div>
+    <div class="info">
+      <div class="name">Wiki アシスタント</div>
+      <div class="status" id="chatStatus">キーワード検索モード</div>
+    </div>
+    <button class="close-btn" onclick="toggleChat()">✕</button>
+  </div>
+  <div class="chat-api-bar" id="chatApiBar">
+    <span class="api-indicator" id="apiIndicator"></span>
+    <span style="white-space:nowrap">Claude APIキー:</span>
+    <input type="password" id="chatApiInput" placeholder="sk-ant-..." oninput="updateChatApiKey()">
+    <button onclick="saveChatApiKey()">設定</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-area">
+    <input type="text" id="chatInput" placeholder="何でも聞いてください..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()">➤</button>
+  </div>
+</div>
+
 <script>
-let pages = JSON.parse(localStorage.getItem('gc_wiki_pages') || '[]');
+/* ═══════════════════════════════════════════════
+   CONFIG & STATE
+═══════════════════════════════════════════════ */
+const GAS_CODE = `// ════ GAS ADDITIONS NEEDED ════
+// Google Apps Script (スプレッドシートバインド or スタンドアロン) に以下を追加してください。
+// スプレッドシートID と SHEET_NAME を適切に変更してください。
+
+const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID';
+const SHEET_NAME = 'WikiPages';
+
+function doGet(e) {
+  const action = e.parameter.action;
+  if (action === 'getWikiPages') return getWikiPages();
+  if (action === 'getWikiPage') return getWikiPage(e.parameter.id);
+  return jsonRes({error: 'Unknown action'});
+}
+
+function doPost(e) {
+  const body = JSON.parse(e.postData.contents);
+  const action = body.action || e.parameter.action;
+  if (action === 'saveWikiPage') return saveWikiPage(body);
+  if (action === 'deleteWikiPage') return deleteWikiPage(body);
+  if (action === 'claudeChat') return claudeChat(body);
+  return jsonRes({error: 'Unknown action'});
+}
+
+function getSheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID)
+    .getSheetByName(SHEET_NAME) ||
+    SpreadsheetApp.openById(SPREADSHEET_ID).insertSheet(SHEET_NAME);
+}
+
+function ensureHeaders(sheet) {
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['id','title','cat','content','author','updatedAt','createdAt']);
+  }
+}
+
+function getWikiPages() {
+  const sheet = getSheet(); ensureHeaders(sheet);
+  if (sheet.getLastRow() < 2) return jsonRes({pages:[]});
+  const data = sheet.getRange(2, 1, sheet.getLastRow()-1, 7).getValues();
+  const pages = data.filter(r=>r[0]).map(r=>({
+    id:r[0], title:r[1], cat:r[2], body:r[3],
+    author:r[4], updatedAt:r[5], createdAt:r[6]
+  }));
+  return jsonRes({pages});
+}
+
+function getWikiPage(id) {
+  const sheet = getSheet(); ensureHeaders(sheet);
+  const data = sheet.getRange(2,1,Math.max(sheet.getLastRow()-1,1),7).getValues();
+  const row = data.find(r=>r[0]===id);
+  if (!row) return jsonRes({error:'Not found'});
+  return jsonRes({page:{id:row[0],title:row[1],cat:row[2],body:row[3],author:row[4],updatedAt:row[5],createdAt:row[6]}});
+}
+
+function saveWikiPage(body) {
+  const sheet = getSheet(); ensureHeaders(sheet);
+  const now = new Date().toISOString();
+  const data = sheet.getLastRow()>1 ? sheet.getRange(2,1,sheet.getLastRow()-1,7).getValues() : [];
+  const idx = data.findIndex(r=>r[0]===body.id);
+  if (idx >= 0) {
+    const row = idx+2;
+    sheet.getRange(row,2,1,5).setValues([[body.title,body.cat,body.content,body.author,now]]);
+  } else {
+    const id = body.id || 'p'+Date.now();
+    sheet.appendRow([id,body.title,body.cat,body.content,body.author,now,now]);
+    body.id = id;
+  }
+  return jsonRes({success:true, id:body.id});
+}
+
+function deleteWikiPage(body) {
+  const sheet = getSheet();
+  const data = sheet.getRange(2,1,sheet.getLastRow()-1,1).getValues();
+  const idx = data.findIndex(r=>r[0]===body.id);
+  if (idx >= 0) sheet.deleteRow(idx+2);
+  return jsonRes({success:true});
+}
+
+function claudeChat(body) {
+  // Claude API key を PropertiesService に保存しておくか、ここで直接指定
+  const apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY') || body.apiKey;
+  if (!apiKey) return jsonRes({error:'API key not set'});
+  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method:'post', contentType:'application/json',
+    headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+    payload: JSON.stringify({
+      model:'claude-haiku-4-5-20251001', max_tokens:1024,
+      system: 'あなたはGreen Carbon社の社内Wikiアシスタントです。以下のWiki記事を参考に質問に答えてください。\\n\\n' + (body.context||''),
+      messages:[{role:'user', content: body.question}]
+    })
+  });
+  const json = JSON.parse(res.getContentText());
+  return jsonRes({answer: json.content?.[0]?.text || 'エラーが発生しました'});
+}
+
+function jsonRes(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+let settings = JSON.parse(localStorage.getItem('gc_wiki_settings') || '{}');
+const GAS_URL = settings.gasUrl || 'https://script.google.com/macros/s/AKfycbwQMe-yzdgvpDibaHidbzuxUFp0V-mWB7lnuhUWj33CBvPPvOQQus2smuICCaaJIyM/exec';
+let useGas = false;
+let pages = [];
+let categories = [];
 let selectedId = null;
 let editingNew = false;
+let syncInterval = null;
 
-function md2html(md) {
-  return md
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hulo]|<block)(.+)$/gm, (m,s)=>s.trim()?s:'')
-    .replace(/<p><\/p>/g, '');
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+async function init() {
+  loadLocalData();
+  renderSidebar();
+  setupSettings();
+  addWelcomeChat();
+  await tryConnectGas();
+  if (useGas) startAutoSync();
 }
 
-if (!pages.length) {
+function loadLocalData() {
+  const stored = JSON.parse(localStorage.getItem('gc_wiki_pages') || 'null');
+  const storedCats = JSON.parse(localStorage.getItem('gc_wiki_categories') || 'null');
+  categories = storedCats || ['会社情報','HR・制度','プロセス・手順','プロジェクト','技術・ツール','その他'];
+  if (stored) { pages = stored; return; }
+  const today = new Date().toISOString().slice(0,10);
   pages = [
-    {id:'p1', title:'Green Carbon について', cat:'会社情報', body:`## 会社概要\n\nGreen Carbonは、カーボンクレジット取引とESGソリューションを提供する企業です。\n\n## ミッション\n\n気候変動対策を事業を通じて加速し、持続可能な社会の実現に貢献します。\n\n## 事業内容\n\n- カーボンクレジットの発行・取引支援\n- 企業向けESG戦略コンサルティング\n- 環境データ分析・レポーティング\n- サステナビリティ認証支援\n\n## オフィス\n\n東京都渋谷区（本社）`, updated:'2026-04-15'},
-    {id:'p2', title:'入社時の手続き一覧', cat:'HR・制度', body:`## 入社手続きチェックリスト\n\n### 入社前に準備するもの\n\n- マイナンバーカード（またはマイナンバー通知カード）\n- 源泉徴収票（前職がある場合）\n- 銀行口座情報（給与振込先）\n- 年金手帳\n\n### 入社当日に提出するもの\n\n- 誓約書\n- 身元保証書\n- 緊急連絡先届\n\n## 社会保険\n\n入社日から健康保険・厚生年金に加入します。手続きはHRが行います。`, updated:'2026-04-10'},
-    {id:'p3', title:'経費精算ガイド', cat:'プロセス・手順', body:`## 経費精算の基本ルール\n\n経費は業務上必要と認められるもののみ申請できます。\n\n## 申請方法\n\n1. 領収書を保管する（電子可）\n2. 経費精算システムにアクセス\n3. 必要事項を入力・領収書をアップロード\n4. 上長承認後、翌月給与と合わせて支払い\n\n## 承認フロー\n\n- 3万円未満: 直属マネジャー\n- 3万円以上: 部門長 + 経理\n\n## 交通費\n\n実費精算。ICカードの履歴または領収書が必要です。`, updated:'2026-04-12'},
-    {id:'p4', title:'リモートワークポリシー', cat:'HR・制度', body:`## リモートワーク制度\n\n週3日まで在宅勤務可（ポジションによる）。\n\n## ルール\n\n- コアタイム（10:00〜15:00）はオンライン状態を維持\n- Slackで始業・終業報告\n- 月1回の出社は必須\n\n## 設備補助\n\nリモートワーク手当として月5,000円支給。\n\n## セキュリティ\n\n- VPNを必ず使用\n- 公共のWi-Fiでの業務は原則禁止`, updated:'2026-04-08'},
-    {id:'p5', title:'Slackの使い方ガイド', cat:'技術・ツール', body:`## チャンネル一覧\n\n- **#general** — 全社アナウンス\n- **#random** — 雑談\n- **#hr** — HR関連\n- **#engineering** — エンジニアチーム\n\n## マナー\n\n- @channel、@here は緊急時のみ使用\n- DM多用より公開チャンネルを優先\n- 既読スタンプで確認を示す\n\n## 通知設定\n\n就業時間外の通知はオフに設定することを推奨します。`, updated:'2026-04-05'},
+    {id:'p1',title:'Green Carbon について',cat:'会社情報',body:`## 会社概要\n\nGreen Carbonは、カーボンクレジット取引とESGソリューションを提供する企業です。\n\n## ミッション\n\n気候変動対策を事業を通じて加速し、持続可能な社会の実現に貢献します。\n\n## 事業内容\n\n- カーボンクレジットの発行・取引支援\n- 企業向けESG戦略コンサルティング\n- 環境データ分析・レポーティング\n- サステナビリティ認証支援\n\n## オフィス\n\n東京都渋谷区（本社）`,author:'システム',updatedAt:today,createdAt:today},
+    {id:'p2',title:'入社時の手続き一覧',cat:'HR・制度',body:`## 入社手続きチェックリスト\n\n### 入社前に準備するもの\n\n- マイナンバーカード（またはマイナンバー通知カード）\n- 源泉徴収票（前職がある場合）\n- 銀行口座情報（給与振込先）\n- 年金手帳\n\n### 入社当日に提出するもの\n\n- 誓約書\n- 身元保証書\n- 緊急連絡先届\n\n## 社会保険\n\n入社日から健康保険・厚生年金に加入します。手続きはHRが行います。`,author:'HRチーム',updatedAt:today,createdAt:today},
+    {id:'p3',title:'経費精算ガイド',cat:'プロセス・手順',body:`## 経費精算の基本ルール\n\n経費は業務上必要と認められるもののみ申請できます。\n\n## 申請方法\n\n1. 領収書を保管する（電子可）\n2. 経費精算システムにアクセス\n3. 必要事項を入力・領収書をアップロード\n4. 上長承認後、翌月給与と合わせて支払い\n\n## 承認フロー\n\n- 3万円未満: 直属マネジャー\n- 3万円以上: 部門長 + 経理\n\n## 交通費\n\n実費精算。ICカードの履歴または領収書が必要です。`,author:'経理',updatedAt:today,createdAt:today},
+    {id:'p4',title:'リモートワークポリシー',cat:'HR・制度',body:`## リモートワーク制度\n\n週3日まで在宅勤務可（ポジションによる）。\n\n## ルール\n\n- コアタイム（10:00〜15:00）はオンライン状態を維持\n- Slackで始業・終業報告\n- 月1回の出社は必須\n\n## 設備補助\n\nリモートワーク手当として月5,000円支給。\n\n## セキュリティ\n\n- VPNを必ず使用\n- 公共のWi-Fiでの業務は原則禁止`,author:'HRチーム',updatedAt:today,createdAt:today},
+    {id:'p5',title:'Slackの使い方ガイド',cat:'技術・ツール',body:`## チャンネル一覧\n\n- **#general** — 全社アナウンス\n- **#random** — 雑談\n- **#hr** — HR関連\n- **#engineering** — エンジニアチーム\n\n## マナー\n\n- @channel、@here は緊急時のみ使用\n- DM多用より公開チャンネルを優先\n- 既読スタンプで確認を示す\n\n## 通知設定\n\n就業時間外の通知はオフに設定することを推奨します。`,author:'システム',updatedAt:today,createdAt:today},
   ];
-  savePages();
+  saveLocalData();
 }
 
-function savePages() { localStorage.setItem('gc_wiki_pages', JSON.stringify(pages)); }
-
-function getCategories() {
-  return [...new Set(pages.map(p=>p.cat))];
+function saveLocalData() {
+  localStorage.setItem('gc_wiki_pages', JSON.stringify(pages));
+  localStorage.setItem('gc_wiki_categories', JSON.stringify(categories));
 }
 
+/* ═══════════════════════════════════════════════
+   GAS BACKEND
+═══════════════════════════════════════════════ */
+async function tryConnectGas() {
+  const url = document.getElementById('gasUrlInput').value || GAS_URL;
+  if (!url) return;
+  setSyncBadge('syncing', '⟳ 接続中...');
+  try {
+    const res = await fetchGas('GET', {action:'getWikiPages'});
+    if (res && res.pages) {
+      useGas = true;
+      if (res.pages.length > 0) {
+        pages = res.pages.map(p => ({
+          ...p,
+          updatedAt: p.updatedAt ? p.updatedAt.slice(0,10) : '',
+          createdAt: p.createdAt ? p.createdAt.slice(0,10) : '',
+        }));
+        saveLocalData();
+        renderSidebar();
+        if (selectedId) selectPage(selectedId);
+      }
+      setSyncBadge('online', '● オンライン (GAS)');
+    }
+  } catch(e) {
+    useGas = false;
+    setSyncBadge('offline', '● オフライン');
+  }
+}
+
+function setSyncBadge(cls, text) {
+  const el = document.getElementById('syncBadge');
+  el.className = 'sync-badge ' + cls;
+  el.textContent = text;
+}
+
+async function fetchGas(method, params) {
+  const url = document.getElementById('gasUrlInput').value || GAS_URL;
+  if (!url) throw new Error('No GAS URL');
+  if (method === 'GET') {
+    const qs = new URLSearchParams(params).toString();
+    const r = await fetch(url + '?' + qs, {mode:'cors'});
+    return r.json();
+  } else {
+    const r = await fetch(url, {
+      method:'POST', mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(params)
+    });
+    return r.json();
+  }
+}
+
+async function gasGetPages() {
+  const res = await fetchGas('GET', {action:'getWikiPages'});
+  return res.pages || [];
+}
+
+async function gasSavePage(page) {
+  return fetchGas('POST', {
+    action:'saveWikiPage',
+    id: page.id, title: page.title, cat: page.cat,
+    content: page.body, author: page.author
+  });
+}
+
+async function gasDeletePage(id) {
+  return fetchGas('POST', {action:'deleteWikiPage', id});
+}
+
+async function gasChatQuery(question, context, apiKey) {
+  return fetchGas('POST', {action:'claudeChat', question, context, apiKey});
+}
+
+function startAutoSync() {
+  if (syncInterval) clearInterval(syncInterval);
+  syncInterval = setInterval(async () => {
+    try {
+      const remote = await gasGetPages();
+      if (remote.length) {
+        pages = remote.map(p => ({...p, updatedAt: p.updatedAt?.slice(0,10)||'', createdAt: p.createdAt?.slice(0,10)||''}));
+        saveLocalData();
+        renderSidebar();
+      }
+    } catch(e) { /* silent */ }
+  }, 60000);
+}
+
+async function syncNow() {
+  setSyncBadge('syncing', '⟳ 同期中...');
+  await tryConnectGas();
+  showToast('同期しました');
+}
+
+async function testGasConnection() {
+  setSyncBadge('syncing', '⟳ テスト中...');
+  try {
+    const res = await fetchGas('GET', {action:'getWikiPages'});
+    if (res && !res.error) {
+      useGas = true;
+      setSyncBadge('online', '● オンライン (GAS)');
+      showToast('✅ GASへの接続に成功しました！');
+    } else {
+      throw new Error(res?.error || 'Unknown');
+    }
+  } catch(e) {
+    useGas = false;
+    setSyncBadge('offline', '● オフライン');
+    showToast('❌ 接続失敗: ' + e.message);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   MARKDOWN RENDERER
+═══════════════════════════════════════════════ */
+function md2html(md) {
+  let html = md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
+    .replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank">$1</a>');
+
+  // Tables
+  html = html.replace(/(\|.+\|\n)+/g, m => {
+    const rows = m.trim().split('\n');
+    let t = '<table>';
+    rows.forEach((r,i) => {
+      if (r.match(/^\|[-| ]+\|$/)) return;
+      const cells = r.split('|').filter((_,j,a)=>j>0&&j<a.length-1);
+      if (i===0) t += '<tr>' + cells.map(c=>`<th>${c.trim()}</th>`).join('') + '</tr>';
+      else t += '<tr>' + cells.map(c=>`<td>${c.trim()}</td>`).join('') + '</tr>';
+    });
+    return t + '</table>';
+  });
+
+  // Lists
+  const lines = html.split('\n');
+  const out = []; let inUl=false, inOl=false;
+  lines.forEach(l => {
+    if (/^- (.+)/.test(l)) {
+      if (!inUl) { if(inOl){out.push('</ol>');inOl=false;} out.push('<ul>'); inUl=true; }
+      out.push('<li>' + l.replace(/^- /,'') + '</li>');
+    } else if (/^\d+\. (.+)/.test(l)) {
+      if (!inOl) { if(inUl){out.push('</ul>');inUl=false;} out.push('<ol>'); inOl=true; }
+      out.push('<li>' + l.replace(/^\d+\. /,'') + '</li>');
+    } else {
+      if (inUl) { out.push('</ul>'); inUl=false; }
+      if (inOl) { out.push('</ol>'); inOl=false; }
+      if (l && !l.match(/^<[h2-6|table|th|td|tr|blockquote]/)) {
+        out.push('<p>' + l + '</p>');
+      } else { out.push(l); }
+    }
+  });
+  if (inUl) out.push('</ul>');
+  if (inOl) out.push('</ol>');
+  return out.join('').replace(/<p><\/p>/g,'').replace(/<p>(<h[2-3]>)/g,'$1').replace(/(<\/h[2-3]>)<\/p>/g,'$1');
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR & ARTICLE RENDERING
+═══════════════════════════════════════════════ */
 function renderSidebar() {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const cats = getCategories();
   let html = '';
-  cats.forEach(cat => {
-    const filtered = pages.filter(p=>p.cat===cat && (p.title.toLowerCase().includes(q)||p.body.toLowerCase().includes(q)));
-    if (!filtered.length) return;
-    html += `<div class="cat-header">${cat}</div>`;
-    filtered.forEach(p=>{
-      html += `<div class="page-item ${p.id===selectedId?'active':''}" onclick="selectPage('${p.id}')">${p.title}</div>`;
+  categories.forEach(cat => {
+    const filtered = pages.filter(p => p.cat===cat && (
+      p.title.toLowerCase().includes(q) || (p.body||'').toLowerCase().includes(q)
+    ));
+    if (!filtered.length && q) return;
+    html += `<div class="cat-header">
+      <span>${cat}</span>
+      <button class="cat-delete-btn" onclick="confirmDeleteCat('${cat}')" title="カテゴリ削除">✕</button>
+    </div>`;
+    filtered.forEach(p => {
+      const updated = p.updatedAt ? p.updatedAt.slice(0,10) : '';
+      html += `<div class="page-item ${p.id===selectedId?'active':''}" onclick="selectPage('${p.id}')">
+        <span>${escHtml(p.title)}</span>
+        ${updated ? `<span class="tag">${updated}</span>` : ''}
+      </div>`;
     });
+    if (!filtered.length && !q) {
+      html += `<div style="padding:6px 16px 8px;font-size:12px;color:#bbb;font-style:italic">空のカテゴリ</div>`;
+    }
   });
   if (!html) html = '<div style="padding:16px;color:#aaa;font-size:13px;text-align:center">ページが見つかりません</div>';
   document.getElementById('sidebarList').innerHTML = html;
+  populateCatSelects();
 }
 
 function selectPage(id) {
@@ -213,18 +696,30 @@ function selectPage(id) {
   if (!p) return;
   document.getElementById('wikiToolbar').style.display = 'flex';
   document.getElementById('breadcrumb').textContent = p.cat + ' › ' + p.title;
+  const updatedAt = p.updatedAt ? p.updatedAt.slice(0,10) : '不明';
+  const author = p.author || '不明';
   document.getElementById('articleArea').innerHTML = `
-    <div class="article-title">${p.title}</div>
-    <div class="article-meta">カテゴリ: ${p.cat} ｜ 最終更新: ${p.updated}</div>
-    <div class="article-body">${md2html(p.body)}</div>
+    <div class="article-title">${escHtml(p.title)}</div>
+    <div class="article-meta">
+      <span class="meta-item"><span class="icon">🗂</span> カテゴリ: ${escHtml(p.cat)}</span>
+      <span class="meta-item"><span class="icon">✏️</span> 最終更新者: <strong>${escHtml(author)}</strong></span>
+      <span class="meta-item"><span class="icon">🕐</span> 更新日: ${updatedAt}</span>
+      ${p.createdAt ? `<span class="meta-item"><span class="icon">📅</span> 作成日: ${p.createdAt.slice(0,10)}</span>` : ''}
+    </div>
+    <div class="article-body">${md2html(p.body||'')}</div>
   `;
 }
 
+/* ═══════════════════════════════════════════════
+   EDITOR
+═══════════════════════════════════════════════ */
 function startEdit() {
   const p = pages.find(x=>x.id===selectedId);
   if (!p) return;
   document.getElementById('editorTitle').value = p.title;
-  document.getElementById('editorBody').value = p.body;
+  document.getElementById('editorBody').value = p.body||'';
+  populateCatSelects();
+  document.getElementById('editorCat').value = p.cat;
   document.getElementById('articleArea').style.display = 'none';
   document.getElementById('editorArea').classList.add('active');
 }
@@ -235,65 +730,392 @@ function cancelEdit() {
   editingNew = false;
 }
 
-function savePage() {
+async function savePage() {
   const title = document.getElementById('editorTitle').value.trim();
   const body = document.getElementById('editorBody').value;
-  if (!title) { alert('タイトルを入力してください'); return; }
+  const cat = document.getElementById('editorCat').value;
+  const author = document.getElementById('authorInput').value.trim() || '匿名';
+  if (!title) { showToast('⚠️ タイトルを入力してください'); return; }
   const today = new Date().toISOString().slice(0,10);
+
+  let page;
   if (editingNew) {
-    const p = {id:'p'+Date.now(), title, cat: editingNew, body, updated:today};
-    pages.unshift(p);
-    selectedId = p.id;
+    page = {id:'p'+Date.now(), title, cat, body, author, updatedAt:today, createdAt:today};
+    pages.unshift(page);
+    selectedId = page.id;
   } else {
-    const p = pages.find(x=>x.id===selectedId);
-    if (p) { p.title = title; p.body = body; p.updated = today; }
+    page = pages.find(x=>x.id===selectedId);
+    if (page) { page.title=title; page.cat=cat; page.body=body; page.author=author; page.updatedAt=today; }
   }
-  savePages();
+  saveLocalData();
   cancelEdit();
   renderSidebar();
   selectPage(selectedId);
+  showToast(`✅ ${author} が「${title}」を更新しました`);
+
+  if (useGas) {
+    setSyncBadge('syncing','⟳ 同期中...');
+    try {
+      await gasSavePage(page);
+      setSyncBadge('online','● オンライン (GAS)');
+    } catch(e) {
+      setSyncBadge('offline','● オフライン');
+      showToast('⚠️ GAS同期失敗: ローカルに保存済み');
+    }
+  }
 }
 
-function deletePage() {
+async function deletePage() {
   if (!selectedId) return;
   const p = pages.find(x=>x.id===selectedId);
   if (!p) return;
   if (!confirm(`「${p.title}」を削除しますか？`)) return;
-  pages = pages.filter(x=>x.id!==selectedId);
+  const id = selectedId;
+  pages = pages.filter(x=>x.id!==id);
   selectedId = null;
-  savePages();
-  document.getElementById('wikiToolbar').style.display = 'none';
-  document.getElementById('articleArea').innerHTML = '<div class="empty-state"><div class="icon">📚</div><div>ページを選択してください</div></div>';
+  saveLocalData();
+  document.getElementById('wikiToolbar').style.display='none';
+  document.getElementById('articleArea').innerHTML='<div class="empty-state"><div class="icon">📚</div><div>ページを選択してください</div></div>';
   renderSidebar();
+  showToast('🗑 削除しました');
+
+  if (useGas) {
+    try { await gasDeletePage(id); } catch(e) { /* silent */ }
+  }
 }
 
-function newPage() { document.getElementById('newPageModal').classList.add('open'); }
+function newPage() {
+  populateCatSelects();
+  document.getElementById('npTitle').value = '';
+  document.getElementById('newPageModal').classList.add('open');
+  setTimeout(()=>document.getElementById('npTitle').focus(),100);
+}
 function closeNewPage() { document.getElementById('newPageModal').classList.remove('open'); }
 
 function createPage() {
   const title = document.getElementById('npTitle').value.trim();
   const cat = document.getElementById('npCat').value;
-  if (!title) { alert('タイトルを入力してください'); return; }
+  if (!title) { showToast('⚠️ タイトルを入力してください'); return; }
   closeNewPage();
+  populateCatSelects();
   document.getElementById('editorTitle').value = title;
   document.getElementById('editorBody').value = `## ${title}\n\nここに内容を記述してください。`;
+  document.getElementById('editorCat').value = cat;
   editingNew = cat;
-  document.getElementById('articleArea').style.display = 'none';
+  document.getElementById('articleArea').style.display='none';
   document.getElementById('editorArea').classList.add('active');
-  document.getElementById('wikiToolbar').style.display = 'none';
+  document.getElementById('wikiToolbar').style.display='none';
 }
 
 function ins(before, after='') {
   const ta = document.getElementById('editorBody');
   const s = ta.selectionStart, e = ta.selectionEnd;
-  const sel = ta.value.substring(s, e);
-  ta.value = ta.value.substring(0,s) + before + sel + after + ta.value.substring(e);
-  ta.focus();
-  ta.selectionStart = s + before.length;
-  ta.selectionEnd = e + before.length;
+  const sel = ta.value.substring(s,e);
+  ta.value = ta.value.substring(0,s)+before+sel+after+ta.value.substring(e);
+  ta.focus(); ta.selectionStart=s+before.length; ta.selectionEnd=e+before.length;
 }
 
-renderSidebar();
+/* ═══════════════════════════════════════════════
+   CATEGORY MANAGEMENT
+═══════════════════════════════════════════════ */
+function populateCatSelects() {
+  ['npCat','editorCat'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = categories.map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    if (cur) sel.value = cur;
+  });
+}
+
+function openCatModal() {
+  renderCatList();
+  document.getElementById('catModal').classList.add('open');
+}
+function closeCatModal() { document.getElementById('catModal').classList.remove('open'); }
+
+function renderCatList() {
+  const html = categories.map(c => {
+    const count = pages.filter(p=>p.cat===c).length;
+    const canDelete = count === 0;
+    return `<div class="cat-list-item">
+      <span class="cat-badge">${escHtml(c)} <span style="color:#aaa;font-weight:400">(${count}件)</span></span>
+      ${canDelete
+        ? `<button class="btn btn-danger btn-sm" onclick="deleteCategory('${escHtml(c)}')">削除</button>`
+        : `<span style="font-size:12px;color:#aaa">記事あり</span>`}
+    </div>`;
+  }).join('');
+  document.getElementById('catList').innerHTML = html || '<p style="color:#aaa;font-size:13px">カテゴリなし</p>';
+}
+
+function addCategory() {
+  const name = document.getElementById('newCatInput').value.trim();
+  if (!name) return;
+  if (categories.includes(name)) { showToast('⚠️ 既に存在するカテゴリです'); return; }
+  categories.push(name);
+  saveLocalData();
+  renderCatList();
+  renderSidebar();
+  document.getElementById('newCatInput').value = '';
+  showToast(`✅ カテゴリ「${name}」を追加しました`);
+}
+
+function deleteCategory(name) {
+  if (pages.some(p=>p.cat===name)) { showToast('⚠️ このカテゴリには記事があります'); return; }
+  categories = categories.filter(c=>c!==name);
+  saveLocalData();
+  renderCatList();
+  renderSidebar();
+  showToast(`🗑 カテゴリ「${name}」を削除しました`);
+}
+
+function confirmDeleteCat(name) {
+  if (pages.some(p=>p.cat===name)) { showToast('⚠️ このカテゴリには記事があります'); return; }
+  if (!confirm(`カテゴリ「${name}」を削除しますか？`)) return;
+  deleteCategory(name);
+}
+
+/* ═══════════════════════════════════════════════
+   SETTINGS PANEL
+═══════════════════════════════════════════════ */
+function setupSettings() {
+  document.getElementById('gasUrlInput').value = settings.gasUrl || GAS_URL;
+  document.getElementById('claudeApiKey').value = settings.claudeApiKey || '';
+  document.getElementById('gasCodeBlock').textContent = GAS_CODE;
+  updateApiIndicator();
+}
+
+function saveSettings() {
+  settings.gasUrl = document.getElementById('gasUrlInput').value;
+  settings.claudeApiKey = document.getElementById('claudeApiKey').value;
+  localStorage.setItem('gc_wiki_settings', JSON.stringify(settings));
+  updateApiIndicator();
+}
+
+function openSettings() { document.getElementById('settingsPanel').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsPanel').classList.remove('open'); }
+
+function copyGasCode() {
+  navigator.clipboard.writeText(GAS_CODE).then(()=>showToast('📋 コードをコピーしました'));
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify({pages, categories}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'gc_wiki_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); showToast('📥 エクスポートしました');
+}
+
+function clearLocalData() {
+  if (!confirm('ローカルに保存されたデータをすべて削除します。よろしいですか？\n（GASにデータがある場合は次回起動時に復元されます）')) return;
+  localStorage.removeItem('gc_wiki_pages');
+  localStorage.removeItem('gc_wiki_categories');
+  localStorage.removeItem('gc_wiki_settings');
+  location.reload();
+}
+
+/* ═══════════════════════════════════════════════
+   SEARCH AI BOT
+═══════════════════════════════════════════════ */
+function buildTFIDF() {
+  const docs = pages.map(p => ({id:p.id, title:p.title, text:(p.title+' '+p.body).toLowerCase()}));
+  const allTerms = new Set();
+  const tf = docs.map(d => {
+    const words = d.text.match(/[\wぁ-んァ-ヶ一-龠a-zA-Z0-9]+/g) || [];
+    const freq = {};
+    words.forEach(w => { freq[w] = (freq[w]||0)+1; });
+    Object.keys(freq).forEach(w=>allTerms.add(w));
+    const total = words.length || 1;
+    return {id:d.id, title:d.title, freq, total};
+  });
+  const df = {};
+  allTerms.forEach(t => { df[t] = tf.filter(d=>d.freq[t]).length; });
+  const N = docs.length;
+  return {tf, df, N};
+}
+
+function searchWiki(query) {
+  if (!pages.length) return [];
+  const {tf, df, N} = buildTFIDF();
+  const queryWords = query.toLowerCase().match(/[\wぁ-んァ-ヶ一-龠a-zA-Z0-9]+/g) || [];
+  const scores = tf.map(d => {
+    let score = 0;
+    queryWords.forEach(w => {
+      const termTF = (d.freq[w]||0) / d.total;
+      const idf = Math.log((N+1) / ((df[w]||0)+1));
+      score += termTF * idf;
+      // Title boost
+      if (d.title.toLowerCase().includes(w)) score += 0.5;
+    });
+    return {id:d.id, score, title:d.title};
+  });
+  return scores.filter(s=>s.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
+}
+
+function getExcerpt(pageId, query) {
+  const p = pages.find(x=>x.id===pageId);
+  if (!p) return '';
+  const words = query.toLowerCase().match(/[\wぁ-んァ-ヶ一-龠a-zA-Z0-9]+/g) || [];
+  const lines = p.body.split('\n').filter(l=>l.trim()&&!l.startsWith('#'));
+  for (const l of lines) {
+    if (words.some(w=>l.toLowerCase().includes(w))) {
+      return l.slice(0,120) + (l.length>120?'…':'');
+    }
+  }
+  return lines[0]?.slice(0,120) || '';
+}
+
+function toggleChat() {
+  const panel = document.getElementById('chatPanel');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open');
+  document.getElementById('chatFabIcon').textContent = isOpen ? '💬' : '✕';
+  if (!isOpen) setTimeout(()=>document.getElementById('chatInput').focus(),200);
+}
+
+function addWelcomeChat() {
+  addBotMessage('こんにちは！Wiki アシスタントです 👋\n\n記事の内容について質問してください。例：\n• 「経費精算の手順を教えて」\n• 「リモートワークのルールは？」\n• 「入社時に必要な書類は？」');
+}
+
+function addBotMessage(text, sources=[]) {
+  const msgs = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = 'chat-msg bot';
+  const textFormatted = text.replace(/\n/g,'<br>').replace(/•/g,'•');
+  let srcHtml = '';
+  if (sources.length) {
+    srcHtml = '<div class="chat-sources">' + sources.map(s=>
+      `<span class="chat-source-link" onclick="selectPage('${s.id}')">📄 ${escHtml(s.title)}</span>`
+    ).join('') + '</div>';
+  }
+  el.innerHTML = `<div class="chat-bubble">${textFormatted}</div>${srcHtml}`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const msgs = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = 'chat-msg user';
+  el.innerHTML = `<div class="chat-bubble">${escHtml(text)}</div>`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = 'chat-msg bot'; el.id = 'typingIndicator';
+  el.innerHTML = `<div class="chat-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight;
+}
+function hideTyping() { document.getElementById('typingIndicator')?.remove(); }
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  addUserMessage(q);
+  showTyping();
+
+  const results = searchWiki(q);
+  await new Promise(r=>setTimeout(r,400)); // simulate thinking
+
+  const apiKey = settings.claudeApiKey || document.getElementById('chatApiInput').value;
+  if (apiKey && useGas) {
+    // Try Claude API via GAS
+    try {
+      const context = results.map(r => {
+        const p = pages.find(x=>x.id===r.id);
+        return p ? `【${p.title}】\n${p.body.slice(0,800)}` : '';
+      }).join('\n\n---\n\n');
+      const res = await gasChatQuery(q, context, apiKey);
+      hideTyping();
+      if (res.answer) {
+        addBotMessage(res.answer, results.map(r=>({id:r.id,title:r.title})));
+        return;
+      }
+    } catch(e) { /* fallback */ }
+  }
+
+  // Keyword search fallback
+  hideTyping();
+  if (!results.length) {
+    addBotMessage('該当する記事が見つかりませんでした 🔍\n\nキーワードを変えて試してみてください。\n（例：「経費」「リモート」「入社」など）');
+    return;
+  }
+  const top = results[0];
+  const excerpt = getExcerpt(top.id, q);
+  let answer = `「**${top.title}**」に関連する情報が見つかりました。\n\n`;
+  if (excerpt) answer += `> ${excerpt}\n\n`;
+  if (results.length > 1) answer += `他にも ${results.length-1} 件の関連記事があります。`;
+  addBotMessage(answer, results.map(r=>({id:r.id,title:r.title})));
+}
+
+function updateChatApiKey() {
+  settings.claudeApiKey = document.getElementById('chatApiInput').value;
+  document.getElementById('claudeApiKey').value = settings.claudeApiKey;
+  updateApiIndicator();
+}
+
+function saveChatApiKey() {
+  settings.claudeApiKey = document.getElementById('chatApiInput').value;
+  localStorage.setItem('gc_wiki_settings', JSON.stringify(settings));
+  updateApiIndicator();
+  showToast('✅ APIキーを保存しました');
+}
+
+function updateApiIndicator() {
+  const hasKey = !!(settings.claudeApiKey);
+  document.getElementById('apiIndicator').className = 'api-indicator' + (hasKey?' set':'');
+  document.getElementById('chatStatus').textContent = hasKey && useGas
+    ? 'Claude AI モード' : 'キーワード検索モード';
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════ */
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target===bg) bg.classList.remove('open'); });
+});
+
+// Enter key for modals
+document.getElementById('npTitle').addEventListener('keydown', e => { if(e.key==='Enter') createPage(); });
+
+// Init
+init();
 </script>
+
+<!--
+/* GAS ADDITIONS NEEDED:
+ *
+ * 下記コードを Google Apps Script のスクリプトエディタに追加してください。
+ * 詳細は画面右上「⚙️ 設定」→「GASに追加が必要なコード」セクションを参照してください。
+ *
+ * 必要な手順:
+ * 1. script.google.com でプロジェクトを開く
+ * 2. 「コードを追加」（doGet / doPost / 各関数）
+ * 3. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」→
+ *    実行ユーザー: 自分 / アクセス: 全員（匿名含む）
+ * 4. デプロイURLをこのページの「設定」に貼り付け
+ * 5. 「接続テスト」で確認
+ *
+ * GASコードの全文は設定パネル内のコードブロックからコピーできます。
+ */
+-->
 </body>
 </html>

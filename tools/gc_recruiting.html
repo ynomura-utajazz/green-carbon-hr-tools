@@ -240,6 +240,52 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
 .add-panel-toggle{margin-left:auto;transition:.3s}
 .add-panel.open .add-panel-toggle{transform:rotate(180deg)}
 
+
+/* TEAM / CHECK SYSTEM */
+.team-section-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px}
+.member-roster{display:flex;flex-direction:column;gap:8px}
+.member-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:#fafafa;transition:.2s}
+.member-row.assigned{border-color:var(--gc-light);background:#f0faf5}
+.member-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;font-family:monospace}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:13px;font-weight:600;color:var(--gc-dark)}
+.member-role-tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-top:2px}
+.role-hr{background:#d1fae5;color:#065f46}
+.role-interviewer{background:#dbeafe;color:#1e40af}
+.role-manager{background:#ede9fe;color:#5b21b6}
+.role-external{background:#fef3db;color:#c78000}
+.member-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.assign-toggle{padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;background:#fff;transition:.2s}
+.assign-toggle.assigned{background:var(--gc-pale);border-color:var(--gc-light);color:var(--gc-dark)}
+.assign-toggle:hover{border-color:var(--gc-green)}
+.check-status-group{display:flex;gap:4px}
+.check-btn{padding:3px 8px;border-radius:5px;border:1.5px solid #ddd;font-size:11px;font-weight:700;cursor:pointer;background:#fff;transition:.15s;line-height:1.3}
+.check-btn.active-pending{background:#f3f4f6;border-color:#9ca3af;color:#6b7280}
+.check-btn.active-checking{background:#fef3db;border-color:#f59e0b;color:#b45309}
+.check-btn.active-ok{background:#d1fae5;border-color:#10b981;color:#065f46}
+.check-btn.active-ng{background:#fee2e2;border-color:#ef4444;color:#991b1b}
+.member-comment-wrap{margin-top:6px}
+.member-comment-input{width:100%;padding:5px 8px;font-size:12px;border:1px solid #e5e7eb;border-radius:5px;resize:none;min-height:42px}
+/* Kanban reviewer badges */
+.card-reviewers{display:flex;gap:3px;flex-wrap:wrap;margin-top:6px}
+.reviewer-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default;position:relative;font-family:monospace}
+.reviewer-dot[title]:hover::after{content:attr(title);position:absolute;bottom:22px;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:10px;padding:3px 7px;border-radius:4px;white-space:nowrap;z-index:10;pointer-events:none}
+/* Candidate table reviewer chips */
+.table-reviewer-chips{display:flex;gap:3px;flex-wrap:wrap}
+/* Team settings panel in a floating button area */
+.team-mgmt-toggle{position:fixed;bottom:28px;left:24px;background:var(--gc-dark);color:#fff;border:none;padding:10px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:300;transition:.2s}
+.team-mgmt-toggle:hover{background:var(--gc-green)}
+.team-mgmt-panel{position:fixed;bottom:72px;left:24px;width:320px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.2);z-index:301;display:none;overflow:hidden}
+.team-mgmt-panel.open{display:block}
+.team-mgmt-header{background:var(--gc-dark);color:#fff;padding:12px 16px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.team-mgmt-body{padding:14px;max-height:400px;overflow-y:auto}
+.team-member-edit-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0}
+.team-member-edit-row:last-child{border-bottom:none}
+.add-member-form{display:flex;flex-direction:column;gap:8px;padding:10px;background:#f8f8f8;border-radius:8px;margin-top:10px}
+.add-member-form input,.add-member-form select{padding:6px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:12px}
+/* Check summary on kanban col header */
+.check-summary-badge{font-size:10px;background:rgba(255,255,255,.25);border-radius:10px;padding:1px 6px;margin-left:4px}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .analytics-grid{grid-template-columns:1fr}
@@ -350,6 +396,7 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
         <th onclick="sortTable('appliedDate')">応募日</th>
         <th onclick="sortTable('assignee')">担当者</th>
         <th onclick="sortTable('days')">経過日数</th>
+        <th>レビュアー</th>
       </tr></thead>
       <tbody id="candTableBody"></tbody>
     </table>
@@ -425,6 +472,7 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
       <button class="modal-tab" onclick="switchModalTab('eval')" data-i18n="modal.eval">評価</button>
       <button class="modal-tab" onclick="switchModalTab('interview')" data-i18n="modal.interview">面接記録</button>
       <button class="modal-tab" onclick="switchModalTab('memo')" data-i18n="modal.memo">メモ</button>
+      <button class="modal-tab" onclick="switchModalTab('team')" data-i18n="modal.team">チーム</button>
     </div>
     <div class="modal-body">
       <!-- Basic Tab -->
@@ -468,6 +516,11 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
           <textarea id="newMemoText" placeholder="メモを入力..."></textarea>
           <button class="btn btn-primary" onclick="addMemo()">追加</button>
         </div>
+      </div>
+      <!-- Team / Check Tab -->
+      <div class="modal-tab-pane" id="pane-team">
+        <div class="team-section-title">担当者・レビュアー管理</div>
+        <div id="teamRosterWrap"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -531,6 +584,30 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('addCandModal')" data-i18n="btn.cancel">キャンセル</button>
       <button class="btn btn-primary" onclick="createCandidate()" data-i18n="btn.add">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEAM MANAGEMENT PANEL -->
+<button class="team-mgmt-toggle" onclick="toggleTeamPanel()">👥 メンバー管理</button>
+<div class="team-mgmt-panel" id="teamMgmtPanel">
+  <div class="team-mgmt-header">
+    <span>チームメンバー管理</span>
+    <button onclick="toggleTeamPanel()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px">✕</button>
+  </div>
+  <div class="team-mgmt-body">
+    <div id="memberEditList"></div>
+    <div class="add-member-form">
+      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:4px">＋ メンバーを追加</div>
+      <input id="newMemberName" type="text" placeholder="氏名">
+      <select id="newMemberRole">
+        <option value="hr">人事担当 (HR)</option>
+        <option value="interviewer">面接官</option>
+        <option value="manager">採用マネージャー</option>
+        <option value="external">外部レビュアー</option>
+      </select>
+      <input id="newMemberInitial" type="text" placeholder="イニシャル（例: 田、S）" maxlength="2">
+      <button class="btn btn-primary btn-sm" onclick="addTeamMember()">追加</button>
     </div>
   </div>
 </div>
@@ -635,10 +712,10 @@ function daysAgo(n){ const d=new Date(today); d.setDate(d.getDate()-n); return d
 const sampleCandidates = [
   // Japan (5)
   {id:'c001',name:'山田 健太',nationality:'🇯🇵 日本',position:'ESGアナリスト',stage:'screening',priority:'high',assignee:'田中 太郎',channel:'Wantedly',email:'k.yamada@example.com',appliedDate:daysAgo(18),dept:'サステナビリティ',evaluations:{},interviews:[],memos:[{text:'書類非常に良好。エネルギー系での経験あり。',author:'田中 太郎',date:daysAgo(16)}],activityDate:daysAgo(2)},
-  {id:'c002',name:'佐藤 美咲',nationality:'🇯🇵 日本',position:'プロジェクトマネージャー',stage:'second',priority:'high',assignee:'山田 花子',channel:'LinkedIn',email:'m.sato@example.com',appliedDate:daysAgo(32),dept:'プロジェクト管理',evaluations:{},interviews:[{date:daysAgo(20),interviewer:'山田 花子',feedback:'コミュニケーション能力が高い',verdict:'pass'},{date:daysAgo(10),interviewer:'田中 太郎',feedback:'リーダーシップに関する質問で優れた回答',verdict:'pass'}],memos:[],activityDate:daysAgo(1)},
+  {id:'c002',name:'佐藤 美咲',nationality:'🇯🇵 日本',position:'プロジェクトマネージャー',stage:'second',priority:'high',assignee:'山田 花子',channel:'LinkedIn',email:'m.sato@example.com',appliedDate:daysAgo(32),dept:'プロジェクト管理',evaluations:{},interviews:[{date:daysAgo(20),interviewer:'山田 花子',feedback:'コミュニケーション能力が高い',verdict:'pass'},{date:daysAgo(10),interviewer:'田中 太郎',feedback:'リーダーシップに関する質問で優れた回答',verdict:'pass'}],memos:[],reviewers:[{memberId:'tm001',status:'ok',comment:'書類・一次通過。最終確認待ち',assignedDate:daysAgo(30),role:'hr'},{memberId:'tm005',status:'checking',comment:'',assignedDate:daysAgo(10),role:'manager'}],activityDate:daysAgo(1)},
   {id:'c003',name:'鈴木 大輔',nationality:'🇯🇵 日本',position:'ビジネス開発',stage:'offer',priority:'mid',assignee:'田中 太郎',channel:'エージェント',email:'d.suzuki@example.com',appliedDate:daysAgo(45),dept:'ビジネス開発',evaluations:{challenge:4,coCreation:4,integrity:5,impact:4,sustainability:3,global:3},interviews:[],memos:[{text:'オファーレター送付済み',author:'田中 太郎',date:daysAgo(3)}],activityDate:daysAgo(3)},
   {id:'c004',name:'高橋 恵子',nationality:'🇯🇵 日本',position:'財務',stage:'first',priority:'mid',assignee:'山田 花子',channel:'Indeed',email:'k.takahashi@example.com',appliedDate:daysAgo(12),dept:'財務',evaluations:{},interviews:[],memos:[],activityDate:daysAgo(5)},
-  {id:'c005',name:'伊藤 誠',nationality:'🇯🇵 日本',position:'エンジニア',stage:'final',priority:'high',assignee:'Nguyen Thi Lan',channel:'リファラル',email:'m.ito@example.com',appliedDate:daysAgo(38),dept:'テクノロジー',evaluations:{challenge:5,coCreation:4,integrity:4,impact:5,sustainability:4,global:4},interviews:[{date:daysAgo(25),interviewer:'Nguyen Thi Lan',feedback:'技術力非常に高い',verdict:'pass'},{date:daysAgo(15),interviewer:'田中 太郎',feedback:'チームフィット良好',verdict:'pass'},{date:daysAgo(7),interviewer:'CEO',feedback:'最終確認OK',verdict:'pass'}],memos:[],activityDate:daysAgo(0)},
+  {id:'c005',name:'伊藤 誠',nationality:'🇯🇵 日本',position:'エンジニア',stage:'final',priority:'high',assignee:'Nguyen Thi Lan',channel:'リファラル',email:'m.ito@example.com',appliedDate:daysAgo(38),dept:'テクノロジー',evaluations:{challenge:5,coCreation:4,integrity:4,impact:5,sustainability:4,global:4},interviews:[{date:daysAgo(25),interviewer:'Nguyen Thi Lan',feedback:'技術力非常に高い',verdict:'pass'},{date:daysAgo(15),interviewer:'田中 太郎',feedback:'チームフィット良好',verdict:'pass'},{date:daysAgo(7),interviewer:'CEO',feedback:'最終確認OK',verdict:'pass'}],memos:[],reviewers:[{memberId:'tm001',status:'ok',comment:'選考完了',assignedDate:daysAgo(38),role:'hr'},{memberId:'tm004',status:'ok',comment:'技術力申し分なし',assignedDate:daysAgo(25),role:'interviewer'},{memberId:'tm005',status:'ok',comment:'承認',assignedDate:daysAgo(7),role:'manager'}],activityDate:daysAgo(0)},
   // Indonesia (5)
   {id:'c006',name:'Budi Santoso',nationality:'🇮🇩 インドネシア',position:'ESGアナリスト',stage:'applied',priority:'low',assignee:'Siti Rahayu',channel:'LinkedIn',email:'budi.s@example.com',appliedDate:daysAgo(5),dept:'サステナビリティ',evaluations:{},interviews:[],memos:[],activityDate:daysAgo(5)},
   {id:'c007',name:'Siti Rahayu',nationality:'🇮🇩 インドネシア',position:'プロジェクトマネージャー',stage:'first',priority:'high',assignee:'田中 太郎',channel:'Wantedly',email:'siti.r@example.com',appliedDate:daysAgo(22),dept:'プロジェクト管理',evaluations:{},interviews:[{date:daysAgo(10),interviewer:'田中 太郎',feedback:'インドネシア森林プロジェクト経験豊富',verdict:'pass'}],memos:[{text:'スケジュール調整済み',author:'田中 太郎',date:daysAgo(8)}],activityDate:daysAgo(1)},
@@ -822,6 +899,7 @@ function kanbanCard(c){
       <span class="card-days">${days}日</span>
       <span class="priority-badge ${c.priority||'mid'}">${c.priority==='high'?'高':c.priority==='low'?'低':'中'}</span>
     </div>
+    ${reviewerDots(c)}
   </div>`;
 }
 
@@ -917,6 +995,7 @@ function openCandidateModal(id){
   renderEvalTab(c);
   renderInterviewTab(c);
   renderMemoTab(c);
+  renderTeamTab(c);
   switchModalTab('basic');
   openModal('candModal');
 }
@@ -1038,6 +1117,7 @@ function saveCandidate(){
   c.evaluations=evals;
   c.evaluator=document.getElementById('evalEvaluator').value;
   c.evalDate=document.getElementById('evalDate').value;
+  // reviewers already mutated in place via toggleAssign/setReviewStatus
   saveData();
   renderAll();
   if(document.getElementById('view-kanban').classList.contains('active')) renderKanban();
@@ -1203,6 +1283,161 @@ document.querySelectorAll('.modal-backdrop').forEach(m=>m.addEventListener('clic
 function daysSince(dateStr){ if(!dateStr) return 0; return Math.floor((new Date()-new Date(dateStr))/(1000*60*60*24)); }
 function formatDate(d){ if(!d) return '-'; const dt=new Date(d); return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}`; }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+
+// ===================== TEAM MEMBERS =====================
+const LS_TEAM = 'gc_team_members';
+const ROLE_COLORS = { hr:'#10b981', interviewer:'#3b82f6', manager:'#8b5cf6', external:'#f59e0b' };
+const ROLE_LABELS = { hr:'人事担当', interviewer:'面接官', manager:'マネージャー', external:'外部' };
+
+let teamMembers = JSON.parse(localStorage.getItem(LS_TEAM)||'null') || [
+  {id:'tm001',name:'田中 太郎',role:'hr',initial:'田',color:'#10b981'},
+  {id:'tm002',name:'山田 花子',role:'hr',initial:'山',color:'#10b981'},
+  {id:'tm003',name:'Siti Rahayu',role:'interviewer',initial:'Si',color:'#3b82f6'},
+  {id:'tm004',name:'Nguyen Thi Lan',role:'interviewer',initial:'Ng',color:'#3b82f6'},
+  {id:'tm005',name:'John Smith',role:'manager',initial:'JS',color:'#8b5cf6'},
+  {id:'tm006',name:'鈴木 部長',role:'manager',initial:'鈴',color:'#8b5cf6'}
+];
+
+function saveTeamMembers(){ localStorage.setItem(LS_TEAM, JSON.stringify(teamMembers)); }
+
+function addTeamMember(){
+  const name = document.getElementById('newMemberName').value.trim();
+  const role = document.getElementById('newMemberRole').value;
+  const initial = document.getElementById('newMemberInitial').value.trim() || name.slice(0,2);
+  if(!name){ toast('氏名を入力してください'); return; }
+  teamMembers.push({id:'tm'+Date.now(), name, role, initial, color: ROLE_COLORS[role]});
+  saveTeamMembers();
+  renderTeamMgmtPanel();
+  document.getElementById('newMemberName').value='';
+  document.getElementById('newMemberInitial').value='';
+  toast(`${name} を追加しました`);
+}
+
+function removeTeamMember(id){
+  teamMembers = teamMembers.filter(m=>m.id!==id);
+  saveTeamMembers();
+  renderTeamMgmtPanel();
+}
+
+function toggleTeamPanel(){
+  const p = document.getElementById('teamMgmtPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')) renderTeamMgmtPanel();
+}
+
+function renderTeamMgmtPanel(){
+  document.getElementById('memberEditList').innerHTML = teamMembers.map(m=>`
+    <div class="team-member-edit-row">
+      <div class="member-avatar" style="background:${m.color};width:28px;height:28px;font-size:10px">${m.initial}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${m.name}</div>
+        <span class="member-role-tag role-${m.role}">${ROLE_LABELS[m.role]}</span>
+      </div>
+      <button onclick="removeTeamMember('${m.id}')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:2px 6px" title="削除">✕</button>
+    </div>`).join('');
+}
+
+// ── Team Tab in Candidate Modal ──
+function renderTeamTab(c){
+  if(!c.reviewers) c.reviewers = [];
+  const wrap = document.getElementById('teamRosterWrap');
+  if(!wrap) return;
+
+  // Group members by role
+  const grouped = {};
+  teamMembers.forEach(m=>{ if(!grouped[m.role]) grouped[m.role]=[]; grouped[m.role].push(m); });
+
+  let html = '';
+  const roleOrder = ['hr','manager','interviewer','external'];
+  roleOrder.forEach(role=>{
+    if(!grouped[role]) return;
+    html += `<div class="team-section-title">${role==='hr'?'人事担当':role==='manager'?'採用マネージャー':role==='interviewer'?'面接官':'外部レビュアー'}</div>
+    <div class="member-roster">`;
+    grouped[role].forEach(m=>{
+      const rv = c.reviewers.find(r=>r.memberId===m.id);
+      const isAssigned = !!rv;
+      const status = rv?.status||'pending';
+      const comment = rv?.comment||'';
+      html += `
+      <div class="member-row ${isAssigned?'assigned':''}" id="mrow-${m.id}">
+        <div class="member-avatar" style="background:${m.color}">${m.initial}</div>
+        <div class="member-info">
+          <div class="member-name">${m.name}</div>
+          <span class="member-role-tag role-${m.role}">${ROLE_LABELS[m.role]}</span>
+          ${isAssigned?`<div class="member-comment-wrap">
+            <textarea class="member-comment-input" id="mc-${m.id}" onchange="updateReviewerComment('${m.id}',this.value)" placeholder="コメント（任意）">${esc(comment)}</textarea>
+          </div>`:''}
+        </div>
+        <div class="member-actions">
+          ${isAssigned?`
+          <div class="check-status-group">
+            ${[['pending','未確認'],['checking','確認中'],['ok','OK'],['ng','NG']].map(([s,l])=>`
+            <button class="check-btn ${status===s?'active-'+s:''}" onclick="setReviewStatus('${m.id}','${s}')" title="${l}">${l}</button>`).join('')}
+          </div>`:''}
+          <button class="assign-toggle ${isAssigned?'assigned':''}" onclick="toggleAssign('${m.id}')">
+            ${isAssigned?'担当中 ✓':'担当追加'}
+          </button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function toggleAssign(memberId){
+  const c = candidates.find(x=>x.id===currentEditId); if(!c) return;
+  if(!c.reviewers) c.reviewers=[];
+  const idx = c.reviewers.findIndex(r=>r.memberId===memberId);
+  if(idx>=0){
+    c.reviewers.splice(idx,1);
+  } else {
+    const m = teamMembers.find(x=>x.id===memberId);
+    c.reviewers.push({memberId, status:'pending', comment:'', assignedDate:new Date().toISOString().split('T')[0], role:m?.role||'interviewer'});
+  }
+  renderTeamTab(c);
+}
+
+function setReviewStatus(memberId, status){
+  const c = candidates.find(x=>x.id===currentEditId); if(!c||!c.reviewers) return;
+  const rv = c.reviewers.find(r=>r.memberId===memberId);
+  if(rv){ rv.status=status; rv.checkedDate=new Date().toISOString().split('T')[0]; }
+  renderTeamTab(c);
+  const m = teamMembers.find(x=>x.id===memberId);
+  const label = status==='ok'?'OK ✓':status==='ng'?'NG ✗':status==='checking'?'確認中':'未確認';
+  toast(`${m?.name||memberId}: ${label}`);
+}
+
+function updateReviewerComment(memberId, value){
+  const c = candidates.find(x=>x.id===currentEditId); if(!c||!c.reviewers) return;
+  const rv = c.reviewers.find(r=>r.memberId===memberId);
+  if(rv) rv.comment=value;
+}
+
+// Reviewer dots for kanban card
+function reviewerDots(c){
+  if(!c.reviewers||!c.reviewers.length) return '';
+  const dots = c.reviewers.map(rv=>{
+    const m = teamMembers.find(x=>x.id===rv.memberId);
+    if(!m) return '';
+    const statusColor = {pending:'#9ca3af',checking:'#f59e0b',ok:'#10b981',ng:'#ef4444'}[rv.status]||'#9ca3af';
+    return `<div class="reviewer-dot" style="background:${statusColor}" title="${m.name}（${rv.status==='ok'?'OK':rv.status==='ng'?'NG':rv.status==='checking'?'確認中':'未確認'}）">${m.initial}</div>`;
+  }).join('');
+  return `<div class="card-reviewers">${dots}</div>`;
+}
+
+// Check summary for reviewer chips in table
+function reviewerChips(c){
+  if(!c.reviewers||!c.reviewers.length) return '<span style="color:#ccc;font-size:11px">—</span>';
+  return `<div class="table-reviewer-chips">${c.reviewers.map(rv=>{
+    const m = teamMembers.find(x=>x.id===rv.memberId);
+    if(!m) return '';
+    const statusColor = {pending:'#9ca3af',checking:'#f59e0b',ok:'#10b981',ng:'#ef4444'}[rv.status]||'#9ca3af';
+    const label = rv.status==='ok'?'OK':rv.status==='ng'?'NG':rv.status==='checking'?'中':'—';
+    return `<div class="reviewer-dot" style="background:${statusColor};width:24px;height:24px;font-size:9px" title="${m.name}: ${label}">${m.initial}</div>`;
+  }).join('')}</div>`;
+}
 
 // ===================== INIT =====================
 window.addEventListener('load', loadData);

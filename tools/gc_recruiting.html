@@ -603,6 +603,7 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
     <div class="add-member-form">
       <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:4px">＋ メンバーを追加</div>
       <input id="newMemberName" type="text" placeholder="氏名">
+      <input id="newMemberEmail" type="email" placeholder="メールアドレス（任意）">
       <select id="newMemberRole">
         <option value="hr">人事担当 (HR)</option>
         <option value="interviewer">面接官</option>
@@ -610,7 +611,10 @@ header{background:linear-gradient(135deg,var(--gc-dark) 0%,var(--gc-green) 100%)
         <option value="external">外部レビュアー</option>
       </select>
       <input id="newMemberInitial" type="text" placeholder="イニシャル（例: 田、S）" maxlength="2">
-      <button class="btn btn-primary btn-sm" onclick="addTeamMember()">追加</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="addTeamMember()" style="flex:1">追加</button>
+        <button class="btn btn-sm" onclick="addAndInvite()" style="flex:1;background:#10b981;color:#fff;border:none" title="追加してツールURLを招待メールで送信">✉️ 追加＋招待</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1324,15 +1328,44 @@ let teamMembers = JSON.parse(localStorage.getItem(LS_TEAM)||'null') || [
 
 function addTeamMember(){
   const name = document.getElementById('newMemberName').value.trim();
+  const email = (document.getElementById('newMemberEmail')||{value:''}).value.trim();
   const role = document.getElementById('newMemberRole').value;
   const initial = document.getElementById('newMemberInitial').value.trim() || name.slice(0,2);
   if(!name){ toast('氏名を入力してください'); return; }
-  teamMembers.push({id:'tm'+Date.now(), name, role, initial, color: ROLE_COLORS[role]});
+  teamMembers.push({id:'tm'+Date.now(), name, role, initial, email, color: ROLE_COLORS[role]});
   syncTeamToGAS();
   renderTeamMgmtPanel();
   document.getElementById('newMemberName').value='';
+  document.getElementById('newMemberEmail').value='';
   document.getElementById('newMemberInitial').value='';
   toast(`${name} を追加しました`);
+}
+
+async function addAndInvite(){
+  const name = document.getElementById('newMemberName').value.trim();
+  const email = document.getElementById('newMemberEmail').value.trim();
+  const role = document.getElementById('newMemberRole').value;
+  if(!name){ toast('氏名を入力してください'); return; }
+  if(!email){ toast('招待するにはメールアドレスを入力してください'); return; }
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){ toast('有効なメールアドレスを入力してください'); return; }
+  addTeamMember();
+  await sendInviteEmail(name, email, role);
+}
+
+async function sendInviteEmail(name, email, role){
+  const toolUrl = location.href.split('?')[0];
+  const roleLabel = {hr:'人事担当', interviewer:'面接官', manager:'採用マネージャー', external:'外部レビュアー'}[role]||role;
+  showLoading();
+  try {
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'sendInvite', data:{name, email, role, roleLabel, toolUrl}})
+    });
+    const json = await res.json();
+    if(json.ok){ toast(`✉️ ${name}さん（${email}）に招待メールを送りました`); }
+    else { toast('⚠️ 送信失敗: '+(json.error||'不明'), true); }
+  } catch(e){ toast('⚠️ 送信エラー: '+e.message, true); }
+  finally { hideLoading(); }
 }
 
 function removeTeamMember(id){

@@ -6,86 +6,141 @@
 <title>1on1マネージャー | Green Carbon HR</title>
 <style>
   :root {
-    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
-    --gc-dark: #1b4332; --bg: #f8fffe; --card: #fff; --border: #b7e4c7; --text: #1a1a2e;
+    --gc-green:#2d6a4f;--gc-light:#52b788;--gc-pale:#d8f3dc;
+    --gc-dark:#1b4332;--bg:#f8fffe;--card:#fff;--border:#b7e4c7;--text:#1a1a2e;
+    --danger:#e63946;--warn:#f4a261;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); }
-  header { background: var(--gc-dark); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
-  header .logo { font-size: 20px; font-weight: 700; }
-  header .subtitle { font-size: 14px; opacity: 0.8; }
-  header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--gc-dark);color:white;padding:16px 24px;display:flex;align-items:center;gap:16px;}
+  header .logo{font-size:20px;font-weight:700;}
+  header .subtitle{font-size:14px;opacity:.8;}
+  header a{color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;margin-left:auto;}
+  .sync-badge{font-size:11px;padding:3px 8px;border-radius:10px;background:rgba(255,255,255,.15);color:white;margin-left:8px;}
+  .sync-badge.ok{background:rgba(82,183,136,.4);}
+  .sync-badge.err{background:rgba(230,57,70,.4);}
 
-  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-  h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; }
-  .page-sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+  .container{max-width:1200px;margin:0 auto;padding:24px;}
+  h1{font-size:22px;color:var(--gc-dark);margin-bottom:4px;}
+  .page-sub{font-size:14px;color:#666;margin-bottom:20px;}
 
-  .layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
-  @media(max-width:768px) { .layout { grid-template-columns: 1fr; } }
+  /* Manager filter bar */
+  .filter-bar{background:white;border-radius:12px;padding:16px 20px;border:1px solid var(--border);margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .filter-bar label{font-size:13px;font-weight:500;color:#444;white-space:nowrap;}
+  .filter-bar input,.filter-bar select{padding:7px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:white;outline:none;}
+  .filter-bar input:focus,.filter-bar select:focus{border-color:var(--gc-light);}
 
-  .sidebar { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border); height: fit-content; }
-  .sidebar h3 { font-size: 15px; color: var(--gc-dark); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .layout{display:grid;grid-template-columns:290px 1fr;gap:24px;}
+  @media(max-width:768px){.layout{grid-template-columns:1fr;}}
 
-  .person-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; margin-bottom: 4px; }
-  .person-item:hover { background: var(--gc-pale); }
-  .person-item.active { background: var(--gc-pale); border-left: 3px solid var(--gc-green); }
-  .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; flex-shrink: 0; }
-  .person-info .name { font-size: 14px; font-weight: 500; }
-  .person-info .role { font-size: 12px; color: #888; }
-  .next-meeting { font-size: 11px; color: var(--gc-green); margin-top: 2px; }
+  .sidebar{background:white;border-radius:12px;padding:20px;border:1px solid var(--border);height:fit-content;}
+  .sidebar h3{font-size:15px;color:var(--gc-dark);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+  .sidebar-search{width:100%;padding:7px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:10px;outline:none;}
+  .sidebar-search:focus{border-color:var(--gc-light);}
 
-  .main-area { display: flex; flex-direction: column; gap: 20px; }
-  .card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
-  .card-title { font-size: 16px; font-weight: 600; color: var(--gc-dark); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .person-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .2s;margin-bottom:4px;position:relative;}
+  .person-item:hover{background:var(--gc-pale);}
+  .person-item.active{background:var(--gc-pale);border-left:3px solid var(--gc-green);}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--gc-green);color:white;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;}
+  .person-info .name{font-size:14px;font-weight:500;}
+  .person-info .role{font-size:12px;color:#888;}
+  .person-info .last-date{font-size:11px;margin-top:2px;}
+  .days-badge{font-size:10px;padding:2px 6px;border-radius:8px;font-weight:600;position:absolute;right:10px;top:10px;}
+  .days-badge.ok{background:#e8f5e9;color:var(--gc-green);}
+  .days-badge.warn{background:#fff3e0;color:var(--warn);}
+  .days-badge.over{background:#fde8ea;color:var(--danger);}
 
-  .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
-  .btn-primary { background: var(--gc-green); color: white; }
-  .btn-primary:hover { background: var(--gc-dark); }
-  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
-  .btn-secondary:hover { background: var(--gc-pale); }
-  .btn-sm { padding: 5px 10px; font-size: 12px; }
-  .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; opacity: 0.6; }
-  .btn-icon:hover { opacity: 1; }
+  .main-area{display:flex;flex-direction:column;gap:20px;}
+  .card{background:white;border-radius:12px;padding:24px;border:1px solid var(--border);}
+  .card-title{font-size:16px;font-weight:600;color:var(--gc-dark);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
 
-  input, select, textarea {
-    padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px;
-    font-size: 14px; background: white; color: var(--text); outline: none;
+  .btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;}
+  .btn-primary{background:var(--gc-green);color:white;}
+  .btn-primary:hover{background:var(--gc-dark);}
+  .btn-secondary{background:white;color:var(--gc-green);border:1.5px solid var(--gc-green);}
+  .btn-secondary:hover{background:var(--gc-pale);}
+  .btn-danger{background:white;color:var(--danger);border:1.5px solid var(--danger);}
+  .btn-sm{padding:5px 10px;font-size:12px;}
+  .btn-icon{background:none;border:none;cursor:pointer;font-size:15px;opacity:.6;}
+  .btn-icon:hover{opacity:1;}
+  .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+
+  input,select,textarea{padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:white;color:var(--text);outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--gc-light);}
+
+  /* Stats row */
+  .stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:4px;}
+  .stat-chip{background:#f5f5f5;border-radius:8px;padding:8px 14px;font-size:13px;display:flex;flex-direction:column;align-items:center;min-width:90px;}
+  .stat-chip .sv{font-size:20px;font-weight:700;color:var(--gc-dark);}
+  .stat-chip .sl{font-size:11px;color:#888;margin-top:2px;}
+  .overdue-alert{background:#fde8ea;color:var(--danger);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;}
+
+  /* Dashboard */
+  .dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:600px){.dashboard-grid{grid-template-columns:1fr;}}
+  .chart-wrap{background:#f9f9f9;border-radius:10px;padding:16px;}
+  .chart-title{font-size:13px;font-weight:600;color:#444;margin-bottom:12px;}
+  .bar-chart{display:flex;align-items:flex-end;gap:6px;height:80px;}
+  .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;}
+  .bar-fill{background:var(--gc-light);border-radius:4px 4px 0 0;width:100%;min-height:2px;transition:height .3s;}
+  .bar-label{font-size:10px;color:#888;margin-top:4px;}
+  .bar-val{font-size:10px;color:var(--gc-dark);font-weight:600;margin-bottom:2px;}
+  .progress-wrap{margin-bottom:10px;}
+  .progress-label{display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:4px;}
+  .progress-bar{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--gc-light);border-radius:4px;transition:width .3s;}
+
+  /* Meeting list */
+  .meeting-list{display:flex;flex-direction:column;gap:12px;}
+  .meeting-item{border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .meeting-item .m-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;}
+  .meeting-item .m-date{font-size:13px;font-weight:600;color:var(--gc-dark);}
+  .meeting-item .m-status{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--gc-pale);color:var(--gc-green);}
+  .meeting-item .m-next{font-size:11px;color:#888;margin-top:2px;}
+
+  .agenda-list{list-style:none;}
+  .agenda-list li{display:flex;align-items:flex-start;gap:8px;font-size:14px;padding:6px 0;border-bottom:1px solid #f5f5f5;}
+  .agenda-list li:last-child{border-bottom:none;}
+  .check-circle{width:18px;height:18px;border-radius:50%;border:2px solid var(--gc-green);cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px;color:white;}
+  .check-circle.done{background:var(--gc-green);}
+
+  .action-items{display:flex;flex-direction:column;gap:8px;}
+  .action-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f9f9f9;border-radius:8px;font-size:14px;}
+  .action-item.done{opacity:.5;}
+  .action-item.done .action-text{text-decoration:line-through;}
+  .action-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--gc-green);cursor:pointer;}
+  .action-item .action-text{flex:1;}
+  .action-item .action-owner{font-size:12px;color:#888;white-space:nowrap;}
+
+  /* Modal */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal{background:white;border-radius:16px;padding:32px;max-width:560px;width:90%;max-height:90vh;overflow-y:auto;}
+  .modal h2{font-size:18px;color:var(--gc-dark);margin-bottom:20px;}
+  .form-group{margin-bottom:14px;}
+  .form-group label{display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:6px;}
+  .form-group input,.form-group select,.form-group textarea{width:100%;}
+  .form-group textarea{resize:vertical;min-height:80px;}
+  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+
+  .action-editor{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+  .action-row{display:flex;gap:6px;align-items:center;}
+  .action-row input{flex:1;}
+  .action-row input.owner-input{width:110px;flex:none;}
+
+  .empty-msg{text-align:center;padding:32px;color:#bbb;font-size:14px;}
+  .mood-btn{width:36px;height:36px;border-radius:50%;border:2px solid #ddd;cursor:pointer;font-size:18px;background:white;transition:all .2s;}
+  .mood-btn.selected{border-color:var(--gc-green);transform:scale(1.2);}
+  .mood-row{display:flex;gap:8px;align-items:center;}
+  .loading{text-align:center;padding:16px;color:#888;font-size:13px;}
+
+  /* Print styles */
+  @media print {
+    header,. filter-bar,.sidebar,.btn,.btn-group,.modal-bg{display:none!important;}
+    .layout{grid-template-columns:1fr!important;}
+    .card{box-shadow:none;border:1px solid #ccc;}
+    body{background:white;}
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--gc-light); }
-
-  .meeting-list { display: flex; flex-direction: column; gap: 12px; }
-  .meeting-item { border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-  .meeting-item .m-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .meeting-item .m-date { font-size: 13px; font-weight: 600; color: var(--gc-dark); }
-  .meeting-item .m-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--gc-pale); color: var(--gc-green); }
-
-  .agenda-list { list-style: none; }
-  .agenda-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
-  .agenda-list li:last-child { border-bottom: none; }
-  .check-circle { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--gc-green); cursor: pointer; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; }
-  .check-circle.done { background: var(--gc-green); }
-
-  .action-items { display: flex; flex-direction: column; gap: 8px; }
-  .action-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f9f9f9; border-radius: 8px; font-size: 14px; }
-  .action-item.done { opacity: 0.5; text-decoration: line-through; }
-  .action-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--gc-green); }
-  .action-item .action-text { flex: 1; }
-  .action-item .action-owner { font-size: 12px; color: #888; }
-
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
-  .modal-bg.open { display: flex; }
-  .modal { background: white; border-radius: 16px; padding: 32px; max-width: 540px; width: 90%; max-height: 90vh; overflow-y: auto; }
-  .modal h2 { font-size: 18px; color: var(--gc-dark); margin-bottom: 20px; }
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
-  .form-group input, .form-group select, .form-group textarea { width: 100%; }
-  .form-group textarea { resize: vertical; min-height: 80px; }
-  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
-
-  .empty-msg { text-align: center; padding: 32px; color: #bbb; font-size: 14px; }
-  .mood-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ddd; cursor: pointer; font-size: 18px; background: white; transition: all 0.2s; }
-  .mood-btn.selected { border-color: var(--gc-green); transform: scale(1.2); }
-  .mood-row { display: flex; gap: 8px; align-items: center; }
 </style>
 </head>
 <body>
@@ -94,6 +149,7 @@
     <div class="logo">🌿 Green Carbon</div>
     <div class="subtitle">1on1マネージャー</div>
   </div>
+  <span class="sync-badge" id="syncBadge">⏳ 接続中</span>
   <a href="../index.html">← ランチャーに戻る</a>
 </header>
 
@@ -101,13 +157,44 @@
   <h1>1on1マネージャー</h1>
   <p class="page-sub">メンバーとの定期1on1を記録・管理し、フォローアップを追跡します</p>
 
+  <!-- Manager filter bar -->
+  <div class="filter-bar">
+    <label>🧑‍💼 マネージャー名:</label>
+    <input type="text" id="managerFilter" placeholder="自分の名前を入力..." style="width:200px" oninput="applyFilters()">
+    <label>部門:</label>
+    <select id="deptFilter" onchange="applyFilters()">
+      <option value="">すべて</option>
+    </select>
+    <label>表示:</label>
+    <select id="overdueFilter" onchange="applyFilters()">
+      <option value="">全員</option>
+      <option value="overdue">30日超過のみ</option>
+      <option value="pending">記録なし</option>
+    </select>
+    <button class="btn btn-secondary btn-sm" onclick="openDashboard()">📊 ダッシュボード</button>
+  </div>
+
   <div class="layout">
     <div class="sidebar">
-      <h3>メンバー <button class="btn btn-sm btn-primary" onclick="openAddPersonModal()">+</button></h3>
-      <div id="personList"></div>
+      <h3>メンバー <span id="memberCount" style="font-size:12px;color:#888;font-weight:400"></span>
+        <button class="btn btn-sm btn-primary" onclick="openAddPersonModal()">+</button>
+      </h3>
+      <input class="sidebar-search" type="text" id="sidebarSearch" placeholder="名前で検索..." oninput="applyFilters()">
+      <div id="personList"><div class="loading">読み込み中...</div></div>
     </div>
     <div class="main-area" id="mainArea">
       <div class="card"><div class="empty-msg">左のメンバーを選択してください</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard Modal -->
+<div class="modal-bg" id="dashboardModal">
+  <div class="modal" style="max-width:700px">
+    <h2>📊 1on1 ダッシュボード</h2>
+    <div id="dashboardContent"><div class="loading">データ読み込み中...</div></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('dashboardModal').classList.remove('open')">閉じる</button>
     </div>
   </div>
 </div>
@@ -119,6 +206,7 @@
     <div class="form-group"><label>氏名 *</label><input type="text" id="pName"></div>
     <div class="form-group"><label>役職</label><input type="text" id="pRole"></div>
     <div class="form-group"><label>部門</label><input type="text" id="pDept"></div>
+    <div class="form-group"><label>マネージャー名</label><input type="text" id="pManager"></div>
     <div class="form-group"><label>1on1頻度</label>
       <select id="pFreq"><option>毎週</option><option>隔週</option><option>月1回</option></select>
     </div>
@@ -134,6 +222,7 @@
   <div class="modal">
     <h2>1on1記録追加</h2>
     <div class="form-group"><label>実施日 *</label><input type="date" id="mDate"></div>
+    <div class="form-group"><label>次回予定日</label><input type="date" id="mNextDate"></div>
     <div class="form-group"><label>気分（メンバー）</label>
       <div class="mood-row">
         <button class="mood-btn" onclick="selectMood(this,'😊')" data-mood="😊">😊</button>
@@ -149,8 +238,10 @@
     <div class="form-group"><label>メモ・気づき</label>
       <textarea id="mNote" placeholder="会話の内容、気になったこと..."></textarea>
     </div>
-    <div class="form-group"><label>アクションアイテム（1行1項目 / 担当者: を先頭につける）</label>
-      <textarea id="mActions" placeholder="マネジャー: キャリア面談を設定する&#10;田中: 資料を整理して共有する"></textarea>
+    <div class="form-group">
+      <label>アクションアイテム</label>
+      <div class="action-editor" id="actionEditor"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addActionRow()">+ アクション追加</button>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeMeetingModal()">キャンセル</button>
@@ -160,154 +251,353 @@
 </div>
 
 <script>
-let people = JSON.parse(localStorage.getItem('gc_1on1_people') || '[]');
-let meetings = JSON.parse(localStorage.getItem('gc_1on1_meetings') || '{}');
+// ─── Config ───────────────────────────────────────────────────────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQMe-yzdgvpDibaHidbzuxUFp0V-mWB7lnuhUWj33CBvPPvOQQus2smuICCaaJIyM/exec';
+let gasAvailable = false;
+let people = [];
+let meetings = {}; // { staffId: [records] }
 let selectedPerson = null;
 let selectedMood = '';
+let filteredPeople = [];
 
-if (!people.length) {
-  people = [
-    {id:'p1', name:'田中 美咲', role:'シニアアナリスト', dept:'ソリューション事業部', freq:'隔週'},
-    {id:'p2', name:'鈴木 健太', role:'エンジニア', dept:'プロダクト部', freq:'毎週'},
-    {id:'p3', name:'佐藤 あい', role:'コンサルタント', dept:'コンサルティング部', freq:'月1回'},
-  ];
-  meetings = {
-    'p1': [
-      {date:'2026-04-22', mood:'😊', agenda:['近況確認','プロジェクト進捗','キャリア相談'], note:'モチベーション高め。新プロジェクトに興味あり。', actions:[{text:'マネジャー: キャリア面談を設定', done:false, owner:'マネジャー'},{text:'田中: スキルマップを更新', done:true, owner:'田中'}]},
-      {date:'2026-04-08', mood:'😐', agenda:['近況確認','課題共有'], note:'業務量が多く少し疲れ気味の様子。', actions:[{text:'マネジャー: 業務量を確認する', done:true, owner:'マネジャー'}]},
-    ],
-    'p2': [
-      {date:'2026-04-25', mood:'😊', agenda:['タスク確認','技術的課題'], note:'新機能の開発が順調。チームワークも良好。', actions:[{text:'鈴木: ドキュメント作成', done:false, owner:'鈴木'}]},
-    ],
-  };
-  saveAll();
+// ─── GAS API ──────────────────────────────────────────────────────────────────
+async function gasGet(params) {
+  const url = GAS_URL + '?' + new URLSearchParams(params);
+  const res = await fetch(url, {mode:'cors'});
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
 }
 
-function saveAll() {
+async function gasPost(body) {
+  const res = await fetch(GAS_URL, {
+    method:'POST', mode:'cors',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  setBadge('loading');
+  // Try GAS first
+  try {
+    const staffData = await gasGet({action:'getStaff'});
+    if (staffData && staffData.staff) {
+      people = staffData.staff.map(s => ({
+        id: String(s.id || s.staffId),
+        name: s.name,
+        role: s.role || s.position || '',
+        dept: s.dept || s.department || '',
+        manager: s.manager || '',
+        freq: s.freq || '隔週'
+      }));
+      gasAvailable = true;
+      setBadge('ok');
+      // Also try to get summary for dashboard
+      try {
+        const sum = await gasGet({action:'getOneon1Summary'});
+        if (sum) window._gasSummary = sum;
+      } catch(e){}
+    } else { throw new Error('no staff data'); }
+  } catch(e) {
+    console.warn('GAS unavailable, using localStorage:', e);
+    loadFromLocalStorage();
+    setBadge('err');
+  }
+
+  populateDeptFilter();
+  applyFilters();
+
+  // Seed sample if empty
+  if (!people.length) seedSampleData();
+  applyFilters();
+}
+
+function setBadge(state) {
+  const b = document.getElementById('syncBadge');
+  b.className = 'sync-badge';
+  if (state === 'ok') { b.textContent = '☁️ GAS同期'; b.classList.add('ok'); }
+  else if (state === 'err') { b.textContent = '💾 ローカル'; b.classList.add('err'); }
+  else { b.textContent = '⏳ 接続中'; }
+}
+
+function loadFromLocalStorage() {
+  people = JSON.parse(localStorage.getItem('gc_1on1_people') || '[]');
+  meetings = JSON.parse(localStorage.getItem('gc_1on1_meetings') || '{}');
+}
+
+function saveToLocalStorage() {
   localStorage.setItem('gc_1on1_people', JSON.stringify(people));
   localStorage.setItem('gc_1on1_meetings', JSON.stringify(meetings));
 }
 
-function initials(name) {
-  const parts = name.trim().split(/\s+/);
-  return parts.map(p=>p[0]).join('').slice(0,2);
+function seedSampleData() {
+  people = [
+    {id:'p1',name:'田中 美咲',role:'シニアアナリスト',dept:'ソリューション事業部',manager:'野村 裕太',freq:'隔週'},
+    {id:'p2',name:'鈴木 健太',role:'エンジニア',dept:'プロダクト部',manager:'野村 裕太',freq:'毎週'},
+    {id:'p3',name:'佐藤 あい',role:'コンサルタント',dept:'コンサルティング部',manager:'野村 裕太',freq:'月1回'},
+  ];
+  meetings = {
+    'p1':[
+      {id:'m1',date:'2026-04-22',nextDate:'2026-05-06',mood:'😊',agenda:['近況確認','プロジェクト進捗','キャリア相談'],note:'モチベーション高め。新プロジェクトに興味あり。',actions:[{text:'キャリア面談を設定する',owner:'マネジャー',done:false},{text:'スキルマップを更新する',owner:'田中',done:true}]},
+      {id:'m2',date:'2026-04-08',nextDate:'',mood:'😐',agenda:['近況確認','課題共有'],note:'業務量が多く少し疲れ気味の様子。',actions:[{text:'業務量を確認する',owner:'マネジャー',done:true}]},
+    ],
+    'p2':[
+      {id:'m3',date:'2026-04-25',nextDate:'2026-05-02',mood:'😊',agenda:['タスク確認','技術的課題'],note:'新機能の開発が順調。チームワークも良好。',actions:[{text:'ドキュメント作成',owner:'鈴木',done:false}]},
+    ],
+  };
+  saveToLocalStorage();
 }
 
+// ─── Filters ──────────────────────────────────────────────────────────────────
+function populateDeptFilter() {
+  const sel = document.getElementById('deptFilter');
+  const depts = [...new Set(people.map(p=>p.dept).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">すべて</option>' +
+    depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+}
+
+function applyFilters() {
+  const mgr = document.getElementById('managerFilter').value.trim().toLowerCase();
+  const dept = document.getElementById('deptFilter').value;
+  const overdue = document.getElementById('overdueFilter').value;
+  const search = document.getElementById('sidebarSearch').value.trim().toLowerCase();
+
+  filteredPeople = people.filter(p => {
+    if (mgr && !(p.manager||'').toLowerCase().includes(mgr)) return false;
+    if (dept && p.dept !== dept) return false;
+    if (search && !p.name.toLowerCase().includes(search)) return false;
+    if (overdue === 'overdue') {
+      const days = daysSinceLastMeeting(p.id);
+      if (days !== null && days < 30) return false;
+    }
+    if (overdue === 'pending') {
+      const ms = getMeetings(p.id);
+      if (ms.length > 0) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('memberCount').textContent = `${filteredPeople.length}名`;
+  renderPersonList();
+}
+
+// ─── Meetings cache & async load ──────────────────────────────────────────────
+function getMeetings(id) {
+  return (meetings[id] || []).sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+async function loadMeetings(id) {
+  if (!gasAvailable) return getMeetings(id);
+  try {
+    const data = await gasGet({action:'getOneon1Records', staffId: id});
+    if (data && data.records) {
+      meetings[id] = data.records;
+      saveToLocalStorage();
+    }
+  } catch(e) { console.warn('loadMeetings fallback:', e); }
+  return getMeetings(id);
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+function initials(name) {
+  return name.trim().split(/\s+/).map(p=>p[0]).join('').slice(0,2);
+}
+
+function daysSinceLastMeeting(id) {
+  const ms = getMeetings(id);
+  if (!ms.length) return null;
+  const last = new Date(ms[0].date);
+  const today = new Date();
+  return Math.floor((today - last) / 86400000);
+}
+
+function daysBadge(id) {
+  const d = daysSinceLastMeeting(id);
+  if (d === null) return '';
+  let cls = 'ok', label = `${d}日前`;
+  if (d >= 30) { cls = 'over'; label = `⚠️${d}日`; }
+  else if (d >= 21) { cls = 'warn'; label = `${d}日前`; }
+  return `<span class="days-badge ${cls}">${label}</span>`;
+}
+
+// ─── Render Person List ───────────────────────────────────────────────────────
 function renderPersonList() {
   const list = document.getElementById('personList');
-  if (!people.length) { list.innerHTML = '<div class="empty-msg">メンバーを追加してください</div>'; return; }
-  list.innerHTML = people.map(p=>{
-    const ms = meetings[p.id] || [];
+  if (!filteredPeople.length) {
+    list.innerHTML = '<div class="empty-msg">該当なし</div>';
+    return;
+  }
+  list.innerHTML = filteredPeople.map(p => {
+    const ms = getMeetings(p.id);
     const last = ms.length ? ms[0].date : null;
     return `<div class="person-item ${selectedPerson===p.id?'active':''}" onclick="selectPerson('${p.id}')">
       <div class="avatar">${initials(p.name)}</div>
       <div class="person-info">
         <div class="name">${p.name}</div>
-        <div class="role">${p.role}</div>
-        <div class="next-meeting">${last?'最終: '+last:'まだ記録なし'}</div>
+        <div class="role">${p.role}${p.dept?' · '+p.dept:''}</div>
+        <div class="last-date" style="color:${!last || daysSinceLastMeeting(p.id)>=30 ? 'var(--danger)' : 'var(--gc-green)'}">
+          ${last ? '最終: '+last : 'まだ記録なし'}
+        </div>
       </div>
+      ${daysBadge(p.id)}
     </div>`;
   }).join('');
 }
 
-function selectPerson(id) {
+// ─── Select Person ────────────────────────────────────────────────────────────
+async function selectPerson(id) {
   selectedPerson = id;
   renderPersonList();
+  document.getElementById('mainArea').innerHTML = '<div class="card"><div class="loading">読み込み中...</div></div>';
+  await loadMeetings(id);
   renderMain();
 }
 
+// ─── Render Main ─────────────────────────────────────────────────────────────
 function renderMain() {
   if (!selectedPerson) return;
   const p = people.find(x=>x.id===selectedPerson);
   if (!p) return;
-  const ms = (meetings[selectedPerson] || []).sort((a,b)=>b.date.localeCompare(a.date));
-  const allActions = ms.flatMap(m=>m.actions||[]).filter(a=>!a.done);
+  const ms = getMeetings(selectedPerson);
+  const allPendingActions = ms.flatMap(m=>(m.actions||[]).map((a,ai)=>({...a,mi:ms.indexOf(m),ai})))
+    .filter(a=>!a.done);
+  const days = daysSinceLastMeeting(selectedPerson);
+  const overdueHtml = days !== null && days >= 30
+    ? `<div class="overdue-alert">⚠️ 最後の1on1から <strong>${days}日</strong> 経過しています。早めに実施してください。</div>`
+    : '';
 
   document.getElementById('mainArea').innerHTML = `
     <div class="card">
       <div class="card-title">
-        <span>👤 ${p.name} — ${p.role} (${p.dept}) · ${p.freq}</span>
-        <button class="btn btn-primary btn-sm" onclick="openMeetingModal()">+ 1on1を記録</button>
+        <span>👤 ${p.name} — ${p.role}${p.dept?' ('+p.dept+')':''} · ${p.freq}</span>
+        <div class="btn-group">
+          <button class="btn btn-secondary btn-sm" onclick="printRecord()">🖨️ 印刷/PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="openMeetingModal()">+ 1on1を記録</button>
+        </div>
       </div>
-      <div style="display:flex;gap:24px;font-size:13px;color:#666">
-        <span>📅 合計 <strong>${ms.length}</strong> 回</span>
-        <span>✅ 未完了アクション <strong style="color:${allActions.length>0?'#e63946':'var(--gc-green)'}">${allActions.length}</strong> 件</span>
+      ${overdueHtml}
+      <div class="stats-row" style="margin-top:12px">
+        <div class="stat-chip"><span class="sv">${ms.length}</span><span class="sl">合計回数</span></div>
+        <div class="stat-chip"><span class="sv" style="color:${allPendingActions.length>0?'var(--danger)':'var(--gc-green)'}">${allPendingActions.length}</span><span class="sl">未完了アクション</span></div>
+        <div class="stat-chip"><span class="sv">${days !== null ? days+'日' : '—'}</span><span class="sl">前回からの経過</span></div>
+        ${ms.length && ms[0].nextDate ? `<div class="stat-chip"><span class="sv" style="font-size:13px">${ms[0].nextDate}</span><span class="sl">次回予定</span></div>` : ''}
       </div>
     </div>
 
-    ${allActions.length > 0 ? `
+    ${allPendingActions.length > 0 ? `
     <div class="card">
       <div class="card-title">🎯 未完了アクションアイテム</div>
       <div class="action-items">
-        ${allActions.map((a,i)=>`<div class="action-item">
-          <input type="checkbox" onchange="toggleAction('${selectedPerson}',${i})">
-          <span class="action-item action-text">${a.text}</span>
+        ${allPendingActions.map(a=>`<div class="action-item">
+          <input type="checkbox" onchange="toggleAction('${selectedPerson}',${a.mi},${a.ai})">
+          <span class="action-text">${a.text}</span>
           <span class="action-owner">${a.owner||''}</span>
         </div>`).join('')}
       </div>
     </div>` : ''}
 
-    <div class="card">
-      <div class="card-title">📋 1on1履歴</div>
-      ${ms.length ? `<div class="meeting-list">${ms.map((m,i)=>renderMeetingItem(m,i)).join('')}</div>`
+    <div class="card" id="historyCard">
+      <div class="card-title">📋 1on1履歴
+        <span style="font-size:12px;color:#888;font-weight:400">${ms.length}件</span>
+      </div>
+      ${ms.length
+        ? `<div class="meeting-list">${ms.map((m,i)=>renderMeetingItem(m,i)).join('')}</div>`
         : '<div class="empty-msg">まだ記録がありません</div>'}
     </div>
   `;
 }
 
 function renderMeetingItem(m, i) {
-  const agendaItems = (m.agenda||[]).map((a,j)=>`
-    <li><div class="check-circle ${m.agendaDone&&m.agendaDone[j]?'done':''}">✓</div>${a}</li>
+  const agendaHtml = (m.agenda||[]).map((a,j)=>`
+    <li><div class="check-circle ${m.agendaDone&&m.agendaDone[j]?'done':''}" onclick="toggleAgenda('${selectedPerson}',${i},${j})">✓</div>${a}</li>
   `).join('');
+  const actionsHtml = (m.actions||[]).map((a,j)=>`
+    <div class="action-item ${a.done?'done':''}">
+      <input type="checkbox" ${a.done?'checked':''} onchange="toggleAction('${selectedPerson}',${i},${j})">
+      <span class="action-text">${a.text}</span>
+      <span class="action-owner">${a.owner||''}</span>
+    </div>`).join('');
+  const pending = (m.actions||[]).filter(a=>!a.done).length;
   return `<div class="meeting-item">
     <div class="m-header">
       <div>
         <span class="m-date">${m.date}</span>
         ${m.mood?`<span style="margin-left:8px;font-size:18px">${m.mood}</span>`:''}
+        ${m.nextDate?`<div class="m-next">次回: ${m.nextDate}</div>`:''}
       </div>
-      <span class="m-status">${m.actions&&m.actions.filter(a=>!a.done).length}件未完了</span>
+      <span class="m-status">${pending}件未完了</span>
     </div>
-    ${m.agenda&&m.agenda.length?`<ul class="agenda-list">${agendaItems}</ul>`:''}
+    ${m.agenda&&m.agenda.length?`<ul class="agenda-list">${agendaHtml}</ul>`:''}
     ${m.note?`<div style="margin-top:10px;font-size:13px;color:#555;background:#f9f9f9;padding:10px;border-radius:6px">${m.note}</div>`:''}
-    ${m.actions&&m.actions.length?`<div style="margin-top:10px">
-      ${m.actions.map(a=>`<div class="action-item ${a.done?'done':''}">
-        <input type="checkbox" ${a.done?'checked':''} disabled>
-        <span>${a.text}</span>
-      </div>`).join('')}
-    </div>`:''}
+    ${m.actions&&m.actions.length?`<div style="margin-top:10px" class="action-items">${actionsHtml}</div>`:''}
   </div>`;
 }
 
-function toggleAction(personId, idx) {
-  const ms = meetings[personId] || [];
-  let count = 0;
-  for (const m of ms) {
-    for (const a of (m.actions||[])) {
-      if (!a.done) { if (count===idx) { a.done = true; break; } count++; }
+// ─── Toggle helpers ───────────────────────────────────────────────────────────
+function toggleAction(personId, mi, ai) {
+  const ms = getMeetings(personId);
+  if (ms[mi] && ms[mi].actions && ms[mi].actions[ai] !== undefined) {
+    ms[mi].actions[ai].done = !ms[mi].actions[ai].done;
+    meetings[personId] = ms;
+    saveToLocalStorage();
+    // Sync to GAS
+    if (gasAvailable) {
+      gasPost({action:'saveOneon1Record', staffId:personId, record:ms[mi]}).catch(console.warn);
     }
+    renderMain();
   }
-  saveAll(); renderMain();
 }
 
+function toggleAgenda(personId, mi, ai) {
+  const ms = getMeetings(personId);
+  if (ms[mi]) {
+    if (!ms[mi].agendaDone) ms[mi].agendaDone = [];
+    ms[mi].agendaDone[ai] = !ms[mi].agendaDone[ai];
+    meetings[personId] = ms;
+    saveToLocalStorage();
+    renderMain();
+  }
+}
+
+// ─── Mood ─────────────────────────────────────────────────────────────────────
 function selectMood(btn, mood) {
   selectedMood = mood;
   document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
 }
 
+// ─── Action row editor ────────────────────────────────────────────────────────
+function addActionRow(text='', owner='') {
+  const ed = document.getElementById('actionEditor');
+  const row = document.createElement('div');
+  row.className = 'action-row';
+  row.innerHTML = `<input type="text" placeholder="アクション内容" value="${text}">
+    <input type="text" class="owner-input" placeholder="担当者" value="${owner}">
+    <button class="btn-icon" onclick="this.parentElement.remove()">🗑️</button>`;
+  ed.appendChild(row);
+}
+
+// ─── Modals ───────────────────────────────────────────────────────────────────
 function openAddPersonModal() { document.getElementById('personModal').classList.add('open'); }
 function closePersonModal() { document.getElementById('personModal').classList.remove('open'); }
+
 function openMeetingModal() {
   document.getElementById('mDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('mNextDate').value = '';
   document.getElementById('mAgenda').value = '';
   document.getElementById('mNote').value = '';
-  document.getElementById('mActions').value = '';
+  document.getElementById('actionEditor').innerHTML = '';
   selectedMood = '';
   document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+  addActionRow(); // start with one empty row
   document.getElementById('meetingModal').classList.add('open');
 }
 function closeMeetingModal() { document.getElementById('meetingModal').classList.remove('open'); }
 
+// ─── Save Person ──────────────────────────────────────────────────────────────
 function savePerson() {
   const name = document.getElementById('pName').value.trim();
   if (!name) { alert('氏名を入力してください'); return; }
@@ -315,33 +605,333 @@ function savePerson() {
     id: 'p'+Date.now(), name,
     role: document.getElementById('pRole').value,
     dept: document.getElementById('pDept').value,
+    manager: document.getElementById('pManager').value,
     freq: document.getElementById('pFreq').value
   };
   people.push(p);
   if (!meetings[p.id]) meetings[p.id] = [];
-  saveAll(); closePersonModal();
-  selectedPerson = p.id;
-  renderPersonList(); renderMain();
+  saveToLocalStorage();
+  closePersonModal();
+  populateDeptFilter();
+  applyFilters();
+  selectPerson(p.id);
 }
 
-function saveMeeting() {
+// ─── Save Meeting ─────────────────────────────────────────────────────────────
+async function saveMeeting() {
   const date = document.getElementById('mDate').value;
   if (!date) { alert('日付を選択してください'); return; }
   const agenda = document.getElementById('mAgenda').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const actionLines = document.getElementById('mActions').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const actions = actionLines.map(line => {
-    const m = line.match(/^([^:：]+)[：:]\s*(.+)/);
-    return m ? {text: m[0], owner: m[1].trim(), done: false} : {text: line, owner: '', done: false};
+  const rows = document.querySelectorAll('#actionEditor .action-row');
+  const actions = [];
+  rows.forEach(r => {
+    const [textIn, ownerIn] = r.querySelectorAll('input');
+    const txt = textIn.value.trim();
+    if (txt) actions.push({text:txt, owner:ownerIn.value.trim(), done:false});
   });
+  const record = {
+    id: 'm'+Date.now(),
+    date,
+    nextDate: document.getElementById('mNextDate').value,
+    mood: selectedMood,
+    agenda,
+    note: document.getElementById('mNote').value,
+    actions
+  };
   if (!meetings[selectedPerson]) meetings[selectedPerson] = [];
-  meetings[selectedPerson].unshift({
-    date, mood: selectedMood,
-    agenda, note: document.getElementById('mNote').value, actions
-  });
-  saveAll(); closeMeetingModal(); renderMain();
+  meetings[selectedPerson].unshift(record);
+  saveToLocalStorage();
+
+  // Try GAS save
+  if (gasAvailable) {
+    try {
+      await gasPost({action:'saveOneon1Record', staffId:selectedPerson,
+        date:record.date, nextDate:record.nextDate, mood:record.mood,
+        agenda:record.agenda.join('\n'), notes:record.note,
+        actions:JSON.stringify(record.actions)});
+    } catch(e) { console.warn('GAS save failed, kept in localStorage:', e); }
+  }
+
+  closeMeetingModal();
+  renderMain();
+  renderPersonList();
 }
 
-renderPersonList();
+// ─── Print / PDF ──────────────────────────────────────────────────────────────
+function printRecord() {
+  window.print();
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+async function openDashboard() {
+  document.getElementById('dashboardModal').classList.add('open');
+  const content = document.getElementById('dashboardContent');
+  content.innerHTML = '<div class="loading">データ集計中...</div>';
+
+  let summaryData = null;
+  if (gasAvailable) {
+    try {
+      summaryData = await gasGet({action:'getOneon1Summary'});
+    } catch(e) {}
+  }
+
+  // Build from local data if GAS summary not available
+  const now = new Date();
+  const months = [];
+  for (let i=5; i>=0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push({year:d.getFullYear(), month:d.getMonth()+1, label:`${d.getMonth()+1}月`, count:0});
+  }
+
+  let totalStaff = people.length;
+  let conductedThisMonth = 0;
+  let overdueCount = 0;
+
+  Object.values(meetings).forEach(ms => {
+    (ms||[]).forEach(m => {
+      const md = new Date(m.date);
+      months.forEach(mo => {
+        if (md.getFullYear()===mo.year && md.getMonth()+1===mo.month) mo.count++;
+      });
+    });
+  });
+  people.forEach(p => {
+    const d = daysSinceLastMeeting(p.id);
+    if (d !== null && d >= 30) overdueCount++;
+    if (d !== null && d <= 31) conductedThisMonth++;
+  });
+
+  // Use GAS summary if available
+  if (summaryData) {
+    totalStaff = summaryData.totalStaff || totalStaff;
+    conductedThisMonth = summaryData.conductedThisMonth || conductedThisMonth;
+    overdueCount = summaryData.overdueCount || overdueCount;
+    if (summaryData.monthlyData) {
+      summaryData.monthlyData.forEach((v,i) => { if(months[i]) months[i].count = v; });
+    }
+  }
+
+  const rate = totalStaff > 0 ? Math.round((conductedThisMonth/totalStaff)*100) : 0;
+  const maxCount = Math.max(...months.map(m=>m.count), 1);
+
+  content.innerHTML = `
+    <div class="stats-row" style="margin-bottom:20px">
+      <div class="stat-chip"><span class="sv">${totalStaff}</span><span class="sl">社員数</span></div>
+      <div class="stat-chip"><span class="sv">${conductedThisMonth}</span><span class="sl">今月実施</span></div>
+      <div class="stat-chip"><span class="sv">${rate}%</span><span class="sl">今月実施率</span></div>
+      <div class="stat-chip"><span class="sv" style="color:${overdueCount>0?'var(--danger)':'var(--gc-green)'}">${overdueCount}</span><span class="sl">30日超過</span></div>
+    </div>
+    <div class="dashboard-grid">
+      <div class="chart-wrap">
+        <div class="chart-title">月別1on1実施数（直近6ヶ月）</div>
+        <div class="bar-chart">
+          ${months.map(m=>`<div class="bar-col">
+            <div class="bar-val">${m.count}</div>
+            <div class="bar-fill" style="height:${Math.max(4,Math.round((m.count/maxCount)*70))}px"></div>
+            <div class="bar-label">${m.label}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">今月の実施率</div>
+        <div class="progress-wrap" style="margin-top:16px">
+          <div class="progress-label"><span>実施済み</span><span>${rate}%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${rate}%"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span style="color:var(--danger)">30日超過</span><span>${totalStaff>0?Math.round((overdueCount/totalStaff)*100):0}%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${totalStaff>0?Math.round((overdueCount/totalStaff)*100):0}%;background:var(--danger)"></div></div>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:#888">
+          ${gasAvailable ? '☁️ GASリアルタイムデータ' : '💾 ローカルデータ（GAS未接続）'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+init();
 </script>
+
+<!-- ==========================================
+GAS ADDITIONS NEEDED:
+
+以下のコードをGASプロジェクト（Code.gs）に追加または統合してください。
+現在のGASファイルに既存のdoGet/doPostがある場合は、
+switch文のcaseを追記する形でマージしてください。
+
+───────────────────────────────────────────────
+// スプレッドシートID（実際のIDに変更してください）
+const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID';
+const SHEET_STAFF = 'staff';         // 社員マスター
+const SHEET_RECORDS = '1on1_records'; // 1on1記録
+
+function doGet(e) {
+  const action = e.parameter.action;
+  let result;
+  try {
+    if (action === 'getStaff') {
+      result = getStaff();
+    } else if (action === 'getOneon1Records') {
+      result = getOneon1Records(e.parameter.staffId);
+    } else if (action === 'getOneon1Summary') {
+      result = getOneon1Summary();
+    } else {
+      result = {error: 'Unknown action'};
+    }
+  } catch(err) {
+    result = {error: err.message};
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  let body;
+  try { body = JSON.parse(e.postData.contents); } catch(err) { body = {}; }
+  let result;
+  try {
+    if (body.action === 'saveOneon1Record') {
+      result = saveOneon1Record(body);
+    } else {
+      result = {error: 'Unknown action'};
+    }
+  } catch(err) {
+    result = {error: err.message};
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// GETスタッフ一覧
+// staffシート列: id, name, role, dept, manager, freq
+function getStaff() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName(SHEET_STAFF);
+  const rows = sh.getDataRange().getValues();
+  const headers = rows[0];
+  const staff = rows.slice(1).filter(r=>r[0]).map(r => {
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = r[i]);
+    return obj;
+  });
+  return {staff};
+}
+
+// GET 1on1記録一覧（staffId指定）
+// 1on1_recordsシート列: id, staffId, date, nextDate, mood, agenda, notes, actions
+function getOneon1Records(staffId) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName(SHEET_RECORDS);
+  const rows = sh.getDataRange().getValues();
+  const headers = rows[0];
+  const records = rows.slice(1)
+    .filter(r => String(r[headers.indexOf('staffId')]) === String(staffId))
+    .map(r => {
+      const obj = {};
+      headers.forEach((h,i) => obj[h] = r[i]);
+      // agendaは改行区切り文字列→配列
+      obj.agenda = obj.agenda ? String(obj.agenda).split('\n').filter(Boolean) : [];
+      // actionsはJSON文字列→配列
+      try { obj.actions = obj.actions ? JSON.parse(obj.actions) : []; } catch(e){ obj.actions=[]; }
+      return obj;
+    });
+  return {records};
+}
+
+// POST 1on1記録保存
+function saveOneon1Record(body) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName(SHEET_RECORDS);
+  // 既存レコード検索（idが一致すれば更新）
+  const rows = sh.getDataRange().getValues();
+  const headers = rows[0];
+  const idCol = headers.indexOf('id');
+  const staffIdCol = headers.indexOf('staffId');
+  let found = -1;
+  if (body.id) {
+    rows.slice(1).forEach((r,i) => {
+      if (String(r[idCol]) === String(body.id)) found = i+2; // 1-indexed, skip header
+    });
+  }
+  const rowData = headers.map(h => {
+    if (h === 'id') return body.id || 'm'+Date.now();
+    if (h === 'staffId') return body.staffId;
+    if (h === 'date') return body.date;
+    if (h === 'nextDate') return body.nextDate || '';
+    if (h === 'mood') return body.mood || '';
+    if (h === 'agenda') return Array.isArray(body.agenda) ? body.agenda.join('\n') : (body.agenda||'');
+    if (h === 'notes') return body.notes || '';
+    if (h === 'actions') return typeof body.actions === 'string' ? body.actions : JSON.stringify(body.actions||[]);
+    return '';
+  });
+  if (found > 0) {
+    sh.getRange(found, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sh.appendRow(rowData);
+  }
+  return {success: true};
+}
+
+// GET サマリー（ダッシュボード用）
+function getOneon1Summary() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const staffSh = ss.getSheetByName(SHEET_STAFF);
+  const recSh = ss.getSheetByName(SHEET_RECORDS);
+  const totalStaff = Math.max(0, staffSh.getLastRow() - 1);
+
+  const recRows = recSh.getDataRange().getValues();
+  const headers = recRows[0];
+  const dateCol = headers.indexOf('date');
+  const staffIdCol = headers.indexOf('staffId');
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thirtyDaysAgo = new Date(now - 30*86400*1000);
+
+  // Per-staff last meeting date
+  const lastByStaff = {};
+  recRows.slice(1).forEach(r => {
+    const sid = String(r[staffIdCol]);
+    const d = new Date(r[dateCol]);
+    if (!isNaN(d)) {
+      if (!lastByStaff[sid] || d > lastByStaff[sid]) lastByStaff[sid] = d;
+    }
+  });
+
+  let conductedThisMonth = 0, overdueCount = 0;
+  Object.values(lastByStaff).forEach(d => {
+    if (d >= monthStart) conductedThisMonth++;
+    if (d < thirtyDaysAgo) overdueCount++;
+  });
+
+  // Monthly counts (last 6 months)
+  const monthlyData = [];
+  for (let i=5; i>=0; i--) {
+    const mStart = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const mEnd   = new Date(now.getFullYear(), now.getMonth()-i+1, 1);
+    const cnt = recRows.slice(1).filter(r => {
+      const d = new Date(r[dateCol]);
+      return d >= mStart && d < mEnd;
+    }).length;
+    monthlyData.push(cnt);
+  }
+
+  return {totalStaff, conductedThisMonth, overdueCount, monthlyData};
+}
+───────────────────────────────────────────────
+
+【セットアップ手順】
+1. GASのスプレッドシートに以下のシートを作成:
+   - "staff" シート (列: id, name, role, dept, manager, freq)
+   - "1on1_records" シート (列: id, staffId, date, nextDate, mood, agenda, notes, actions)
+2. SPREADSHEET_ID を実際のIDに変更
+3. GASを「ウェブアプリとしてデプロイ」→「全員がアクセス可能」に設定
+4. CORSは自動で許可されます（ContentService使用のため）
+==========================================
+-->
 </body>
 </html>

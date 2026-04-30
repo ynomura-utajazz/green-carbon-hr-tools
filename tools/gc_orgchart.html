@@ -17,63 +17,75 @@
   header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; margin-left: auto; }
 
   .toolbar { padding: 16px 24px; background: white; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .toolbar-stats { font-size: 14px; color: #666; }
+  .toolbar-stats strong { color: var(--gc-dark); }
   .btn { padding: 7px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
   .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
   .btn-secondary:hover { background: var(--gc-pale); }
-  select { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+  .btn-active { background: var(--gc-green); color: white; border: 1.5px solid var(--gc-green); }
 
-  .chart-wrapper { padding: 32px; overflow: auto; min-height: calc(100vh - 120px); }
+  .chart-wrapper { padding: 32px 24px; overflow: auto; min-height: calc(100vh - 120px); }
 
-  /* Tree layout */
-  .org-tree { display: flex; flex-direction: column; align-items: center; gap: 0; }
-  .level { display: flex; justify-content: center; gap: 20px; position: relative; }
-  .level::before { content:''; position:absolute; left:50%; top:-24px; width:2px; height:24px; background:var(--border); transform:translateX(-50%); }
-  .level:first-child::before { display:none; }
+  /* ── Tree View ── */
+  .tree-view { display: flex; flex-direction: column; align-items: center; gap: 0; }
 
-  .branch { display: flex; flex-direction: column; align-items: center; }
-  .branch-line { width: 2px; height: 24px; background: var(--border); margin: 0 auto; }
-  .branch-connector { position: relative; }
-  .branch-connector::before {
-    content:''; position:absolute; top:0; left:50%; width:100%;
-    height:2px; background:var(--border); transform:translateX(-50%);
-  }
+  /* CEO node */
+  .ceo-node { background: var(--gc-dark); color: white; border-radius: 16px; padding: 18px 28px; text-align: center; min-width: 200px; box-shadow: 0 4px 16px rgba(27,67,50,0.3); }
+  .ceo-node .n-avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; margin: 0 auto 10px; }
+  .ceo-node .n-name { font-size: 16px; font-weight: 700; }
+  .ceo-node .n-role { font-size: 12px; opacity: 0.75; margin-top: 3px; }
 
-  .node { background: white; border: 2px solid var(--border); border-radius: 12px; padding: 14px 18px; min-width: 160px; max-width: 180px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; z-index:1; }
-  .node:hover { border-color: var(--gc-green); box-shadow: 0 4px 12px rgba(45,106,79,0.2); }
-  .node.ceo { border-color: var(--gc-dark); background: var(--gc-dark); color: white; }
-  .node.dept-head { border-color: var(--gc-green); border-width: 2.5px; }
-  .node .node-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; margin: 0 auto 8px; }
-  .node.ceo .node-avatar { background: rgba(255,255,255,0.25); }
-  .node .node-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
-  .node .node-role { font-size: 11px; color: #888; }
-  .node.ceo .node-role { color: rgba(255,255,255,0.7); }
-  .node .node-dept { font-size: 10px; padding: 2px 8px; border-radius: 8px; background: var(--gc-pale); color: var(--gc-dark); margin-top: 6px; display: inline-block; }
-  .node.ceo .node-dept { display: none; }
-  .node .headcount { font-size: 10px; color: #aaa; margin-top: 4px; }
+  /* Connector lines */
+  .v-line { width: 2px; height: 32px; background: var(--border); margin: 0 auto; }
+  .h-connector { position: relative; display: flex; align-items: flex-start; justify-content: center; }
+  .h-connector::before { content:''; position:absolute; top:0; left:10%; right:10%; height:2px; background:var(--border); }
 
-  /* Department view */
-  .dept-view { display: none; padding: 8px; }
+  /* Director row */
+  .director-row { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+  .director-node { background: white; border: 2.5px solid var(--gc-dark); border-radius: 12px; padding: 14px 18px; min-width: 150px; max-width: 180px; text-align: center; }
+  .director-node .n-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--gc-dark); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; margin: 0 auto 8px; }
+  .director-node .n-name { font-size: 14px; font-weight: 600; }
+  .director-node .n-role { font-size: 11px; color: #888; margin-top: 3px; }
+  .director-node .n-dept { font-size: 10px; padding: 2px 8px; background: var(--gc-pale); color: var(--gc-dark); border-radius: 8px; margin-top: 6px; display: inline-block; }
+
+  /* Department grid */
+  .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; width: 100%; max-width: 1100px; }
+  .dept-card { background: white; border: 2px solid var(--border); border-radius: 12px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+  .dept-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+  .dept-card-header { background: var(--gc-green); color: white; padding: 12px 16px; }
+  .dept-card-header .d-name { font-size: 14px; font-weight: 600; }
+  .dept-card-header .d-count { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .dept-card-body { padding: 12px 16px; }
+  .dept-card-body .d-leader { font-size: 13px; font-weight: 500; color: var(--gc-dark); }
+  .dept-card-body .d-leader-role { font-size: 11px; color: #888; }
+  .dept-card-body .d-members { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .d-chip { font-size: 11px; padding: 2px 8px; background: var(--gc-pale); border-radius: 8px; color: var(--gc-dark); }
+
+  /* ── Dept List View ── */
+  .dept-list-view { display: none; }
   .dept-section { background: white; border-radius: 12px; border: 2px solid var(--border); margin-bottom: 20px; overflow: hidden; }
-  .dept-header { background: var(--gc-green); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
-  .dept-header h3 { font-size: 16px; font-weight: 600; }
-  .dept-header .dept-count { font-size: 13px; opacity: 0.8; }
-  .dept-members { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .dept-section-header { background: var(--gc-green); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .dept-section-header h3 { font-size: 16px; font-weight: 600; }
+  .dept-section-header .dc { font-size: 13px; opacity: 0.8; }
+  .dept-members { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
   .member-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
-  .member-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
-  .member-info .m-name { font-size: 14px; font-weight: 500; }
-  .member-info .m-role { font-size: 12px; color: #888; }
+  .member-avatar { width: 34px; height: 34px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .member-info .m-name { font-size: 13px; font-weight: 500; }
+  .member-info .m-role { font-size: 11px; color: #888; }
 
-  .detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
-  .detail-modal.open { display: flex; }
-  .detail-panel { background: white; border-radius: 16px; padding: 28px; max-width: 360px; width: 90%; text-align: center; }
-  .dp-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--gc-green); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; margin: 0 auto 12px; }
-  .dp-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-  .dp-role { font-size: 14px; color: #666; margin-bottom: 12px; }
-  .dp-info { display: flex; flex-direction: column; gap: 6px; text-align: left; margin-top: 14px; }
-  .dp-row { display: flex; gap: 10px; font-size: 13px; }
-  .dp-label { color: #888; width: 60px; flex-shrink: 0; }
-
-  .toggle-view { margin-left: auto; }
+  /* Profile modal */
+  .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center; }
+  .modal-bg.open { display:flex; }
+  .modal-panel { background:white; border-radius:16px; padding:0; max-width:380px; width:90%; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.2); }
+  .mp-header { background:var(--gc-dark); color:white; padding:24px; text-align:center; }
+  .mp-avatar { width:68px; height:68px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; margin:0 auto 10px; }
+  .mp-name { font-size:20px; font-weight:700; }
+  .mp-role { font-size:13px; opacity:0.75; margin-top:3px; }
+  .mp-body { padding:20px; }
+  .mp-row { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid #f5f5f5; font-size:13px; }
+  .mp-row:last-child { border:none; }
+  .mp-label { color:#888; width:60px; flex-shrink:0; }
+  .mp-footer { padding:14px 20px; border-top:1px solid var(--border); text-align:right; }
 </style>
 </head>
 <body>
@@ -86,374 +98,245 @@
 </header>
 
 <div class="toolbar">
-  <span style="font-size:14px;color:#666">社員数: <strong style="color:var(--gc-dark)">184名</strong></span>
-  <span style="font-size:14px;color:#666">部門数: <strong style="color:var(--gc-dark)">22</strong></span>
-  <div class="toggle-view" style="display:flex;gap:8px">
-    <button class="btn btn-secondary" id="treeBtn" onclick="setView('tree')">🌳 ツリー表示</button>
+  <span class="toolbar-stats">社員数: <strong id="statTotal">—</strong></span>
+  <span class="toolbar-stats">部門数: <strong id="statDepts">—</strong></span>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn btn-active" id="treeBtn" onclick="setView('tree')">🌳 ツリー</button>
     <button class="btn btn-secondary" id="deptBtn" onclick="setView('dept')">🏢 部門別</button>
     <button class="btn btn-secondary" onclick="window.print()">🖨️ 印刷</button>
   </div>
 </div>
 
-<div class="chart-wrapper" id="chartWrapper">
-  <!-- Tree View -->
-  <div id="treeView" class="org-tree">
-    <!-- CEO -->
-    <div class="node ceo" onclick="showDetail('大北 潤','代表取締役','Green Carbon創業者。カーボンクレジット市場のパイオニア。','取締役会','2025-01-01')">
-      <div class="node-avatar">GC</div>
-      <div class="node-name">大北 潤</div>
-      <div class="node-role">代表取締役</div>
-    </div>
-    <div class="branch-line"></div>
-
-    <!-- Level 2 -->
-    <div style="position:relative;display:flex;gap:0;justify-content:center;width:100%">
-      <div style="position:absolute;top:0;left:25%;right:25%;height:2px;background:var(--border)"></div>
-      <div style="display:flex;gap:0;justify-content:space-around;width:80%">
-        <div class="branch" style="align-items:center">
-          <div class="branch-line"></div>
-          <div class="node dept-head" onclick="showDetail('山本 誠','CFO / 管理部長','財務・経理・人事を統括。上場準備の責任者。','管理部','2021-01-01')">
-            <div class="node-avatar">山</div>
-            <div class="node-name">山本 誠</div>
-            <div class="node-role">CFO</div>
-            <div class="node-dept">管理部</div>
-            <div class="headcount">8名</div>
-          </div>
-        </div>
-        <div class="branch">
-          <div class="branch-line"></div>
-          <div class="node dept-head" onclick="showDetail('CTO','最高技術責任者','プロダクト・エンジニアリング全体を統括。','プロダクト部','2021-06-01')">
-            <div class="node-avatar">CT</div>
-            <div class="node-name">CTO</div>
-            <div class="node-role">Chief Technology Officer</div>
-            <div class="node-dept">プロダクト部</div>
-            <div class="headcount">12名</div>
-          </div>
-        </div>
-        <div class="branch">
-          <div class="branch-line"></div>
-          <div class="node dept-head" onclick="showDetail('ソリューション部長','部門長','カーボンクレジット・ESG分析事業を統括。','ソリューション事業部','2022-01-01')">
-            <div class="node-avatar">ソ</div>
-            <div class="node-name">ソリューション部長</div>
-            <div class="node-role">事業部長</div>
-            <div class="node-dept">ソリューション事業部</div>
-            <div class="headcount">15名</div>
-          </div>
-        </div>
-        <div class="branch">
-          <div class="branch-line"></div>
-          <div class="node dept-head" onclick="showDetail('コンサルティング部長','部門長','企業向けESGコンサルティングを統括。','コンサルティング部','2022-06-01')">
-            <div class="node-avatar">コ</div>
-            <div class="node-name">コンサル部長</div>
-            <div class="node-role">事業部長</div>
-            <div class="node-dept">コンサルティング部</div>
-            <div class="headcount">8名</div>
-          </div>
-        </div>
-        <div class="branch">
-          <div class="branch-line"></div>
-          <div class="node dept-head" onclick="showDetail('COO','最高執行責任者','事業開発・パートナーシップを統括。','事業開発部','2022-01-01')">
-            <div class="node-avatar">CO</div>
-            <div class="node-name">COO</div>
-            <div class="node-role">Chief Operating Officer</div>
-            <div class="node-dept">事業開発部</div>
-            <div class="headcount">4名</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="branch-line" style="height:32px"></div>
-
-    <!-- Level 3 examples -->
-    <div style="display:flex;gap:40px;justify-content:center;flex-wrap:wrap">
-      <div class="node" onclick="showDetail('野村 裕太','People & Culture Manager','HR全般・採用・オンボーディングを担当。','管理部','2022-04-01')">
-        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">野</div>
-        <div class="node-name" style="font-size:13px">野村 裕太</div>
-        <div class="node-role">P&C Manager</div>
-        <div class="node-dept">管理部</div>
-      </div>
-      <div class="node" onclick="showDetail('田中 美咲','シニアカーボンアナリスト','J-クレジット・Verra認証プロジェクトを担当。','ソリューション事業部','2023-07-01')">
-        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">田</div>
-        <div class="node-name" style="font-size:13px">田中 美咲</div>
-        <div class="node-role">Sr. アナリスト</div>
-        <div class="node-dept">ソリューション事業部</div>
-      </div>
-      <div class="node" onclick="showDetail('鈴木 健太','フロントエンドエンジニア','プロダクトのUI/UX開発を担当。','プロダクト部','2024-04-01')">
-        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">鈴</div>
-        <div class="node-name" style="font-size:13px">鈴木 健太</div>
-        <div class="node-role">FE Engineer</div>
-        <div class="node-dept">プロダクト部</div>
-      </div>
-      <div class="node" onclick="showDetail('佐藤 あい','ESGコンサルタント','企業のCO2排出量削減計画を支援。','コンサルティング部','2024-10-01')">
-        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">佐</div>
-        <div class="node-name" style="font-size:13px">佐藤 あい</div>
-        <div class="node-role">ESGコンサルタント</div>
-        <div class="node-dept">コンサルティング部</div>
-      </div>
-      <div class="node" onclick="showDetail('松田 俊介','プロジェクトマネージャー','新規事業パートナーシップを推進。','事業開発部','2023-10-01')">
-        <div class="node-avatar" style="width:32px;height:32px;font-size:12px">松</div>
-        <div class="node-name" style="font-size:13px">松田 俊介</div>
-        <div class="node-role">PM</div>
-        <div class="node-dept">事業開発部</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Dept View -->
-  <div id="deptView" class="dept-view">
-    <div class="dept-section">
-      <div class="dept-header"><h3>📊 リサーチチーム</h3><span class="dept-count">37名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">塚</div><div class="member-info"><div class="m-name">塚越 航汰</div></div></div>
-        <div class="member-card"><div class="member-avatar">高</div><div class="member-info"><div class="m-name">高徳 志帆</div></div></div>
-        <div class="member-card"><div class="member-avatar">木</div><div class="member-info"><div class="m-name">木村 健太郎</div></div></div>
-        <div class="member-card"><div class="member-avatar">入</div><div class="member-info"><div class="m-name">入江 七葉</div></div></div>
-        <div class="member-card"><div class="member-avatar">Y</div><div class="member-info"><div class="m-name">Yap Alyssa</div><div class="m-role">リーダー</div></div></div>
-        <div class="member-card"><div class="member-avatar">埜</div><div class="member-info"><div class="m-name">埜崎 大空</div></div></div>
-        <div class="member-card"><div class="member-avatar">藤</div><div class="member-info"><div class="m-name">藤本 若奈</div></div></div>
-        <div class="member-card"><div class="member-avatar">Q</div><div class="member-info"><div class="m-name">Quinn Genevieve</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他29名</div><div class="m-role">合計37名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🇯🇵 国内企画部</h3><span class="dept-count">35名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">土</div><div class="member-info"><div class="m-name">土居 海斗</div><div class="m-role">リーダー</div></div></div>
-        <div class="member-card"><div class="member-avatar">富</div><div class="member-info"><div class="m-name">富澤 雫</div></div></div>
-        <div class="member-card"><div class="member-avatar">吉</div><div class="member-info"><div class="m-name">吉田 花菜</div></div></div>
-        <div class="member-card"><div class="member-avatar">保</div><div class="member-info"><div class="m-name">保木 陽人</div></div></div>
-        <div class="member-card"><div class="member-avatar">岡</div><div class="member-info"><div class="m-name">岡村 航太朗</div></div></div>
-        <div class="member-card"><div class="member-avatar">竹</div><div class="member-info"><div class="m-name">竹下 瑛貴</div></div></div>
-        <div class="member-card"><div class="member-avatar">佐</div><div class="member-info"><div class="m-name">佐々木 瞭</div></div></div>
-        <div class="member-card"><div class="member-avatar">森</div><div class="member-info"><div class="m-name">森川 あおい</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他27名</div><div class="m-role">合計35名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>⚙️ オペレーションチーム</h3><span class="dept-count">19名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">S</div><div class="member-info"><div class="m-name">SHU HAOWEN</div></div></div>
-        <div class="member-card"><div class="member-avatar">B</div><div class="member-info"><div class="m-name">BAL TAMANG Anurodh</div><div class="m-role">リーダー</div></div></div>
-        <div class="member-card"><div class="member-avatar">夏</div><div class="member-info"><div class="m-name">夏目 環</div></div></div>
-        <div class="member-card"><div class="member-avatar">N</div><div class="member-info"><div class="m-name">Nyakoon Cherish</div></div></div>
-        <div class="member-card"><div class="member-avatar">O</div><div class="member-info"><div class="m-name">Ompusunggu Gratia Dearios</div></div></div>
-        <div class="member-card"><div class="member-avatar">P</div><div class="member-info"><div class="m-name">Premanandhan Anandha Selvi</div></div></div>
-        <div class="member-card"><div class="member-avatar">武</div><div class="member-info"><div class="m-name">武関 瀬七</div></div></div>
-        <div class="member-card"><div class="member-avatar">前</div><div class="member-info"><div class="m-name">前坂 海英</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他11名</div><div class="m-role">合計19名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🚀 ビジネスディベロップメントチーム</h3><span class="dept-count">16名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">加</div><div class="member-info"><div class="m-name">加藤 葉月</div></div></div>
-        <div class="member-card"><div class="member-avatar">原</div><div class="member-info"><div class="m-name">原田 亮</div></div></div>
-        <div class="member-card"><div class="member-avatar">S</div><div class="member-info"><div class="m-name">Saw Jane</div></div></div>
-        <div class="member-card"><div class="member-avatar">D</div><div class="member-info"><div class="m-name">Deepak HV</div><div class="m-role">リーダー</div></div></div>
-        <div class="member-card"><div class="member-avatar">E</div><div class="member-info"><div class="m-name">Effendi Daulay Muthia Otsuka</div></div></div>
-        <div class="member-card"><div class="member-avatar">羽</div><div class="member-info"><div class="m-name">羽山 伊弦</div></div></div>
-        <div class="member-card"><div class="member-avatar">L</div><div class="member-info"><div class="m-name">Lee Raina</div></div></div>
-        <div class="member-card"><div class="member-avatar">C</div><div class="member-info"><div class="m-name">Clemency Claudia</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他8名</div><div class="m-role">合計16名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🌱 ESGコンサルティング部</h3><span class="dept-count">14名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">井</div><div class="member-info"><div class="m-name">井家 良輔</div><div class="m-role">部長</div></div></div>
-        <div class="member-card"><div class="member-avatar">下</div><div class="member-info"><div class="m-name">下條 拓真</div></div></div>
-        <div class="member-card"><div class="member-avatar">川</div><div class="member-info"><div class="m-name">川崎 堅太</div></div></div>
-        <div class="member-card"><div class="member-avatar">中</div><div class="member-info"><div class="m-name">中津川 千聖</div></div></div>
-        <div class="member-card"><div class="member-avatar">櫛</div><div class="member-info"><div class="m-name">櫛田 健志郎</div></div></div>
-        <div class="member-card"><div class="member-avatar">朱</div><div class="member-info"><div class="m-name">朱 無邪</div></div></div>
-        <div class="member-card"><div class="member-avatar">南</div><div class="member-info"><div class="m-name">南部 栞音</div></div></div>
-        <div class="member-card"><div class="member-avatar">圷</div><div class="member-info"><div class="m-name">圷 琴美</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他6名</div><div class="m-role">合計14名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>📈 データチーム</h3><span class="dept-count">13名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">A</div><div class="member-info"><div class="m-name">Alifah Viona Puteri</div></div></div>
-        <div class="member-card"><div class="member-avatar">G</div><div class="member-info"><div class="m-name">Garren Adriel</div></div></div>
-        <div class="member-card"><div class="member-avatar">桐</div><div class="member-info"><div class="m-name">桐山 拓未</div></div></div>
-        <div class="member-card"><div class="member-avatar">R</div><div class="member-info"><div class="m-name">RANJATOSON MESSIE</div></div></div>
-        <div class="member-card"><div class="member-avatar">設</div><div class="member-info"><div class="m-name">設楽 大雅</div></div></div>
-        <div class="member-card"><div class="member-avatar">M</div><div class="member-info"><div class="m-name">MacNamara Michael</div></div></div>
-        <div class="member-card"><div class="member-avatar">D</div><div class="member-info"><div class="m-name">Dolorosa Reggie Mae</div></div></div>
-        <div class="member-card"><div class="member-avatar">V</div><div class="member-info"><div class="m-name">Villanueva Boj</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他5名</div><div class="m-role">合計13名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🌏 海外企画部</h3><span class="dept-count">11名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">横</div><div class="member-info"><div class="m-name">横山 治生</div><div class="m-role">リーダー</div></div></div>
-        <div class="member-card"><div class="member-avatar">酒</div><div class="member-info"><div class="m-name">酒井 友希乃</div></div></div>
-        <div class="member-card"><div class="member-avatar">清</div><div class="member-info"><div class="m-name">清水 優花</div></div></div>
-        <div class="member-card"><div class="member-avatar">仲</div><div class="member-info"><div class="m-name">仲間 悠衣</div></div></div>
-        <div class="member-card"><div class="member-avatar">諸</div><div class="member-info"><div class="m-name">諸岡 まり子</div></div></div>
-        <div class="member-card"><div class="member-avatar">バ</div><div class="member-info"><div class="m-name">バーサンクフー サインザヤ</div></div></div>
-        <div class="member-card"><div class="member-avatar">常</div><div class="member-info"><div class="m-name">常田 姫歌</div></div></div>
-        <div class="member-card"><div class="member-avatar">T</div><div class="member-info"><div class="m-name">Tran Thi My Tran</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他3名</div><div class="m-role">合計11名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>💻 システムディベロップメントチーム</h3><span class="dept-count">9名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">野</div><div class="member-info"><div class="m-name">野口 登子</div></div></div>
-        <div class="member-card"><div class="member-avatar">作</div><div class="member-info"><div class="m-name">作野 あゆみ</div></div></div>
-        <div class="member-card"><div class="member-avatar">森</div><div class="member-info"><div class="m-name">森田 乃吾</div></div></div>
-        <div class="member-card"><div class="member-avatar">メ</div><div class="member-info"><div class="m-name">メノン 智</div></div></div>
-        <div class="member-card"><div class="member-avatar">G</div><div class="member-info"><div class="m-name">Ghosh Shrinnwanti</div></div></div>
-        <div class="member-card"><div class="member-avatar">A</div><div class="member-info"><div class="m-name">ANG Joanna Marie Dodson</div></div></div>
-        <div class="member-card"><div class="member-avatar">R</div><div class="member-info"><div class="m-name">Regin Arron</div></div></div>
-        <div class="member-card"><div class="member-avatar">G</div><div class="member-info"><div class="m-name">GAWANDE Gayatri Dinkar</div></div></div>
-        <div class="member-card"><div class="member-avatar">+</div><div class="member-info"><div class="m-name">他1名</div><div class="m-role">合計9名</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🏢 国内事業部</h3><span class="dept-count">7名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">吉</div><div class="member-info"><div class="m-name">吉見 俊哉</div><div class="m-role">リーダー</div></div></div>
-        <div class="member-card"><div class="member-avatar">宮</div><div class="member-info"><div class="m-name">宮本 晋一郎</div><div class="m-role">部長</div></div></div>
-        <div class="member-card"><div class="member-avatar">兵</div><div class="member-info"><div class="m-name">兵藤 悠太</div></div></div>
-        <div class="member-card"><div class="member-avatar">丸</div><div class="member-info"><div class="m-name">丸山 克紀</div></div></div>
-        <div class="member-card"><div class="member-avatar">鶴</div><div class="member-info"><div class="m-name">鶴岡 拓真</div></div></div>
-        <div class="member-card"><div class="member-avatar">竹</div><div class="member-info"><div class="m-name">竹内 大翔</div></div></div>
-        <div class="member-card"><div class="member-avatar">武</div><div class="member-info"><div class="m-name">武田 佳樹</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>👑 取締役会</h3><span class="dept-count">4名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">大</div><div class="member-info"><div class="m-name">大北 潤</div><div class="m-role">代表取締役</div></div></div>
-        <div class="member-card"><div class="member-avatar">妹</div><div class="member-info"><div class="m-name">妹尾 聖人</div><div class="m-role">取締役</div></div></div>
-        <div class="member-card"><div class="member-avatar">山</div><div class="member-info"><div class="m-name">山本 高太郎</div><div class="m-role">取締役</div></div></div>
-        <div class="member-card"><div class="member-avatar">田</div><div class="member-info"><div class="m-name">田邉 健介</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>📋 経営企画部</h3><span class="dept-count">3名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">蔭</div><div class="member-info"><div class="m-name">蔭山 隼人</div><div class="m-role">部長</div></div></div>
-        <div class="member-card"><div class="member-avatar">立</div><div class="member-info"><div class="m-name">立石 みなみ</div></div></div>
-        <div class="member-card"><div class="member-avatar">石</div><div class="member-info"><div class="m-name">石川 拓人</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>👥 HR室</h3><span class="dept-count">2名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">野</div><div class="member-info"><div class="m-name">野村 佑大</div><div class="m-role">本部長</div></div></div>
-        <div class="member-card"><div class="member-avatar">北</div><div class="member-info"><div class="m-name">北川 詩温</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🔬 R&D</h3><span class="dept-count">2名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">藤</div><div class="member-info"><div class="m-name">藤本 翔大</div><div class="m-role">リーダー</div></div></div>
-        <div class="member-card"><div class="member-avatar">冷</div><div class="member-info"><div class="m-name">冷牟田 修一</div><div class="m-role">リーダー</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>📢 広報室</h3><span class="dept-count">2名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">芝</div><div class="member-info"><div class="m-name">芝崎 かれん</div></div></div>
-        <div class="member-card"><div class="member-avatar">川</div><div class="member-info"><div class="m-name">川端 準</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🤝 CXチーム</h3><span class="dept-count">2名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">坂</div><div class="member-info"><div class="m-name">坂田 瑞穂</div></div></div>
-        <div class="member-card"><div class="member-avatar">梅</div><div class="member-info"><div class="m-name">梅田 花代</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>💡 事業企画チーム</h3><span class="dept-count">2名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">A</div><div class="member-info"><div class="m-name">A NAHU</div></div></div>
-        <div class="member-card"><div class="member-avatar">立</div><div class="member-info"><div class="m-name">立谷 琴音</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🌾 秋田チーム</h3><span class="dept-count">1名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">中</div><div class="member-info"><div class="m-name">中尾 圭太</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>💰 海外クレジット事業本部</h3><span class="dept-count">1名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">田</div><div class="member-info"><div class="m-name">田口 智恵美</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🏔️ 北海道営業所</h3><span class="dept-count">1名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">安</div><div class="member-info"><div class="m-name">安藤 元樹</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🏔️ 北陸営業所</h3><span class="dept-count">1名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">貴</div><div class="member-info"><div class="m-name">貴船 祐太</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>🏔️ 東北営業所</h3><span class="dept-count">1名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">佐</div><div class="member-info"><div class="m-name">佐藤 圭介</div></div></div>
-      </div>
-    </div>
-    <div class="dept-section">
-      <div class="dept-header"><h3>💴 経理・財務チーム</h3><span class="dept-count">1名</span></div>
-      <div class="dept-members">
-        <div class="member-card"><div class="member-avatar">塚</div><div class="member-info"><div class="m-name">塚本 伸一郎</div><div class="m-role">部長</div></div></div>
-      </div>
-    </div>
-  </div>
+<div class="chart-wrapper">
+  <div id="treeView"></div>
+  <div class="dept-list-view" id="deptView"></div>
 </div>
 
-<!-- Detail Modal -->
-<div class="detail-modal" id="detailModal">
-  <div class="detail-panel">
-    <div class="dp-avatar" id="dpAvatar"></div>
-    <div class="dp-name" id="dpName"></div>
-    <div class="dp-role" id="dpRole"></div>
-    <div style="font-size:13px;color:#555;margin-top:8px;line-height:1.6" id="dpBio"></div>
-    <div class="dp-info">
-      <div class="dp-row"><span class="dp-label">部門</span><span id="dpDept"></span></div>
-      <div class="dp-row"><span class="dp-label">入社日</span><span id="dpStart"></span></div>
+<!-- Profile Modal -->
+<div class="modal-bg" id="profileModal">
+  <div class="modal-panel">
+    <div class="mp-header">
+      <div class="mp-avatar" id="mpAv"></div>
+      <div class="mp-name" id="mpName"></div>
+      <div class="mp-role" id="mpRole"></div>
     </div>
-    <button class="btn" style="margin-top:20px;background:var(--gc-green);color:white;border:none;padding:9px 24px;border-radius:8px;cursor:pointer" onclick="document.getElementById('detailModal').classList.remove('open')">閉じる</button>
+    <div class="mp-body" id="mpBody"></div>
+    <div class="mp-footer"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>
   </div>
 </div>
 
 <script>
+const DATA_VERSION = '20260430-slack';
+const COLORS = ['#2d6a4f','#40916c','#1b4332','#52b788','#2563eb','#7c3aed','#b45309','#be185d','#0e7490','#9a3412'];
+
+// Load employees from localStorage (shared with gc_directory)
+let employees = [];
+if (localStorage.getItem('gc_directory_version') === DATA_VERSION) {
+  employees = JSON.parse(localStorage.getItem('gc_directory') || '[]');
+}
+if (!employees.length) {
+  employees = [
+    {"name": "大北 潤", "role": "代表取締役", "dept": "取締役会", "email": "j.okita@green-carbon.inc", "slack": "U09J5K73ZRS", "start": "2025-01-01", "location": "東京", "manager": ""},
+    {"name": "土居 海斗", "role": "リーダー", "dept": "国内企画部", "email": "k.doi@green-carbon.inc", "slack": "U099FND80J2", "start": "2023-03-09", "location": "東京", "manager": ""},
+    {"name": "横山 治生", "role": "リーダー", "dept": "海外企画部", "email": "h.yokoyama@green-carbon.inc", "slack": "U09QP1ZCW5Q", "start": "2023-03-09", "location": "東京", "manager": ""},
+    {"name": "井家 良輔", "role": "部長", "dept": "ESGコンサルティング部", "email": "r.ike@green-carbon.inc", "slack": "U09PHBF81DJ", "start": "2023-04-01", "location": "東京", "manager": ""},
+    {"name": "吉見 俊哉", "role": "リーダー", "dept": "国内事業部", "email": "y.yoshimi@green-carbon.inc", "slack": "U09QKHL51HT", "start": "2023-05-01", "location": "東京", "manager": ""},
+    {"name": "野村 佑大", "role": "本部長", "dept": "HR室", "email": "y.nomura@green-carbon.inc", "slack": "U09KA9U02DV", "start": "2023-09-01", "location": "東京", "manager": ""},
+    {"name": "藤本 翔大", "role": "リーダー", "dept": "R&D", "email": "s.fujimoto@green-carbon.inc", "slack": "U09QGK1BNR1", "start": "2023-11-01", "location": "東京", "manager": ""},
+    {"name": "妹尾 聖人", "role": "取締役", "dept": "取締役会", "email": "emp029@green-carbon.inc", "slack": "", "start": "2024-07-01", "location": "東京", "manager": ""},
+    {"name": "山本 高太郎", "role": "取締役", "dept": "取締役会", "email": "k.yamamoto@green-carbon.inc", "slack": "U09J5K4FWHJ", "start": "2025-02-01", "location": "東京", "manager": ""},
+    {"name": "田邉 健介", "role": "メンバー", "dept": "取締役会", "email": "k.tanabe@green-carbon.inc", "slack": "U09J5K6DKHA", "start": "2025-01-01", "location": "東京", "manager": ""},
+    {"name": "蔭山 隼人", "role": "部長", "dept": "経営企画部", "email": "h.kageyama@green-carbon.inc", "slack": "U09J5K5K9K6", "start": "2025-04-15", "location": "東京", "manager": ""},
+    {"name": "宮本 晋一郎", "role": "部長", "dept": "国内事業部", "email": "s.miyamoto@green-carbon.inc", "slack": "U09QP1YSUCA", "start": "2025-04-01", "location": "東京", "manager": ""}
+  ];
+}
+
 function initials(name) {
-  return name.trim().split(/\s+/).map(p=>p[0]).join('').slice(0,2);
+  const parts = name.trim().split(/[\s]+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0,2).toUpperCase();
 }
 
-function showDetail(name, role, bio, dept, start) {
-  document.getElementById('dpAvatar').textContent = initials(name);
-  document.getElementById('dpName').textContent = name;
-  document.getElementById('dpRole').textContent = role;
-  document.getElementById('dpBio').textContent = bio;
-  document.getElementById('dpDept').textContent = dept;
-  document.getElementById('dpStart').textContent = start;
-  document.getElementById('detailModal').classList.add('open');
+function avatarColor(name) {
+  let h = 0;
+  for (let c of name) h = (h * 31 + c.charCodeAt(0)) % COLORS.length;
+  return COLORS[Math.abs(h)];
 }
 
-function setView(mode) {
-  document.getElementById('treeView').style.display = mode==='tree' ? 'flex' : 'none';
-  document.getElementById('deptView').style.display = mode==='dept' ? 'block' : 'none';
-  document.getElementById('treeBtn').style.background = mode==='tree' ? 'var(--gc-pale)' : 'white';
-  document.getElementById('deptBtn').style.background = mode==='dept' ? 'var(--gc-pale)' : 'white';
+function buildDeptMap() {
+  const map = {};
+  for (const e of employees) {
+    if (!map[e.dept]) map[e.dept] = [];
+    map[e.dept].push(e);
+  }
+  return map;
 }
 
+function showProfile(emp) {
+  const color = avatarColor(emp.name);
+  document.getElementById('mpAv').textContent = initials(emp.name);
+  document.getElementById('mpAv').style.background = color;
+  document.getElementById('mpName').textContent = emp.name;
+  document.getElementById('mpRole').textContent = emp.role || '';
+  document.getElementById('mpBody').innerHTML = `
+    <div class="mp-row"><span class="mp-label">部門</span><span>${emp.dept || '-'}</span></div>
+    <div class="mp-row"><span class="mp-label">メール</span><span style="word-break:break-all">${emp.email || '-'}</span></div>
+    <div class="mp-row"><span class="mp-label">💬 Slack</span><span>${emp.slack || '-'}</span></div>
+    <div class="mp-row"><span class="mp-label">入社日</span><span>${emp.start || '-'}</span></div>
+    <div class="mp-row"><span class="mp-label">勤務地</span><span>${emp.location || '-'}</span></div>
+  `;
+  document.getElementById('profileModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('profileModal').classList.remove('open'); }
+
+// DEPT ICONS
+const DEPT_ICONS = {
+  'リサーチチーム': '🔬',
+  '国内企画部': '🇯🇵',
+  'オペレーションチーム': '⚙️',
+  'ビジネスディベロップメントチーム': '🚀',
+  'ESGコンサルティング部': '🌱',
+  'データチーム': '📊',
+  '海外企画部': '🌐',
+  'システムディベロップメントチーム': '💻',
+  '国内事業部': '🏢',
+  '取締役会': '👑',
+  '経営企画部': '📋',
+  'HR室': '👥',
+  'R&D': '🧪',
+  '広報室': '📣',
+  'CXチーム': '💡',
+  '事業企画チーム': '🗂️',
+  '経理・財務チーム': '💰',
+  '秋田チーム': '🍁',
+  '海外クレジット事業本部': '💱',
+  '北海道営業所': '🏔️',
+  '北陸営業所': '🌊',
+  '東北営業所': '🌸',
+};
+
+function renderTree() {
+  const deptMap = buildDeptMap();
+  const ceo = employees.find(e => e.role === '代表取締役' || e.dept === '取締役会' && e.role === '代表取締役') || employees[0];
+  const directors = employees.filter(e => e.dept === '取締役会' && e !== ceo);
+  const depts = Object.entries(deptMap)
+    .filter(([d]) => d !== '取締役会')
+    .sort((a, b) => b[1].length - a[1].length);
+
+  const ceoColor = avatarColor(ceo.name);
+
+  let html = `<div class="tree-view">
+    <!-- CEO -->
+    <div class="ceo-node" style="cursor:pointer" onclick="showProfile(${JSON.stringify(ceo).replace(/"/g,'&quot;')})">
+      <div class="n-avatar">${initials(ceo.name)}</div>
+      <div class="n-name">${ceo.name}</div>
+      <div class="n-role">${ceo.role}</div>
+    </div>
+    <div class="v-line"></div>`;
+
+  // Directors row
+  if (directors.length > 0) {
+    html += `<div class="director-row">`;
+    for (const d of directors) {
+      html += `<div class="director-node" style="cursor:pointer" onclick="showProfile(${JSON.stringify(d).replace(/"/g,'&quot;')})">
+        <div class="n-avatar" style="background:${avatarColor(d.name)}">${initials(d.name)}</div>
+        <div class="n-name">${d.name}</div>
+        <div class="n-role">${d.role}</div>
+        <div class="n-dept">取締役会</div>
+      </div>`;
+    }
+    html += `</div>
+    <div class="v-line" style="height:40px"></div>`;
+  }
+
+  // Section label
+  html += `<div style="font-size:13px;color:#888;margin-bottom:20px;text-align:center">── 各部門 ──</div>`;
+
+  // Departments grid
+  html += `<div class="dept-grid">`;
+  for (const [deptName, members] of depts) {
+    const icon = DEPT_ICONS[deptName] || '📁';
+    const leader = members.find(m => ['部長','本部長','代表取締役','取締役','リーダー'].includes(m.role));
+    const others = members.filter(m => m !== leader).slice(0, 4);
+    const moreCount = members.length - (leader ? 1 : 0) - others.length;
+
+    html += `<div class="dept-card" onclick="setView('dept')">
+      <div class="dept-card-header">
+        <div class="d-name">${icon} ${deptName}</div>
+        <div class="d-count">${members.length}名</div>
+      </div>
+      <div class="dept-card-body">`;
+
+    if (leader) {
+      html += `<div class="d-leader">${leader.name}</div>
+        <div class="d-leader-role">${leader.role}</div>`;
+    }
+
+    html += `<div class="d-members">`;
+    for (const m of others) {
+      html += `<span class="d-chip">${m.name.split(' ')[0]}</span>`;
+    }
+    if (moreCount > 0) {
+      html += `<span class="d-chip">+${moreCount}名</span>`;
+    }
+    html += `</div></div></div>`;
+  }
+  html += `</div></div>`;
+
+  document.getElementById('treeView').innerHTML = html;
+}
+
+function renderDeptList() {
+  const deptMap = buildDeptMap();
+  const depts = Object.entries(deptMap).sort((a,b) => b[1].length - a[1].length);
+
+  let html = '';
+  for (const [deptName, members] of depts) {
+    const icon = DEPT_ICONS[deptName] || '📁';
+    const sortedMembers = [...members].sort((a,b) => {
+      const order = {'代表取締役':0,'取締役':1,'部長':2,'本部長':3,'リーダー':4,'メンバー':5};
+      return (order[a.role]??5) - (order[b.role]??5);
+    });
+
+    html += `<div class="dept-section">
+      <div class="dept-section-header"><h3>${icon} ${deptName}</h3><span class="dc">${members.length}名</span></div>
+      <div class="dept-members">`;
+
+    for (const m of sortedMembers) {
+      const color = avatarColor(m.name);
+      html += `<div class="member-card" style="cursor:pointer" onclick="showProfile(${JSON.stringify(m).replace(/"/g,'&quot;')})">
+        <div class="member-avatar" style="background:${color}">${initials(m.name)}</div>
+        <div class="member-info">
+          <div class="m-name">${m.name}</div>
+          ${m.role ? `<div class="m-role">${m.role}</div>` : ''}
+        </div>
+      </div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  document.getElementById('deptView').innerHTML = html;
+}
+
+function setView(v) {
+  document.getElementById('treeView').style.display = v === 'tree' ? '' : 'none';
+  document.getElementById('deptView').style.display = v === 'dept' ? 'block' : 'none';
+  document.getElementById('treeBtn').className = v === 'tree' ? 'btn btn-active' : 'btn btn-secondary';
+  document.getElementById('deptBtn').className = v === 'dept' ? 'btn btn-active' : 'btn btn-secondary';
+}
+
+function updateStats() {
+  const deptMap = buildDeptMap();
+  document.getElementById('statTotal').textContent = employees.length + '名';
+  document.getElementById('statDepts').textContent = Object.keys(deptMap).length;
+}
+
+// Initialize
+updateStats();
+renderTree();
+renderDeptList();
 setView('tree');
 </script>
 </body>

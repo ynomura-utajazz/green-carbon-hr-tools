@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBO×OKR評価管理 | Green Carbon HR</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --gc-accent: #40916c;
+    --bg: #f0fdf4; --card: #ffffff; --border: #b7e4c7; --text: #1a1a2e;
+    --s-color: #7c3aed; --a-color: #2563eb; --b-color: #16a34a;
+    --c-color: #d97706; --d-color: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--gc-dark); color: white; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+  header .logo { font-size: 18px; font-weight: 700; }
+  header .subtitle { font-size: 13px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 13px; margin-left: auto; transition: color 0.2s; }
+  header a:hover { color: white; }
+  .nav-tabs { background: white; border-bottom: 2px solid var(--border); display: flex; padding: 0 24px; overflow-x: auto; }
+  .nav-tab { padding: 14px 24px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; color: #888; white-space: nowrap; transition: all 0.2s; }
+  .nav-tab:hover { color: var(--gc-green); }
+  .nav-tab.active { color: var(--gc-dark); border-bottom-color: var(--gc-green); font-weight: 700; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 22px; color: var(--gc-dark); margin-bottom: 4px; }
+  .page-header p { font-size: 14px; color: #666; }
+  .card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 24px; margin-bottom: 20px; }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--gc-dark); margin-bottom: 16px; }
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-danger { background: white; color: #e63946; border: 1.5px solid #e63946; }
+  .btn-danger:hover { background: #ffebee; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+  input[type=text], input[type=number], select, textarea { padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--gc-light); }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .form-group { flex: 1; }
+  .okr-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .okr-level-btn { padding: 8px 20px; border-radius: 20px; border: 1.5px solid var(--border); background: white; font-size: 13px; cursor: pointer; font-weight: 500; transition: all 0.2s; color: #666; }
+  .okr-level-btn:hover { border-color: var(--gc-light); color: var(--gc-green); }
+  .okr-level-btn.active { background: var(--gc-green); color: white; border-color: var(--gc-green); }
+  .quarter-selector { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .quarter-btn { padding: 6px 16px; border-radius: 16px; border: 1.5px solid var(--border); background: white; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .quarter-btn:hover { border-color: var(--gc-light); }
+  .quarter-btn.active { background: var(--gc-accent); color: white; border-color: var(--gc-accent); }
+  .okr-item { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 14px; transition: box-shadow 0.2s; }
+  .okr-item:hover { box-shadow: 0 3px 12px rgba(45,106,79,0.1); }
+  .okr-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+  .okr-level-badge { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+  .okr-level-badge.company { background: #e8f5e9; color: #1b5e20; }
+  .okr-level-badge.dept { background: #e3f2fd; color: #0d47a1; }
+  .okr-level-badge.individual { background: #f3e5f5; color: #4a148c; }
+  .okr-objective { font-size: 15px; font-weight: 600; color: var(--gc-dark); flex: 1; }
+  .okr-meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .kr-list { margin-top: 12px; }
+  .kr-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px 12px; background: #f8fffe; border-radius: 8px; border: 1px solid #e8f5ee; }
+  .kr-text { flex: 1; font-size: 13px; color: #444; }
+  .kr-progress-wrap { display: flex; align-items: center; gap: 8px; min-width: 200px; }
+  .kr-bar-bg { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; cursor: pointer; }
+  .kr-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .bar-green { background: linear-gradient(90deg, var(--gc-light), var(--gc-green)); }
+  .bar-yellow { background: linear-gradient(90deg, #f4c542, #f4a261); }
+  .bar-red { background: linear-gradient(90deg, #ff8a80, #e63946); }
+  .kr-pct { font-size: 12px; font-weight: 700; min-width: 36px; text-align: right; }
+  .pct-green { color: var(--gc-green); }
+  .pct-yellow { color: #f4a261; }
+  .pct-red { color: #e63946; }
+  .add-kr-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-kr-row input[type=number] { width: 70px; }
+  .mbo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .mbo-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
+  .mbo-card:hover { box-shadow: 0 3px 12px rgba(45,106,79,0.12); }
+  .mbo-emp { font-size: 15px; font-weight: 600; color: var(--gc-dark); }
+  .mbo-role { font-size: 12px; color: #888; margin-bottom: 12px; }
+  .eval-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .eval-label { font-size: 12px; color: #666; min-width: 64px; }
+  .grade-badges { display: flex; gap: 4px; }
+  .grade-btn { width: 36px; height: 36px; border-radius: 8px; border: 2px solid transparent; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; background: #f0f0f0; color: #888; }
+  .grade-btn:hover { transform: scale(1.1); }
+  .grade-btn.sel-S { background: var(--s-color); color: white; }
+  .grade-btn.sel-A { background: var(--a-color); color: white; }
+  .grade-btn.sel-B { background: var(--b-color); color: white; }
+  .grade-btn.sel-C { background: var(--c-color); color: white; }
+  .grade-btn.sel-D { background: var(--d-color); color: white; }
+  .mbo-comment { width: 100%; margin-top: 10px; resize: vertical; min-height: 56px; font-size: 13px; }
+  .mbo-card-footer { display: flex; justify-content: flex-end; margin-top: 12px; gap: 8px; }
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; border-radius: 12px; padding: 20px 24px; border: 1px solid var(--border); border-left: 5px solid var(--gc-light); }
+  .stat-num { font-size: 36px; font-weight: 700; color: var(--gc-green); }
+  .stat-label { font-size: 13px; color: #666; margin-top: 4px; }
+  .dept-okr-table { width: 100%; border-collapse: collapse; }
+  .dept-okr-table th, .dept-okr-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .dept-okr-table th { background: var(--gc-pale); color: var(--gc-dark); font-weight: 600; }
+  .dept-okr-table tr:hover td { background: #f8fffe; }
+  .mini-bar-bg { height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; width: 100px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .mini-bar { height: 100%; border-radius: 4px; }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 32px; max-width: 580px; width: 90%; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+  .modal h2 { font-size: 18px; color: var(--gc-dark); margin-bottom: 20px; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .slider-group { display: flex; align-items: center; gap: 10px; }
+  .slider-group input[type=range] { flex: 1; accent-color: var(--gc-green); }
+  .slider-val { min-width: 40px; font-weight: 700; }
+  .tab-section { display: none; }
+  .tab-section.active { display: block; }
+  .empty-state { text-align: center; padding: 48px 20px; color: #aaa; }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+  .toolbar select { width: auto; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">MBO×OKR評価管理</div>
+  </div>
+  <a href="../index.html">← ホームに戻る</a>
+</header>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('okr')">📐 OKR管理</div>
+  <div class="nav-tab" onclick="switchTab('mbo')">🎯 MBO評価</div>
+  <div class="nav-tab" onclick="switchTab('dashboard')">📊 ダッシュボード</div>
+</div>
+
+<!-- OKR Tab -->
+<div class="tab-section active" id="tab-okr">
+<div class="container">
+  <div class="page-header"><h1>OKR管理</h1><p>会社・部署・個人の3階層でObjectiveとKey Resultsを管理します</p></div>
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+    <div class="okr-tabs">
+      <button class="okr-level-btn active" onclick="setLevel('all',this)">すべて</button>
+      <button class="okr-level-btn" onclick="setLevel('company',this)">🏢 会社</button>
+      <button class="okr-level-btn" onclick="setLevel('dept',this)">🏗️ 部署</button>
+      <button class="okr-level-btn" onclick="setLevel('individual',this)">👤 個人</button>
+    </div>
+    <div class="quarter-selector">
+      <span style="font-size:13px;color:#666">四半期:</span>
+      <button class="quarter-btn active" onclick="setQuarter('2026Q1',this)">2026 Q1</button>
+      <button class="quarter-btn" onclick="setQuarter('2026Q2',this)">2026 Q2</button>
+      <button class="quarter-btn" onclick="setQuarter('2026Q3',this)">2026 Q3</button>
+      <button class="quarter-btn" onclick="setQuarter('2026Q4',this)">2026 Q4</button>
+    </div>
+    <button class="btn btn-primary" style="margin-left:auto" onclick="openOKRModal()">+ OKR追加</button>
+  </div>
+  <div id="okrList"></div>
+</div>
+</div>
+
+<!-- MBO Tab -->
+<div class="tab-section" id="tab-mbo">
+<div class="container">
+  <div class="page-header"><h1>MBO評価</h1><p>期末目標達成評価（S/A/B/C/Dの5段階）を自己評価・上司評価で管理します</p></div>
+  <div class="toolbar">
+    <select id="mboFilterDept" onchange="renderMBO()"><option value="">すべての部門</option></select>
+    <select id="mboFilterPeriod" onchange="renderMBO()">
+      <option value="2026H1">2026上半期</option>
+      <option value="2026H2">2026下半期</option>
+      <option value="2025H2">2025下半期</option>
+    </select>
+    <button class="btn btn-primary" onclick="openMBOModal()">+ 評価対象追加</button>
+  </div>
+  <div class="mbo-grid" id="mboGrid"></div>
+</div>
+</div>
+
+<!-- Dashboard Tab -->
+<div class="tab-section" id="tab-dashboard">
+<div class="container">
+  <div class="page-header"><h1>ダッシュボード</h1><p>部署別OKR達成率・MBO評価分布を一覧で確認</p></div>
+  <div class="dash-grid" id="statCards"></div>
+  <div class="two-col">
+    <div class="card"><div class="card-title">🏗️ 部署別OKR達成率</div><div id="deptOKRTable"></div></div>
+    <div class="card"><div class="card-title">🎯 MBO評価分布（上司評価）</div><div id="mboDistChart"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- OKR Modal -->
+<div class="modal-bg" id="okrModal">
+  <div class="modal">
+    <h2>OKR追加</h2>
+    <div class="form-row">
+      <div class="form-group"><label>階層</label>
+        <select id="okrLevel"><option value="company">🏢 会社</option><option value="dept">🏗️ 部署</option><option value="individual">👤 個人</option></select>
+      </div>
+      <div class="form-group"><label>四半期</label>
+        <select id="okrQuarter"><option value="2026Q1">2026 Q1</option><option value="2026Q2">2026 Q2</option><option value="2026Q3">2026 Q3</option><option value="2026Q4">2026 Q4</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>部門・担当者名</label><input type="text" id="okrOwner" placeholder="例: 国内事業部、野村 裕太"></div>
+    <div class="form-group"><label>Objective（目標）</label><input type="text" id="okrObjective" placeholder="例: カーボンクレジット事業の売上を拡大する"></div>
+    <div style="font-size:13px;font-weight:500;color:#444;margin-bottom:8px">Key Results</div>
+    <div class="add-kr-row"><input type="text" id="kr0" placeholder="KR 1"><input type="number" id="krp0" min="0" max="100" value="0"><span style="font-size:12px;color:#888;align-self:center">%</span></div>
+    <div class="add-kr-row"><input type="text" id="kr1" placeholder="KR 2"><input type="number" id="krp1" min="0" max="100" value="0"><span style="font-size:12px;color:#888;align-self:center">%</span></div>
+    <div class="add-kr-row"><input type="text" id="kr2" placeholder="KR 3（任意）"><input type="number" id="krp2" min="0" max="100" value="0"><span style="font-size:12px;color:#888;align-self:center">%</span></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeOKRModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveOKR()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal-bg" id="progressModal">
+  <div class="modal" style="max-width:420px">
+    <h2>進捗更新</h2>
+    <p id="progressKRText" style="font-size:14px;color:#444;margin-bottom:20px;line-height:1.6;background:#f8fffe;padding:12px;border-radius:8px;border:1px solid var(--border)"></p>
+    <div class="form-group">
+      <label>進捗率</label>
+      <div class="slider-group">
+        <input type="range" id="progressSlider" min="0" max="100" value="0" oninput="updateProgressDisplay()">
+        <span class="slider-val" id="progressVal">0</span><span style="color:#888;font-size:13px">%</span>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <div id="progressBarPreview" style="height:12px;border-radius:6px;background:#e0e0e0;overflow:hidden">
+        <div id="progressBarFill" style="height:100%;width:0%;border-radius:6px;transition:width 0.3s;background:linear-gradient(90deg,#52b788,#2d6a4f)"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeProgressModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveProgress()">更新</button>
+    </div>
+  </div>
+</div>
+
+<!-- MBO Modal -->
+<div class="modal-bg" id="mboModal">
+  <div class="modal">
+    <h2>MBO評価対象追加</h2>
+    <div class="form-row">
+      <div class="form-group"><label>氏名</label><input type="text" id="mboName" placeholder="例: 野村 裕太"></div>
+      <div class="form-group"><label>役職</label><input type="text" id="mboRole" placeholder="例: 本部長"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>部門</label><input type="text" id="mboDept" placeholder="例: HR室"></div>
+      <div class="form-group"><label>評価期間</label>
+        <select id="mboPeriod"><option value="2026H1">2026上半期</option><option value="2026H2">2026下半期</option><option value="2025H2">2025下半期</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>主な目標</label><textarea id="mboGoals" rows="3" placeholder="例: 採用プロセスの改善、1on1制度の整備、離職率5%以内"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeMBOModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveMBORecord()">追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQMe-yzdgvpDibaHidbzuxUFp0V-mWB7lnuhUWj33CBvPPvOQQus2smuICCaaJIyM/exec';
+let currentLevel = 'all';
+let currentQuarter = '2026Q1';
+let progressEditCtx = null;
+
+const defaultOKRs = [
+  { level:'company', quarter:'2026Q1', owner:'Green Carbon Inc.', objective:'カーボンクレジット事業の売上を前年比150%に拡大する', krs:[{text:'新規顧客50社獲得',pct:62},{text:'既存顧客継続率95%以上を維持',pct:88},{text:'国際市場2カ国進出を実現',pct:40}] },
+  { level:'company', quarter:'2026Q1', owner:'Green Carbon Inc.', objective:'組織文化とエンゲージメントを強化する', krs:[{text:'従業員満足度スコア80点以上',pct:75},{text:'離職率5%以下に抑える',pct:90}] },
+  { level:'dept', quarter:'2026Q1', owner:'HR室', objective:'採用力を強化し優秀人材の獲得を加速する', krs:[{text:'年間採用計画80%以上達成',pct:55},{text:'採用リードタイム45日以内に短縮',pct:70},{text:'内定承諾率85%以上',pct:82}] },
+  { level:'dept', quarter:'2026Q1', owner:'国内事業部', objective:'国内クレジット販売量を前期比130%に増加させる', krs:[{text:'大手企業10社と新規契約を締結',pct:50},{text:'提案書成約率35%以上',pct:45}] },
+  { level:'individual', quarter:'2026Q1', owner:'野村 裕太（HR室）', objective:'1on1制度を全社展開し定着させる', krs:[{text:'全マネージャーに1on1ガイドラインを配布',pct:100},{text:'月次1on1実施率90%以上',pct:78},{text:'フィードバックNPS+20以上',pct:35}] },
+];
+const defaultMBOs = [
+  {name:'野村 裕太', role:'本部長', dept:'HR室', period:'2026H1', goals:'採用プロセス改善、1on1制度整備、離職率5%以内', selfGrade:'A', managerGrade:'B', comment:'採用は目標の80%達成。1on1制度は全社展開完了。'},
+  {name:'吉見 俊哉', role:'リーダー', dept:'国内事業部', period:'2026H1', goals:'大手企業10社契約、売上前年比130%', selfGrade:'B', managerGrade:'B', comment:'契約数6社。来期継続チャレンジ。'},
+  {name:'土居 海斗', role:'リーダー', dept:'国内企画部', period:'2026H1', goals:'新商品企画3件リリース、市場調査完了', selfGrade:'S', managerGrade:'A', comment:'新商品4件リリース。期待以上の成果。'},
+  {name:'横山 治生', role:'リーダー', dept:'海外企画部', period:'2026H1', goals:'東南アジア2カ国進出計画策定', selfGrade:'A', managerGrade:'A', comment:'計画策定完了。推進フェーズへ。'},
+  {name:'藤本 翔大', role:'リーダー', dept:'R&D', period:'2026H1', goals:'新測定技術の検証実験完了、特許申請1件', selfGrade:'B', managerGrade:'C', comment:'実験遅延。技術的課題あり。'},
+  {name:'Deepak HV', role:'リーダー', dept:'ビジネスディベロップメントチーム', period:'2026H1', goals:'グローバルパートナー5社提携', selfGrade:'A', managerGrade:'A', comment:'6社と提携交渉成立。'},
+];
+
+function loadOKRs() { try { const s=localStorage.getItem('gc_okrs'); return s?JSON.parse(s):[...defaultOKRs]; } catch(e){ return [...defaultOKRs]; } }
+function saveOKRsLS(d) { localStorage.setItem('gc_okrs',JSON.stringify(d)); }
+function loadMBOs() { try { const s=localStorage.getItem('gc_mbos'); return s?JSON.parse(s):[...defaultMBOs]; } catch(e){ return [...defaultMBOs]; } }
+function saveMBOsLS(d) { localStorage.setItem('gc_mbos',JSON.stringify(d)); }
+let okrData = loadOKRs();
+let mboData = loadMBOs();
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tabs=['okr','mbo','dashboard'];
+  document.querySelectorAll('.nav-tab')[tabs.indexOf(tab)].classList.add('active');
+  if(tab==='dashboard') renderDashboard();
+  if(tab==='mbo') renderMBO();
+}
+
+function setLevel(l,btn) { currentLevel=l; document.querySelectorAll('.okr-level-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderOKRs(); }
+function setQuarter(q,btn) { currentQuarter=q; document.querySelectorAll('.quarter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderOKRs(); }
+
+function getPctCls(p) {
+  if(p>=70) return {bar:'bar-green',pct:'pct-green',fill:'linear-gradient(90deg,#52b788,#2d6a4f)'};
+  if(p>=40) return {bar:'bar-yellow',pct:'pct-yellow',fill:'linear-gradient(90deg,#f4c542,#f4a261)'};
+  return {bar:'bar-red',pct:'pct-red',fill:'linear-gradient(90deg,#ff8a80,#e63946)'};
+}
+function avgPct(krs) { return krs.length?Math.round(krs.reduce((s,k)=>s+k.pct,0)/krs.length):0; }
+
+function renderOKRs() {
+  const filtered = okrData.filter(o=>o.quarter===currentQuarter&&(currentLevel==='all'||o.level===currentLevel));
+  const cont = document.getElementById('okrList');
+  if(!filtered.length){ cont.innerHTML='<div class="empty-state"><div class="icon">📐</div><p>このフィルターにOKRがありません。「OKR追加」から登録してください。</p></div>'; return; }
+  const levelLabel = {company:'🏢 会社',dept:'🏗️ 部署',individual:'👤 個人'};
+  cont.innerHTML = filtered.map(o=>{
+    const ri = okrData.indexOf(o);
+    const avg = avgPct(o.krs);
+    const c = getPctCls(avg);
+    return `<div class="okr-item">
+      <div class="okr-header">
+        <span class="okr-level-badge ${o.level}">${levelLabel[o.level]}</span>
+        <div style="flex:1">
+          <div class="okr-objective">${o.objective}</div>
+          <div class="okr-meta">${o.owner} | ${o.quarter} | 平均進捗 <strong class="${c.pct}">${avg}%</strong></div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deleteOKR(${ri})">削除</button>
+      </div>
+      <div class="kr-list">
+        ${o.krs.map((kr,ki)=>{
+          const cc=getPctCls(kr.pct);
+          return `<div class="kr-item">
+            <span class="kr-text">${kr.text}</span>
+            <div class="kr-progress-wrap">
+              <div class="kr-bar-bg" onclick="openProgressModal(${ri},${ki})" title="クリックして進捗更新">
+                <div class="kr-bar ${cc.bar}" style="width:${kr.pct}%"></div>
+              </div>
+              <span class="kr-pct ${cc.pct}">${kr.pct}%</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openOKRModal() {
+  ['okrObjective','okrOwner'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('okrLevel').value='company';
+  document.getElementById('okrQuarter').value=currentQuarter;
+  ['kr0','kr1','kr2'].forEach(id=>document.getElementById(id).value='');
+  ['krp0','krp1','krp2'].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById('okrModal').classList.add('open');
+}
+function closeOKRModal(){ document.getElementById('okrModal').classList.remove('open'); }
+function saveOKR() {
+  const obj=document.getElementById('okrObjective').value.trim();
+  if(!obj){alert('Objectiveを入力してください');return;}
+  const krs=[];
+  for(let i=0;i<3;i++){const t=document.getElementById('kr'+i).value.trim();const p=Math.min(100,Math.max(0,parseInt(document.getElementById('krp'+i).value)||0));if(t)krs.push({text:t,pct:p});}
+  if(!krs.length){alert('Key Resultを1件以上入力してください');return;}
+  const rec={level:document.getElementById('okrLevel').value,quarter:document.getElementById('okrQuarter').value,owner:document.getElementById('okrOwner').value||'未設定',objective:obj,krs};
+  okrData.push(rec); saveOKRsLS(okrData); closeOKRModal(); renderOKRs();
+  fetch(GAS_URL+'?action=saveMBORecord',{method:'POST',body:JSON.stringify({type:'okr',...rec})}).catch(()=>{});
+}
+function deleteOKR(idx){if(!confirm('このOKRを削除しますか？'))return;okrData.splice(idx,1);saveOKRsLS(okrData);renderOKRs();}
+
+function openProgressModal(oi,ki) {
+  progressEditCtx={oi,ki};
+  const kr=okrData[oi].krs[ki];
+  document.getElementById('progressKRText').textContent=kr.text;
+  document.getElementById('progressSlider').value=kr.pct;
+  updateProgressDisplay();
+  document.getElementById('progressModal').classList.add('open');
+}
+function closeProgressModal(){document.getElementById('progressModal').classList.remove('open');progressEditCtx=null;}
+function updateProgressDisplay(){
+  const v=document.getElementById('progressSlider').value;
+  document.getElementById('progressVal').textContent=v;
+  const pct=parseInt(v);
+  const fill=pct>=70?'linear-gradient(90deg,#52b788,#2d6a4f)':pct>=40?'linear-gradient(90deg,#f4c542,#f4a261)':'linear-gradient(90deg,#ff8a80,#e63946)';
+  document.getElementById('progressBarFill').style.width=v+'%';
+  document.getElementById('progressBarFill').style.background=fill;
+}
+function saveProgress(){
+  if(!progressEditCtx)return;
+  okrData[progressEditCtx.oi].krs[progressEditCtx.ki].pct=parseInt(document.getElementById('progressSlider').value);
+  saveOKRsLS(okrData);closeProgressModal();renderOKRs();
+}
+
+function renderMBO() {
+  const depts=[...new Set(mboData.map(m=>m.dept))];
+  const ds=document.getElementById('mboFilterDept');const curD=ds.value;
+  ds.innerHTML='<option value="">すべての部門</option>'+depts.map(d=>`<option${d===curD?' selected':''}>${d}</option>`).join('');
+  const fD=ds.value,fP=document.getElementById('mboFilterPeriod').value;
+  const filtered=mboData.filter(m=>(!fD||m.dept===fD)&&(!fP||m.period===fP));
+  const grid=document.getElementById('mboGrid');
+  if(!filtered.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎯</div><p>該当する評価データがありません</p></div>';return;}
+  const grades=['S','A','B','C','D'];
+  grid.innerHTML=filtered.map(m=>{
+    const ri=mboData.indexOf(m);
+    return `<div class="mbo-card">
+      <div class="mbo-emp">${m.name}</div>
+      <div class="mbo-role">${m.role} | ${m.dept} | ${m.period}</div>
+      ${m.goals?`<div style="font-size:12px;color:#777;background:#f9fffe;padding:8px 10px;border-radius:6px;margin-bottom:12px;line-height:1.6">${m.goals}</div>`:''}
+      <div class="eval-row">
+        <span class="eval-label">自己評価</span>
+        <div class="grade-badges">${grades.map(g=>`<button class="grade-btn${m.selfGrade===g?' sel-'+g:''}" onclick="setGrade(${ri},'self','${g}')">${g}</button>`).join('')}</div>
+      </div>
+      <div class="eval-row">
+        <span class="eval-label">上司評価</span>
+        <div class="grade-badges">${grades.map(g=>`<button class="grade-btn${m.managerGrade===g?' sel-'+g:''}" onclick="setGrade(${ri},'manager','${g}')">${g}</button>`).join('')}</div>
+      </div>
+      <textarea class="mbo-comment" placeholder="コメント・所見..." onblur="setComment(${ri},this.value)">${m.comment||''}</textarea>
+      <div class="mbo-card-footer">
+        <button class="btn btn-danger btn-sm" onclick="deleteMBO(${ri})">削除</button>
+        <button class="btn btn-primary btn-sm" onclick="saveSingleMBO(${ri},this)">保存</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function setGrade(idx,type,g){if(type==='self')mboData[idx].selfGrade=g;else mboData[idx].managerGrade=g;saveMBOsLS(mboData);renderMBO();}
+function setComment(idx,val){mboData[idx].comment=val;saveMBOsLS(mboData);}
+function deleteMBO(idx){if(!confirm('削除しますか？'))return;mboData.splice(idx,1);saveMBOsLS(mboData);renderMBO();}
+function saveSingleMBO(idx,btn){
+  saveMBOsLS(mboData);
+  fetch(GAS_URL+'?action=saveMBORecord',{method:'POST',body:JSON.stringify({type:'mbo',...mboData[idx]})}).catch(()=>{});
+  const orig=btn.textContent;btn.textContent='✓ 保存済み';btn.style.background='var(--gc-light)';
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';},1500);
+}
+function openMBOModal(){['mboName','mboRole','mboDept','mboGoals'].forEach(id=>document.getElementById(id).value='');document.getElementById('mboPeriod').value='2026H1';document.getElementById('mboModal').classList.add('open');}
+function closeMBOModal(){document.getElementById('mboModal').classList.remove('open');}
+function saveMBORecord(){
+  const name=document.getElementById('mboName').value.trim();
+  if(!name){alert('氏名を入力してください');return;}
+  mboData.push({name,role:document.getElementById('mboRole').value,dept:document.getElementById('mboDept').value,period:document.getElementById('mboPeriod').value,goals:document.getElementById('mboGoals').value,selfGrade:'',managerGrade:'',comment:''});
+  saveMBOsLS(mboData);closeMBOModal();renderMBO();
+}
+
+function renderDashboard() {
+  const total=okrData.length;
+  const avgO=total?Math.round(okrData.reduce((s,o)=>s+avgPct(o.krs),0)/total):0;
+  const hi=okrData.filter(o=>avgPct(o.krs)>=70).length;
+  document.getElementById('statCards').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">OKR 登録数</div></div>
+    <div class="stat-card" style="border-color:var(--gc-accent)"><div class="stat-num" style="color:var(--gc-accent)">${avgO}%</div><div class="stat-label">OKR 平均進捗率</div></div>
+    <div class="stat-card" style="border-color:#52b788"><div class="stat-num" style="color:#52b788">${hi}</div><div class="stat-label">進捗70%超のOKR</div></div>
+    <div class="stat-card" style="border-color:#7c3aed"><div class="stat-num" style="color:#7c3aed">${mboData.length}</div><div class="stat-label">MBO 評価対象者</div></div>`;
+  // Dept OKR
+  const dm={};
+  okrData.filter(o=>o.level==='dept').forEach(o=>{if(!dm[o.owner])dm[o.owner]=[];dm[o.owner].push(avgPct(o.krs));});
+  const rows=Object.entries(dm).sort((a,b)=>{const aa=Math.round(a[1].reduce((s,p)=>s+p,0)/a[1].length);const bb=Math.round(b[1].reduce((s,p)=>s+p,0)/b[1].length);return bb-aa;}).map(([dept,pcts])=>{
+    const avg=Math.round(pcts.reduce((s,p)=>s+p,0)/pcts.length);
+    const c=getPctCls(avg);
+    return `<tr><td>${dept}</td><td><div class="mini-bar-bg"><div class="mini-bar ${c.bar}" style="width:${avg}%"></div></div><span class="${c.pct}" style="font-weight:600">${avg}%</span></td><td>${pcts.length}件</td></tr>`;
+  }).join('');
+  document.getElementById('deptOKRTable').innerHTML=rows?`<table class="dept-okr-table"><thead><tr><th>部署</th><th>平均進捗</th><th>OKR数</th></tr></thead><tbody>${rows}</tbody></table>`:'<div style="color:#aaa;padding:20px;text-align:center">部署OKRを追加してください</div>';
+  // MBO dist
+  const gc={S:0,A:0,B:0,C:0,D:0};
+  mboData.forEach(m=>{if(m.managerGrade&&gc[m.managerGrade]!==undefined)gc[m.managerGrade]++;});
+  const tot=Object.values(gc).reduce((s,v)=>s+v,0);
+  const colors={S:'#7c3aed',A:'#2563eb',B:'#16a34a',C:'#d97706',D:'#dc2626'};
+  const bgs={S:'#ede9fe',A:'#dbeafe',B:'#dcfce7',C:'#fef3c7',D:'#fee2e2'};
+  document.getElementById('mboDistChart').innerHTML=Object.entries(gc).map(([g,cnt])=>{
+    const pct=tot?Math.round(cnt/tot*100):0;
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="min-width:32px;text-align:center;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:700;background:${bgs[g]};color:${colors[g]}">${g}</span>
+      <div style="flex:1;height:20px;background:#eee;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${colors[g]};border-radius:4px;transition:width 0.5s"></div></div>
+      <span style="font-size:13px;font-weight:600;min-width:28px">${cnt}名</span>
+      <span style="font-size:12px;color:#aaa">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadFromGAS() {
+  try {
+    const r=await fetch(GAS_URL+'?action=getMBORecords');
+    const d=await r.json();
+    if(d.okrs&&d.okrs.length){okrData=d.okrs;saveOKRsLS(okrData);}
+    if(d.mbos&&d.mbos.length){mboData=d.mbos;saveMBOsLS(mboData);}
+    renderOKRs();renderMBO();
+  } catch(e){}
+}
+
+renderOKRs();
+renderMBO();
+loadFromGAS();
+
+/* GAS ADDITIONS NEEDED:
+case 'getMBORecords':
+  return JSON.stringify({ okrs: readSheet('OKR'), mbos: readSheet('MBO') });
+case 'saveMBORecord':
+  const p = JSON.parse(e.postData.contents);
+  if (p.type==='okr') appendToSheet('OKR', [p.level,p.quarter,p.owner,p.objective,JSON.stringify(p.krs)]);
+  else appendToSheet('MBO', [p.name,p.role,p.dept,p.period,p.goals,p.selfGrade,p.managerGrade,p.comment]);
+  return '{status:"ok"}';
+*/
+</script>
+</body>
+</html>

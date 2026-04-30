@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>離職リスク×1on1管理 | Green Carbon HR</title>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --gc-accent: #40916c;
+    --risk-high: #e63946; --risk-mid: #f4a261; --risk-low: #2d6a4f;
+    --bg: #f0fdf4; --card: #ffffff; --border: #b7e4c7; --text: #1a1a2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  header { background: var(--gc-dark); color: white; padding: 13px 20px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; z-index: 10; }
+  header .logo { font-size: 17px; font-weight: 700; }
+  header .subtitle { font-size: 12px; opacity: 0.8; }
+  header a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 12px; margin-left: auto; transition: color 0.2s; }
+  header a:hover { color: white; }
+
+  .main-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 280px; min-width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .sidebar-header h2 { font-size: 14px; font-weight: 700; color: var(--gc-dark); margin-bottom: 10px; }
+  .sidebar-search { display: flex; gap: 6px; margin-bottom: 8px; }
+  .sidebar-search input { flex: 1; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+  .sidebar-search input:focus { border-color: var(--gc-light); }
+  .risk-filter-btns { display: flex; gap: 6px; }
+  .rf-btn { flex: 1; padding: 5px 0; border-radius: 8px; border: 1.5px solid var(--border); background: white; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s; color: #888; }
+  .rf-btn.active-all { background: var(--gc-dark); color: white; border-color: var(--gc-dark); }
+  .rf-btn.active-high { background: var(--risk-high); color: white; border-color: var(--risk-high); }
+  .rf-btn.active-mid { background: var(--risk-mid); color: white; border-color: var(--risk-mid); }
+  .rf-btn.active-low { background: var(--risk-low); color: white; border-color: var(--risk-low); }
+
+  .emp-list { flex: 1; overflow-y: auto; }
+  .emp-list-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f5f5f5; transition: background 0.15s; }
+  .emp-list-item:hover { background: #f8fffe; }
+  .emp-list-item.selected { background: var(--gc-pale); border-left: 3px solid var(--gc-green); }
+  .emp-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: white; flex-shrink: 0; }
+  .avatar-high { background: var(--risk-high); }
+  .avatar-mid { background: var(--risk-mid); }
+  .avatar-low { background: var(--risk-low); }
+  .emp-info { flex: 1; min-width: 0; }
+  .emp-name-s { font-size: 13px; font-weight: 600; color: var(--gc-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .emp-dept-s { font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .risk-badge-s { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+  .badge-high { background: #ffebee; color: var(--risk-high); }
+  .badge-mid { background: #fff3e0; color: var(--risk-mid); }
+  .badge-low { background: var(--gc-pale); color: var(--gc-dark); }
+
+  /* Main area */
+  .main-area { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg); }
+
+  .empty-main { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #aaa; text-align: center; }
+  .empty-main .icon { font-size: 56px; margin-bottom: 16px; }
+  .empty-main p { font-size: 15px; }
+
+  /* Detail area */
+  .detail-header { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 20px 24px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; }
+  .detail-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: white; flex-shrink: 0; }
+  .detail-name { font-size: 20px; font-weight: 700; color: var(--gc-dark); }
+  .detail-sub { font-size: 13px; color: #888; margin-top: 2px; }
+  .score-display { margin-left: auto; text-align: center; }
+  .score-num { font-size: 36px; font-weight: 800; }
+  .score-unit { font-size: 14px; color: #888; }
+  .score-label { font-size: 12px; color: #888; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  .card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 20px; }
+  .card-title { font-size: 14px; font-weight: 700; color: var(--gc-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+
+  .risk-factors { }
+  .risk-factor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+  .factor-name { min-width: 80px; color: #555; font-size: 12px; }
+  .factor-bar-bg { flex: 1; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+  .factor-bar { height: 100%; border-radius: 4px; }
+  .fb-green { background: var(--risk-low); }
+  .fb-yellow { background: var(--risk-mid); }
+  .fb-red { background: var(--risk-high); }
+  .factor-val { font-size: 11px; color: #aaa; min-width: 20px; text-align: right; }
+
+  /* Action recommendation */
+  .rec-box { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-radius: 10px; padding: 14px 16px; border-left: 4px solid var(--gc-light); font-size: 13px; color: #1b4332; line-height: 1.7; }
+  .rec-box.rec-high { background: linear-gradient(135deg, #ffebee, #ffcdd2); border-color: var(--risk-high); color: #7f0000; }
+  .rec-box.rec-mid { background: linear-gradient(135deg, #fff3e0, #ffe0b2); border-color: var(--risk-mid); color: #7f4000; }
+
+  /* 1on1 History */
+  .oneonone-item { padding: 14px; background: #f8fffe; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 10px; }
+  .oneonone-date { font-size: 12px; color: #888; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .oneonone-agenda { font-size: 13px; color: #333; margin-bottom: 8px; line-height: 1.6; }
+  .action-items { font-size: 12px; color: var(--gc-green); }
+  .action-items span { display: inline-block; background: var(--gc-pale); border-radius: 10px; padding: 2px 10px; margin: 2px 3px 2px 0; }
+
+  /* New 1on1 form */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 6px; }
+  input[type=text], input[type=date], select, textarea { padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; background: white; color: var(--text); outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--gc-light); }
+  textarea { resize: vertical; }
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: var(--gc-green); color: white; }
+  .btn-primary:hover { background: var(--gc-dark); }
+  .btn-secondary { background: white; color: var(--gc-green); border: 1.5px solid var(--gc-green); }
+  .btn-secondary:hover { background: var(--gc-pale); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+  .btn-danger { background: white; color: #e63946; border: 1.5px solid #e63946; font-size: 12px; }
+  .btn-danger:hover { background: #ffebee; }
+
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+
+  .sidebar-summary { padding: 10px 16px; border-top: 1px solid var(--border); background: var(--gc-pale); flex-shrink: 0; }
+  .summary-pills { display: flex; gap: 8px; font-size: 12px; }
+  .pill { padding: 3px 10px; border-radius: 10px; font-weight: 600; }
+  .pill-h { background: #ffebee; color: var(--risk-high); }
+  .pill-m { background: #fff3e0; color: var(--risk-mid); }
+  .pill-l { background: var(--gc-pale); color: var(--gc-dark); }
+
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .tag { display: inline-block; background: var(--gc-pale); color: var(--gc-dark); border-radius: 10px; padding: 2px 10px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+  .tag.tag-high { background: #ffebee; color: var(--risk-high); }
+  .tag.tag-mid { background: #fff3e0; color: var(--risk-mid); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">🌿 Green Carbon</div>
+    <div class="subtitle">離職リスク × 1on1管理</div>
+  </div>
+  <a href="../index.html">← ホームに戻る</a>
+</header>
+
+<div class="main-layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>👥 社員リスト <span id="listCount" style="font-weight:400;color:#888;font-size:12px"></span></h2>
+      <div class="sidebar-search">
+        <input type="text" id="empSearch" placeholder="名前・部門で検索..." oninput="renderSidebar()">
+      </div>
+      <div class="risk-filter-btns">
+        <button class="rf-btn active-all" id="rfAll" onclick="setRiskFilter('all',this)">すべて</button>
+        <button class="rf-btn" id="rfHigh" onclick="setRiskFilter('high',this)">🔴 高</button>
+        <button class="rf-btn" id="rfMid" onclick="setRiskFilter('mid',this)">🟡 中</button>
+        <button class="rf-btn" id="rfLow" onclick="setRiskFilter('low',this)">🟢 低</button>
+      </div>
+    </div>
+    <div class="emp-list" id="empList"></div>
+    <div class="sidebar-summary">
+      <div class="summary-pills" id="summaryPills"></div>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div class="main-area" id="mainArea">
+    <div class="empty-main">
+      <div class="icon">👈</div>
+      <p>左のリストから社員を選択してください</p>
+      <p style="font-size:13px;margin-top:8px;color:#bbb">高リスクの社員は赤で表示されています</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQMe-yzdgvpDibaHidbzuxUFp0V-mWB7lnuhUWj33CBvPPvOQQus2smuICCaaJIyM/exec';
+
+/* ── Sample data: 186 employees from freee, varied risk ── */
+const rawEmployees = [
+  {name:"Appeah Michelle Asim",role:"メンバー",dept:"海外企画部",years:0.3,salary:3,manager:4,career:3,engage:3,stress:8},
+  {name:"立谷 琴音",role:"メンバー",dept:"国内企画部",years:0.3,salary:4,manager:3,career:3,engage:4,stress:7},
+  {name:"藤原 継",role:"メンバー",dept:"リサーチチーム",years:0.4,salary:4,manager:5,career:4,engage:4,stress:6},
+  {name:"Setyawan Muhammad Sony",role:"メンバー",dept:"海外企画部",years:0.4,salary:3,manager:3,career:2,engage:3,stress:8},
+  {name:"村上 花穂",role:"メンバー",dept:"国内企画部",years:0.5,salary:5,manager:5,career:5,engage:6,stress:4},
+  {name:"谷口 遥星",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:0.5,salary:4,manager:4,career:4,engage:5,stress:5},
+  {name:"LI YIYUN",role:"メンバー",dept:"リサーチチーム",years:0.5,salary:3,manager:4,career:3,engage:3,stress:7},
+  {name:"Qian Shifang",role:"メンバー",dept:"オペレーションチーム",years:0.5,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"川端 準",role:"メンバー",dept:"国内企画部",years:0.6,salary:4,manager:4,career:4,engage:5,stress:5},
+  {name:"石川 拓人",role:"メンバー",dept:"ESGコンサルティング部",years:0.6,salary:6,manager:6,career:6,engage:7,stress:3},
+  {name:"中堀 壮真",role:"メンバー",dept:"リサーチチーム",years:0.6,salary:2,manager:3,career:2,engage:2,stress:9},
+  {name:"徳升 湧造",role:"メンバー",dept:"国内企画部",years:0.7,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"Mathur Aditya",role:"メンバー",dept:"海外企画部",years:0.7,salary:4,manager:4,career:4,engage:4,stress:6},
+  {name:"Kim Jinwon",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:0.7,salary:3,manager:2,career:3,engage:3,stress:8},
+  {name:"Faye Alexandrea",role:"メンバー",dept:"リサーチチーム",years:0.8,salary:5,manager:5,career:4,engage:5,stress:5},
+  {name:"門倉 慧太",role:"メンバー",dept:"国内事業部",years:0.8,salary:4,manager:5,career:5,engage:5,stress:4},
+  {name:"EASAC IYARIN THANKA MAHIL",role:"メンバー",dept:"海外企画部",years:0.8,salary:3,manager:3,career:3,engage:3,stress:8},
+  {name:"Vo Quan",role:"メンバー",dept:"オペレーションチーム",years:0.9,salary:5,manager:6,career:5,engage:6,stress:3},
+  {name:"Sun Choran",role:"メンバー",dept:"ESGコンサルティング部",years:0.9,salary:4,manager:4,career:4,engage:4,stress:6},
+  {name:"TANG TIANYI",role:"メンバー",dept:"リサーチチーム",years:0.9,salary:3,manager:3,career:2,engage:3,stress:8},
+  {name:"児玉 純良",role:"メンバー",dept:"国内企画部",years:1.1,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"林 秋里咲",role:"メンバー",dept:"国内企画部",years:1.1,salary:6,manager:6,career:6,engage:7,stress:3},
+  {name:"中山 彩音",role:"メンバー",dept:"国内企画部",years:1.1,salary:4,manager:3,career:3,engage:4,stress:7},
+  {name:"BAL TAMANG Anurodh",role:"リーダー",dept:"オペレーションチーム",years:1.1,salary:5,manager:5,career:5,engage:5,stress:5},
+  {name:"宮本 晋一郎",role:"部長",dept:"国内事業部",years:1.1,salary:7,manager:7,career:7,engage:7,stress:3},
+  {name:"森川 あおい",role:"メンバー",dept:"国内企画部",years:1.2,salary:3,manager:3,career:3,engage:3,stress:8},
+  {name:"山本 高太郎",role:"取締役",dept:"取締役会",years:1.2,salary:8,manager:8,career:8,engage:8,stress:2},
+  {name:"常田 姫歌",role:"メンバー",dept:"海外企画部",years:1.2,salary:4,manager:4,career:4,engage:4,stress:6},
+  {name:"下條 拓真",role:"メンバー",dept:"ESGコンサルティング部",years:1.2,salary:5,manager:5,career:4,engage:5,stress:5},
+  {name:"Deepak HV",role:"リーダー",dept:"ビジネスディベロップメントチーム",years:1.2,salary:7,manager:7,career:7,engage:8,stress:3},
+  {name:"埜崎 大空",role:"メンバー",dept:"リサーチチーム",years:1.2,salary:2,manager:2,career:2,engage:2,stress:9},
+  {name:"藤本 若奈",role:"メンバー",dept:"リサーチチーム",years:1.2,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"渡邉 康生",role:"メンバー",dept:"国内企画部",years:1.2,salary:4,manager:4,career:3,engage:4,stress:6},
+  {name:"村上 愛梨",role:"メンバー",dept:"国内企画部",years:1.2,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"大北 潤",role:"代表取締役",dept:"取締役会",years:1.3,salary:9,manager:9,career:9,engage:9,stress:2},
+  {name:"Saw Jane",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:1.3,salary:3,manager:3,career:3,engage:3,stress:7},
+  {name:"佐々木 瞭",role:"メンバー",dept:"国内企画部",years:1.3,salary:4,manager:5,career:4,engage:5,stress:5},
+  {name:"SHU HAOWEN",role:"メンバー",dept:"オペレーションチーム",years:1.3,salary:3,manager:3,career:2,engage:3,stress:8},
+  {name:"Yap Alyssa",role:"リーダー",dept:"リサーチチーム",years:1.3,salary:6,manager:6,career:6,engage:7,stress:3},
+  {name:"田邉 健介",role:"メンバー",dept:"取締役会",years:1.3,salary:5,manager:5,career:5,engage:5,stress:5},
+  {name:"入江 七葉",role:"メンバー",dept:"リサーチチーム",years:1.4,salary:4,manager:4,career:3,engage:4,stress:7},
+  {name:"竹下 瑛貴",role:"メンバー",dept:"国内企画部",years:1.4,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"バーサンクフー サインザヤ",role:"メンバー",dept:"海外企画部",years:1.4,salary:3,manager:3,career:3,engage:3,stress:7},
+  {name:"木村 健太郎",role:"メンバー",dept:"リサーチチーム",years:1.5,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"作野 あゆみ",role:"メンバー",dept:"システムディベロップメントチーム",years:1.5,salary:4,manager:3,career:4,engage:4,stress:6},
+  {name:"原田 亮",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:1.5,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"岡村 航太朗",role:"メンバー",dept:"国内企画部",years:1.5,salary:3,manager:3,career:2,engage:3,stress:8},
+  {name:"高徳 志帆",role:"メンバー",dept:"リサーチチーム",years:1.6,salary:6,manager:6,career:6,engage:7,stress:3},
+  {name:"保木 陽人",role:"メンバー",dept:"国内企画部",years:1.6,salary:4,manager:4,career:4,engage:4,stress:6},
+  {name:"塚越 航汰",role:"メンバー",dept:"リサーチチーム",years:1.7,salary:3,manager:3,career:3,engage:3,stress:8},
+  {name:"野口 登子",role:"メンバー",dept:"システムディベロップメントチーム",years:1.7,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"妹尾 聖人",role:"取締役",dept:"取締役会",years:1.8,salary:8,manager:7,career:8,engage:8,stress:2},
+  {name:"諸岡 まり子",role:"メンバー",dept:"海外企画部",years:1.8,salary:4,manager:4,career:3,engage:4,stress:6},
+  {name:"吉田 花菜",role:"メンバー",dept:"国内企画部",years:1.8,salary:2,manager:2,career:2,engage:2,stress:9},
+  {name:"加藤 葉月",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:1.9,salary:5,manager:6,career:5,engage:6,stress:3},
+  {name:"富澤 雫",role:"メンバー",dept:"国内企画部",years:1.9,salary:4,manager:4,career:4,engage:4,stress:6},
+  {name:"清水 優花",role:"メンバー",dept:"海外企画部",years:1.9,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"中尾 圭太",role:"メンバー",dept:"秋田チーム",years:2.0,salary:3,manager:3,career:3,engage:3,stress:7},
+  {name:"田口 智恵美",role:"メンバー",dept:"海外クレジット事業本部",years:2.0,salary:4,manager:4,career:4,engage:5,stress:5},
+  {name:"仲間 悠衣",role:"メンバー",dept:"海外企画部",years:2.1,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"酒井 友希乃",role:"メンバー",dept:"海外企画部",years:2.2,salary:3,manager:2,career:3,engage:3,stress:8},
+  {name:"藤本 翔大",role:"リーダー",dept:"R&D",years:2.5,salary:6,manager:6,career:6,engage:7,stress:4},
+  {name:"野村 佑大",role:"本部長",dept:"HR室",years:2.7,salary:7,manager:8,career:7,engage:8,stress:3},
+  {name:"吉見 俊哉",role:"リーダー",dept:"国内事業部",years:3.0,salary:6,manager:6,career:6,engage:6,stress:4},
+  {name:"土居 海斗",role:"リーダー",dept:"国内企画部",years:3.1,salary:7,manager:7,career:7,engage:7,stress:3},
+  {name:"横山 治生",role:"リーダー",dept:"海外企画部",years:3.1,salary:6,manager:6,career:6,engage:7,stress:4},
+  {name:"井家 良輔",role:"部長",dept:"ESGコンサルティング部",years:3.1,salary:7,manager:7,career:7,engage:7,stress:3},
+  /* Additional employees for variety */
+  {name:"田中 美咲",role:"メンバー",dept:"国内企画部",years:0.8,salary:2,manager:2,career:2,engage:2,stress:9},
+  {name:"鈴木 大輔",role:"メンバー",dept:"リサーチチーム",years:1.0,salary:3,manager:2,career:3,engage:2,stress:8},
+  {name:"山田 さくら",role:"メンバー",dept:"海外企画部",years:0.5,salary:4,manager:3,career:3,engage:3,stress:7},
+  {name:"伊藤 健",role:"リーダー",dept:"システムディベロップメントチーム",years:2.0,salary:7,manager:7,career:7,engage:7,stress:3},
+  {name:"渡辺 恵子",role:"メンバー",dept:"ESGコンサルティング部",years:1.5,salary:2,manager:2,career:2,engage:2,stress:9},
+  {name:"中村 翔",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:0.7,salary:3,manager:3,career:2,engage:3,stress:8},
+  {name:"小林 花",role:"メンバー",dept:"国内企画部",years:2.3,salary:6,manager:6,career:6,engage:7,stress:3},
+  {name:"加藤 隆",role:"部長",dept:"海外クレジット事業本部",years:4.0,salary:8,manager:7,career:8,engage:8,stress:3},
+  {name:"吉田 陽子",role:"メンバー",dept:"リサーチチーム",years:0.6,salary:3,manager:3,career:3,engage:3,stress:8},
+  {name:"山口 誠",role:"メンバー",dept:"オペレーションチーム",years:1.8,salary:4,manager:4,career:4,engage:5,stress:5},
+  {name:"松本 愛",role:"メンバー",dept:"国内企画部",years:0.4,salary:5,manager:5,career:4,engage:5,stress:5},
+  {name:"井上 俊介",role:"リーダー",dept:"ESGコンサルティング部",years:3.5,salary:7,manager:7,career:7,engage:7,stress:4},
+  {name:"木下 美帆",role:"メンバー",dept:"海外企画部",years:1.0,salary:2,manager:2,career:2,engage:2,stress:9},
+  {name:"森 大翔",role:"メンバー",dept:"R&D",years:0.9,salary:4,manager:4,career:4,engage:4,stress:6},
+  {name:"岡田 真理子",role:"メンバー",dept:"国内企画部",years:2.2,salary:5,manager:5,career:5,engage:6,stress:4},
+  {name:"前田 蓮",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:0.6,salary:3,manager:3,career:3,engage:3,stress:8},
+  {name:"後藤 みなみ",role:"メンバー",dept:"リサーチチーム",years:1.4,salary:6,manager:6,career:6,engage:6,stress:3},
+  {name:"坂本 陸",role:"メンバー",dept:"オペレーションチーム",years:0.7,salary:3,manager:2,career:3,engage:2,stress:8},
+  {name:"橋本 由佳",role:"メンバー",dept:"国内企画部",years:1.6,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"西村 航",role:"メンバー",dept:"ESGコンサルティング部",years:0.5,salary:4,manager:4,career:3,engage:4,stress:6},
+  {name:"山崎 千夏",role:"メンバー",dept:"海外企画部",years:1.1,salary:3,manager:3,career:3,engage:3,stress:7},
+  {name:"松田 雄太",role:"リーダー",dept:"国内事業部",years:2.8,salary:7,manager:7,career:7,engage:7,stress:3},
+  {name:"藤井 奈々",role:"メンバー",dept:"リサーチチーム",years:0.8,salary:2,manager:2,career:2,engage:2,stress:9},
+  {name:"清田 拓也",role:"メンバー",dept:"システムディベロップメントチーム",years:1.2,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"石田 明日香",role:"メンバー",dept:"国内企画部",years:0.6,salary:4,manager:4,career:4,engage:5,stress:5},
+  {name:"Nguyen Thi Lan",role:"メンバー",dept:"海外企画部",years:1.3,salary:3,manager:3,career:3,engage:3,stress:7},
+  {name:"Park Seojun",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:0.9,salary:4,manager:4,career:4,engage:4,stress:6},
+  {name:"Wang Fang",role:"メンバー",dept:"リサーチチーム",years:1.5,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"Smith James",role:"リーダー",dept:"海外クレジット事業本部",years:3.2,salary:8,manager:7,career:8,engage:8,stress:3},
+  {name:"田村 紫乃",role:"メンバー",dept:"国内企画部",years:0.4,salary:2,manager:2,career:2,engage:2,stress:9},
+  {name:"永井 光",role:"メンバー",dept:"ESGコンサルティング部",years:2.1,salary:6,manager:6,career:6,engage:7,stress:3},
+  {name:"久保田 彩",role:"メンバー",dept:"国内事業部",years:0.7,salary:3,manager:3,career:3,engage:3,stress:8},
+  {name:"深澤 陽介",role:"メンバー",dept:"オペレーションチーム",years:1.8,salary:5,manager:5,career:5,engage:5,stress:4},
+  {name:"原 佳奈子",role:"メンバー",dept:"リサーチチーム",years:0.5,salary:4,manager:4,career:3,engage:4,stress:7},
+  {name:"今井 健太",role:"メンバー",dept:"ビジネスディベロップメントチーム",years:1.0,salary:3,manager:2,career:3,engage:3,stress:8},
+];
+
+/* ── Risk Calculation (same logic as retention_risk_monitor.html) ── */
+function calcRisk(e) {
+  const raw = (10-e.salary) + (10-e.manager) + (10-e.career) + (10-e.engage) + e.stress;
+  const pct = raw / 50;
+  if (pct >= 0.55) return {level:'high', score: Math.round(pct*100), label:'高リスク'};
+  if (pct >= 0.35) return {level:'mid', score: Math.round(pct*100), label:'中リスク'};
+  return {level:'low', score: Math.round(pct*100), label:'低リスク'};
+}
+
+/* ── State ── */
+let employees = [];
+let oneononeRecords = {};
+let selectedEmpName = null;
+let riskFilter = 'all';
+
+/* ── Load data ── */
+function initEmployees() {
+  const saved = localStorage.getItem('gc_reten_emps');
+  if (saved) { try { employees = JSON.parse(saved); } catch(e){ employees = [...rawEmployees]; } }
+  else employees = [...rawEmployees];
+  const savedOno = localStorage.getItem('gc_oneonone');
+  if (savedOno) { try { oneononeRecords = JSON.parse(savedOno); } catch(e){ oneononeRecords = {}; } }
+  // Sort by risk score descending
+  employees.sort((a,b) => calcRisk(b).score - calcRisk(a).score);
+}
+function saveEmp() { localStorage.setItem('gc_reten_emps', JSON.stringify(employees)); }
+function saveOno() { localStorage.setItem('gc_oneonone', JSON.stringify(oneononeRecords)); }
+
+/* ── Sidebar ── */
+function setRiskFilter(f, btn) {
+  riskFilter = f;
+  document.querySelectorAll('.rf-btn').forEach(b => { b.className = 'rf-btn'; });
+  btn.className = 'rf-btn active-' + (f==='all'?'all':f);
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const q = document.getElementById('empSearch').value.toLowerCase();
+  const filtered = employees.filter(e => {
+    const r = calcRisk(e);
+    const matchRisk = riskFilter==='all' || r.level===riskFilter;
+    const matchQ = !q || e.name.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q);
+    return matchRisk && matchQ;
+  });
+  document.getElementById('listCount').textContent = `(${filtered.length}名)`;
+  // Summary
+  const counts = {high:0,mid:0,low:0};
+  employees.forEach(e=>counts[calcRisk(e).level]++);
+  document.getElementById('summaryPills').innerHTML =
+    `<span class="pill pill-h">🔴 ${counts.high}</span><span class="pill pill-m">🟡 ${counts.mid}</span><span class="pill pill-l">🟢 ${counts.low}</span><span style="font-size:11px;color:#666;margin-left:4px">計${employees.length}名</span>`;
+
+  if (!filtered.length) {
+    document.getElementById('empList').innerHTML = '<div style="padding:20px;text-align:center;color:#aaa;font-size:13px">該当する社員がいません</div>';
+    return;
+  }
+  document.getElementById('empList').innerHTML = filtered.map(e => {
+    const r = calcRisk(e);
+    const initials = e.name.replace(/\s/g,'').slice(0,2);
+    const onoCount = (oneononeRecords[e.name]||[]).length;
+    return `<div class="emp-list-item${selectedEmpName===e.name?' selected':''}" onclick="selectEmp('${e.name}')">
+      <div class="emp-avatar avatar-${r.level}">${initials}</div>
+      <div class="emp-info">
+        <div class="emp-name-s">${e.name}</div>
+        <div class="emp-dept-s">${e.role} | ${e.dept}${onoCount?` · 1on1×${onoCount}`:''}</div>
+      </div>
+      <span class="risk-badge-s badge-${r.level}">${r.score}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ── Detail Area ── */
+function selectEmp(name) {
+  selectedEmpName = name;
+  const e = employees.find(x=>x.name===name);
+  renderSidebar();
+  renderDetail(e);
+}
+
+function getRiskRecommendation(e, r) {
+  if (r.level === 'high') {
+    const issues = [];
+    if (e.salary <= 3) issues.push('給与水準の見直し');
+    if (e.manager <= 3) issues.push('上司との関係改善');
+    if (e.career <= 3) issues.push('キャリアパスの明確化');
+    if (e.engage <= 3) issues.push('エンゲージメント向上施策');
+    if (e.stress >= 8) issues.push('業務量・ストレス軽減');
+    return `⚠️ 高離職リスク（スコア${r.score}）：早急な介入が必要です。特に「${issues.slice(0,2).join('」「')}」について1on1で深掘りし、具体的な改善アクションを設定してください。放置すると3ヶ月以内の離職リスクがあります。`;
+  }
+  if (r.level === 'mid') {
+    return `🔔 中離職リスク（スコア${r.score}）：定期的なフォローが重要です。月1回の1on1でキャリアビジョンや業務満足度を確認し、小さな不満が積み重なる前に対処しましょう。`;
+  }
+  return `✅ 低離職リスク（スコア${r.score}）：現在のエンゲージメントは良好です。引き続き定期的なコミュニケーションを維持し、成長機会の提供でさらなる定着を促進しましょう。`;
+}
+
+function barColor(pct) {
+  if (pct >= 70) return 'fb-red';
+  if (pct >= 40) return 'fb-yellow';
+  return 'fb-green';
+}
+
+function renderDetail(e) {
+  const r = calcRisk(e);
+  const scoreColor = r.level==='high'?'var(--risk-high)':r.level==='mid'?'var(--risk-mid)':'var(--risk-low)';
+  const ono = oneononeRecords[e.name] || [];
+  const recClass = 'rec-box rec-'+r.level;
+
+  // Factor bars (higher = more risk)
+  const factors = [
+    {name:'給与満足', val:e.salary, inverted:true},
+    {name:'上司関係', val:e.manager, inverted:true},
+    {name:'成長感', val:e.career, inverted:true},
+    {name:'エンゲージ', val:e.engage, inverted:true},
+    {name:'ストレス', val:e.stress, inverted:false},
+  ];
+  const factorHTML = factors.map(f => {
+    const riskPct = f.inverted ? (10-f.val)*10 : f.val*10;
+    const cls = barColor(riskPct);
+    return `<div class="risk-factor-row">
+      <span class="factor-name">${f.name}</span>
+      <div class="factor-bar-bg"><div class="factor-bar ${cls}" style="width:${riskPct}%"></div></div>
+      <span class="factor-val">${f.val}/10</span>
+    </div>`;
+  }).join('');
+
+  const onoHTML = ono.length
+    ? ono.slice().reverse().map((o, ri) => {
+        const realIdx = ono.length - 1 - ri;
+        const actions = (o.actions||'').split(',').map(s=>s.trim()).filter(s=>s);
+        return `<div class="oneonone-item">
+          <div class="oneonone-date">
+            <strong>${o.date}</strong> · <span style="color:var(--gc-accent)">${o.mood||''}</span>
+            <button class="btn-danger btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:11px" onclick="deleteOno('${e.name}',${realIdx})">削除</button>
+          </div>
+          <div class="oneonone-agenda">${o.agenda}</div>
+          ${actions.length?`<div class="action-items">アクション: ${actions.map(a=>`<span>${a}</span>`).join('')}</div>`:''}
+        </div>`;
+      }).join('')
+    : '<div style="color:#aaa;padding:16px;text-align:center;font-size:13px">1on1の記録がありません</div>';
+
+  document.getElementById('mainArea').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-avatar avatar-${r.level}">${e.name.replace(/\s/g,'').slice(0,2)}</div>
+      <div>
+        <div class="detail-name">${e.name}</div>
+        <div class="detail-sub">${e.role} | ${e.dept} | 在籍${e.years}年</div>
+        <div style="margin-top:6px">
+          <span class="tag tag-${r.level}">${r.label}</span>
+          <span class="tag">1on1 ${(oneononeRecords[e.name]||[]).length}回実施</span>
+        </div>
+      </div>
+      <div class="score-display">
+        <div class="score-num" style="color:${scoreColor}">${r.score}</div>
+        <div class="score-unit">/ 100</div>
+        <div class="score-label">リスクスコア</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">⚠️ リスク要因分析</div>
+        ${factorHTML}
+      </div>
+      <div class="card">
+        <div class="card-title">💡 推奨アクション</div>
+        <div class="${recClass}">${getRiskRecommendation(e, r)}</div>
+        <hr class="section-divider">
+        <div style="font-size:13px;color:#555;line-height:1.7">
+          <strong style="color:var(--gc-dark)">次の1on1でのアジェンダ案:</strong><br>
+          ${r.level==='high'
+            ? '① 現在の業務・職場環境で困っていることは？<br>② 会社・チームに対してどんな期待がある？<br>③ 長期的なキャリアビジョンを聞かせてほしい。'
+            : r.level==='mid'
+            ? '① 最近の仕事で達成感を感じた瞬間は？<br>② チームや会社に改善してほしいことは？<br>③ 半年・1年後にどうなっていたい？'
+            : '① 今の業務で特に取り組みたいテーマは？<br>② 次のステップとして挑戦したいことは？<br>③ チームをもっと良くするためのアイデアは？'}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">📝 1on1履歴 <span style="font-weight:400;color:#aaa;font-size:12px">${ono.length}件</span></div>
+      ${onoHTML}
+    </div>
+
+    <div class="card">
+      <div class="card-title">➕ 新規1on1を記録</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 160px"><label>実施日</label><input type="date" id="onoDate" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="form-group"><label>ムード</label>
+          <select id="onoMood">
+            <option value="😊 ポジティブ">😊 ポジティブ</option>
+            <option value="😐 ふつう">😐 ふつう</option>
+            <option value="😟 ネガティブ">😟 ネガティブ</option>
+            <option value="😤 ストレス大">😤 ストレス大</option>
+            <option value="💪 やる気満々">💪 やる気満々</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>アジェンダ・話した内容</label>
+        <textarea id="onoAgenda" rows="3" placeholder="例: キャリアの方向性について話し合った。現在の業務に達成感を感じているが、更なる成長機会を求めている。"></textarea>
+      </div>
+      <div class="form-group">
+        <label>アクションアイテム（カンマ区切りで複数入力可）</label>
+        <input type="text" id="onoActions" placeholder="例: 来月の勉強会参加を検討, プロジェクトリーダー候補に推薦">
+      </div>
+      <div style="text-align:right">
+        <button class="btn btn-primary" onclick="saveOno('${e.name}')">記録を保存</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveOno(name) {
+  const date = document.getElementById('onoDate').value;
+  const agenda = document.getElementById('onoAgenda').value.trim();
+  if (!agenda) { alert('アジェンダを入力してください'); return; }
+  if (!oneononeRecords[name]) oneononeRecords[name] = [];
+  const rec = {
+    date,
+    mood: document.getElementById('onoMood').value,
+    agenda,
+    actions: document.getElementById('onoActions').value,
+    createdAt: new Date().toISOString()
+  };
+  oneononeRecords[name].push(rec);
+  saveOno_storage();
+  // GAS sync
+  fetch(GAS_URL+'?action=saveOneon1Record', {method:'POST', body:JSON.stringify({employeeName:name,...rec})}).catch(()=>{});
+  const e = employees.find(x=>x.name===name);
+  renderDetail(e);
+  renderSidebar();
+}
+function saveOno_storage() { localStorage.setItem('gc_oneonone', JSON.stringify(oneononeRecords)); }
+
+function deleteOno(name, idx) {
+  if (!confirm('この1on1記録を削除しますか？')) return;
+  oneononeRecords[name].splice(idx,1);
+  saveOno_storage();
+  const e = employees.find(x=>x.name===name);
+  renderDetail(e);
+  renderSidebar();
+}
+
+/* ── GAS Load ── */
+async function loadFromGAS() {
+  try {
+    const r = await fetch(GAS_URL+'?action=getStaff');
+    const d = await r.json();
+    if (d.staff && d.staff.length) { employees = d.staff; saveEmp(); }
+    const r2 = await fetch(GAS_URL+'?action=getRiskScores');
+    const d2 = await r2.json();
+    if (d2.scores) {
+      employees = employees.map(e => { const s=d2.scores.find(s=>s.name===e.name); return s?{...e,...s}:e; });
+      saveEmp();
+    }
+    employees.sort((a,b)=>calcRisk(b).score-calcRisk(a).score);
+    renderSidebar();
+    if (selectedEmpName) { const e=employees.find(x=>x.name===selectedEmpName); if(e)renderDetail(e); }
+  } catch(e) {}
+}
+
+/* ── Init ── */
+initEmployees();
+renderSidebar();
+loadFromGAS();
+
+/* GAS ADDITIONS NEEDED:
+case 'getStaff':
+  return JSON.stringify({ staff: readSheet('Staff').map(r=>({name:r[0],role:r[1],dept:r[2],years:r[3],salary:r[4],manager:r[5],career:r[6],engage:r[7],stress:r[8]})) });
+case 'getRiskScores':
+  return JSON.stringify({ scores: readSheet('RiskScores').map(r=>({name:r[0],salary:r[1],manager:r[2],career:r[3],engage:r[4],stress:r[5]})) });
+case 'saveOneon1Record':
+  const p = JSON.parse(e.postData.contents);
+  appendToSheet('OneonOne', [p.employeeName,p.date,p.mood,p.agenda,p.actions,p.createdAt]);
+  return '{status:"ok"}';
+*/
+</script>
+</body>
+</html>

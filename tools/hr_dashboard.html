@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HRダッシュボード — Green Carbon HR Tools</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+    --gc-dark: #1b4332; --bg: #f0fdf4; --border: #b7e4c7; --text: #1a1a2e;
+    --red: #e63946; --red-pale: #fde8ea; --amber: #f4a261; --amber-pale: #fef3e2;
+    --blue: #1d6fa4; --blue-pale: #e3f0fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .header {
+    background: linear-gradient(135deg, var(--gc-dark) 0%, #40916c 60%, var(--gc-light) 100%);
+    color: white; padding: 20px 28px; display: flex; align-items: center;
+    gap: 20px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .header-back { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 14px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .header-back:hover { color: white; }
+  .header-title { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .header-title h1 { font-size: 20px; font-weight: 800; }
+  .header-title .badge { font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; }
+  .period-select { display: flex; align-items: center; gap: 8px; }
+  .period-select label { font-size: 13px; opacity: 0.8; white-space: nowrap; }
+  .period-select select { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .period-select select option { background: var(--gc-dark); color: white; }
+  .last-updated { font-size: 12px; opacity: 0.65; white-space: nowrap; }
+  .tabs-bar { background: white; border-bottom: 2px solid var(--border); display: flex; padding: 0 24px; gap: 0; overflow-x: auto; }
+  .tab-btn { padding: 14px 22px; font-size: 14px; font-weight: 600; color: #888; border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all 0.2s; }
+  .tab-btn:hover { color: var(--gc-green); }
+  .tab-btn.active { color: var(--gc-dark); border-bottom-color: var(--gc-green); }
+  .tab-panel { display: none; padding: 28px; max-width: 1200px; margin: 0 auto; }
+  .tab-panel.active { display: block; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .kpi-card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 20px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .kpi-label { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.3px; }
+  .kpi-value { font-size: 32px; font-weight: 800; color: var(--gc-dark); line-height: 1; }
+  .kpi-sub { font-size: 12px; color: #aaa; }
+  .kpi-delta { font-size: 13px; font-weight: 700; }
+  .kpi-delta.up { color: var(--gc-light); }
+  .kpi-delta.down { color: var(--red); }
+  .kpi-delta.neutral { color: #aaa; }
+  .section-title { font-size: 16px; font-weight: 700; color: var(--gc-dark); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 2px; background: var(--border); border-radius: 1px; }
+  .panel { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 22px; margin-bottom: 20px; }
+  .panel-title { font-size: 14px; font-weight: 700; color: var(--gc-dark); margin-bottom: 16px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .chart-wrap { position: relative; }
+  .chart-wrap canvas { max-width: 100%; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { text-align: left; padding: 10px 12px; background: var(--gc-pale); font-size: 12px; font-weight: 700; color: var(--gc-dark); border-bottom: 2px solid var(--border); white-space: nowrap; }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #fafff8; }
+  .trend-up { color: var(--gc-light); font-weight: 600; }
+  .trend-down { color: var(--red); font-weight: 600; }
+  .trend-neu { color: #aaa; }
+  .prog-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .prog-label { font-size: 13px; min-width: 140px; color: #555; }
+  .prog-bar-wrap { flex: 1; background: #eee; border-radius: 6px; height: 16px; overflow: hidden; }
+  .prog-bar { height: 100%; border-radius: 6px; transition: width 0.8s ease; }
+  .prog-val { font-size: 13px; font-weight: 700; min-width: 110px; text-align: right; color: var(--gc-dark); }
+  .rank { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--gc-pale); color: var(--gc-dark); font-size: 11px; font-weight: 800; text-align: center; line-height: 22px; }
+  .visa-tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 6px; background: var(--blue-pale); color: var(--blue); font-weight: 600; }
+  .metric-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-name { font-size: 13px; color: #555; }
+  .metric-val { font-size: 20px; font-weight: 800; color: var(--gc-dark); }
+  .metric-unit { font-size: 12px; color: #aaa; margin-left: 4px; }
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr; }
+    .tab-btn { padding: 12px 14px; font-size: 13px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .tab-panel { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}<\/script>
+
+<div class="header">
+  <a class="header-back" href="../index.html">← ホームに戻る</a>
+  <div class="header-title">
+    <span style="font-size:28px">📊</span>
+    <h1>HR ダッシュボード</h1>
+    <span class="badge">人事分析</span>
+  </div>
+  <div class="period-select">
+    <label>期間:</label>
+    <select id="periodSelect" onchange="changePeriod(this.value)">
+      <option value="3">直近3ヶ月</option>
+      <option value="6">直近6ヶ月</option>
+      <option value="12" selected>直近12ヶ月</option>
+      <option value="fy">当年度</option>
+    </select>
+  </div>
+  <div class="last-updated" id="lastUpdated">読み込み中…</div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab('overview',this)">📈 概要</button>
+  <button class="tab-btn" onclick="switchTab('diversity',this)">🌏 多様性</button>
+  <button class="tab-btn" onclick="switchTab('attrition',this)">🔄 採用・離職</button>
+  <button class="tab-btn" onclick="switchTab('costs',this)">💰 HRメトリクス</button>
+</div>
+
+<!-- TAB 1: Overview -->
+<div class="tab-panel active" id="tab-overview">
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">総社員数</div>
+      <div class="kpi-value" id="kpi-total">186</div>
+      <div class="kpi-sub">正社員・契約・アルバイト含む</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">今月入社</div>
+      <div class="kpi-value" id="kpi-joined" style="color:var(--gc-light)">4</div>
+      <div class="kpi-delta up" id="kpi-joined-delta">▲ 先月比 +1名</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">今月退社</div>
+      <div class="kpi-value" id="kpi-left" style="color:var(--red)">2</div>
+      <div class="kpi-delta down" id="kpi-left-delta">▼ 先月比 -1名</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">在職率</div>
+      <div class="kpi-value" id="kpi-retention">96.8%</div>
+      <div class="kpi-delta up" id="kpi-retention-delta">▲ 前月比 +0.3pt</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">平均勤続年数</div>
+      <div class="kpi-value" id="kpi-tenure">2.4<span style="font-size:16px;font-weight:400">年</span></div>
+      <div class="kpi-sub">全社平均</div>
+    </div>
+  </div>
+  <div class="section-title">📊 月別頭数推移（直近12ヶ月）</div>
+  <div class="panel">
+    <div class="chart-wrap" style="height:260px"><canvas id="headcountChart"></canvas></div>
+  </div>
+  <div class="section-title">🏢 部門別人員</div>
+  <div class="panel">
+    <table class="data-table">
+      <thead><tr><th>部門</th><th>人数</th><th>比率</th><th>前月差</th></tr></thead>
+      <tbody id="deptTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB 2: Diversity -->
+<div class="tab-panel" id="tab-diversity">
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">🌏 国籍別分布</div>
+      <div class="chart-wrap" style="height:230px"><canvas id="nationalityChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">📅 年齢分布（10歳刻み）</div>
+      <div class="chart-wrap" style="height:230px"><canvas id="ageChart"></canvas></div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">⚧ 性別比率</div>
+      <div id="genderBars" style="margin-top:8px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">📑 雇用形態別内訳</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="empTypeChart"></canvas></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">🛂 外国籍社員の在留資格種別内訳</div>
+    <div id="visaSection"></div>
+  </div>
+</div>
+
+<!-- TAB 3: Attrition -->
+<div class="tab-panel" id="tab-attrition">
+  <div class="section-title">📊 月別入退社（直近12ヶ月）</div>
+  <div class="panel">
+    <div class="chart-wrap" style="height:260px"><canvas id="joinLeaveChart"></canvas></div>
+  </div>
+  <div class="section-title">📉 離職率トレンド</div>
+  <div class="panel">
+    <div class="chart-wrap" style="height:220px"><canvas id="attritionTrendChart"></canvas></div>
+  </div>
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">🏢 部門別離職率ランキング</div>
+      <table class="data-table">
+        <thead><tr><th></th><th>部門</th><th>離職率</th><th>退社数</th></tr></thead>
+        <tbody id="deptAttrTbody"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-title">🔄 自発的 vs 非自発的離職</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="attrTypeChart"></canvas></div>
+      <div id="attrTypeLegend" style="margin-top:14px"></div>
+    </div>
+  </div>
+  <div class="section-title">📣 採用チャネル別実績</div>
+  <div class="panel">
+    <div class="chart-wrap" style="height:200px"><canvas id="channelChart"></canvas></div>
+  </div>
+</div>
+
+<!-- TAB 4: Costs -->
+<div class="tab-panel" id="tab-costs">
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+    <div class="kpi-card">
+      <div class="kpi-label">1人当たり採用コスト</div>
+      <div class="kpi-value" style="font-size:26px">¥485K</div>
+      <div class="kpi-delta down">▲ 前年比 +12%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">年間採用総コスト</div>
+      <div class="kpi-value" style="font-size:26px">¥8.7M</div>
+      <div class="kpi-sub">18名採用 × 平均</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">人件費比率（概算）</div>
+      <div class="kpi-value" style="font-size:26px">38.2%</div>
+      <div class="kpi-sub">売上に対する人件費</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">1人当たり研修時間</div>
+      <div class="kpi-value" style="font-size:26px">34<span style="font-size:16px;font-weight:400">h/年</span></div>
+      <div class="kpi-delta up">▲ 前年比 +8h</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">研修コスト合計</div>
+      <div class="kpi-value" style="font-size:26px">¥2.1M</div>
+      <div class="kpi-sub">年間見込み</div>
+    </div>
+  </div>
+  <div class="section-title">💰 採用コスト（チャネル別）</div>
+  <div class="panel">
+    <div class="chart-wrap" style="height:220px"><canvas id="costByChannelChart"></canvas></div>
+  </div>
+  <div class="section-title">📈 1人当たり採用コスト推移</div>
+  <div class="panel">
+    <div class="chart-wrap" style="height:220px"><canvas id="costTrendChart"></canvas></div>
+  </div>
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">🏭 人件費比率の推移（月次）</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="payrollRatioChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">📚 研修コスト内訳</div>
+      <div id="trainingBreakdown"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQMe-yzdgvpDibaHidbzuxUFp0V-mWB7lnuhUWj33CBvPPvOQQus2smuICCaaJIyM/exec';
+const MONTHS_12 = ['24/06','24/07','24/08','24/09','24/10','24/11','24/12','25/01','25/02','25/03','25/04','25/05'];
+
+const SAMPLE = {
+  kpi: { total: 186, joined: 4, left: 2, retention: 96.8, tenure: 2.4, joinedDelta: 1, leftDelta: -1, retentionDelta: 0.3 },
+  headcount: [172,174,175,176,178,179,180,181,182,183,185,186],
+  departments: [
+    { name: '事業開発', count: 42, prev: 40 },
+    { name: 'ESG・サステナビリティ', count: 35, prev: 35 },
+    { name: 'テクノロジー', count: 28, prev: 27 },
+    { name: 'ファイナンス', count: 22, prev: 22 },
+    { name: 'オペレーション', count: 20, prev: 19 },
+    { name: 'マーケティング', count: 18, prev: 18 },
+    { name: 'HR', count: 14, prev: 14 },
+    { name: 'その他', count: 7, prev: 7 },
+  ],
+  nationality: [
+    { name: '🇯🇵 日本', count: 88, color: '#1b4332' },
+    { name: '🇮🇩 インドネシア', count: 42, color: '#2d6a4f' },
+    { name: '🇻🇳 ベトナム', count: 31, color: '#52b788' },
+    { name: '🇵🇭 フィリピン', count: 12, color: '#74c69d' },
+    { name: '🇹🇭 タイ', count: 8, color: '#95d5b2' },
+    { name: 'その他', count: 5, color: '#d8f3dc' },
+  ],
+  gender: { male: 108, female: 73, other: 5 },
+  empType: [
+    { name: '正社員', count: 142, color: '#2d6a4f' },
+    { name: '契約社員', count: 28, color: '#52b788' },
+    { name: 'アルバイト', count: 10, color: '#95d5b2' },
+    { name: '業務委託', count: 6, color: '#d8f3dc' },
+  ],
+  age: [8,54,72,38,10,4],
+  ageLabels: ['〜24','25–34','35–44','45–54','55–64','65〜'],
+  visa: [
+    { name: '技術・人文知識・国際業務', count: 43 },
+    { name: '高度専門職', count: 18 },
+    { name: '特定活動（高度人材）', count: 12 },
+    { name: '永住者', count: 15 },
+    { name: '定住者', count: 6 },
+    { name: '日本人の配偶者等', count: 4 },
+  ],
+  joinLeave: {
+    join:  [2,3,2,3,2,1,2,3,1,2,2,4],
+    leave: [1,2,1,2,1,2,1,1,2,1,1,2],
+  },
+  attrRate:   [1.8,2.1,1.6,2.3,1.5,2.4,1.7,1.4,2.2,1.6,1.5,1.8],
+  attrAnnual: [21.6,25.2,19.2,27.6,18.0,28.8,20.4,16.8,26.4,19.2,18.0,21.6],
+  deptAttr: [
+    { dept: 'テクノロジー', rate: 8.2, count: 2 },
+    { dept: '事業開発', rate: 6.5, count: 3 },
+    { dept: 'マーケティング', rate: 5.8, count: 1 },
+    { dept: 'ESG・サステナビリティ', rate: 3.4, count: 1 },
+    { dept: 'ファイナンス', rate: 2.9, count: 1 },
+    { dept: 'オペレーション', rate: 1.8, count: 0 },
+    { dept: 'HR', rate: 0.0, count: 0 },
+  ],
+  attrType: { voluntary: 14, involuntary: 4 },
+  channels: [
+    { name: '求人サイト', count: 7, color: '#2d6a4f' },
+    { name: 'エージェント', count: 5, color: '#52b788' },
+    { name: 'リファラル', count: 4, color: '#95d5b2' },
+    { name: '直応募', count: 2, color: '#d8f3dc' },
+  ],
+  costByChannel: [3200000,2900000,1200000,380000],
+  costTrend: [420000,435000,410000,460000,450000,480000,455000,470000,490000,465000,475000,485000],
+  payrollRatio: [36.4,37.1,36.8,37.5,37.9,38.2,37.8,38.4,38.0,38.1,37.9,38.2],
+  training: [
+    { name: 'e-ラーニング', cost: 840000 },
+    { name: '外部研修', cost: 650000 },
+    { name: '社内勉強会', cost: 320000 },
+    { name: '資格取得支援', cost: 290000 },
+  ],
+};
+
+let DATA = null;
+let PERIOD = '12';
+const charts = {};
+
+function periodSlice() {
+  const n = PERIOD === 'fy' ? 12 : parseInt(PERIOD);
+  return { labels: MONTHS_12.slice(12 - n), n };
+}
+
+function dc(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+async function fetchGAS() {
+  try {
+    const r = await fetch(GAS_URL + '?action=getHRDashboard');
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    if (j && j.kpi) return j;
+  } catch(e) { console.warn('GAS fallback:', e.message); }
+  return null;
+}
+
+function renderOverview() {
+  const d = DATA; const { labels, n } = periodSlice();
+  const k = d.kpi;
+  document.getElementById('kpi-total').textContent = k.total;
+  document.getElementById('kpi-joined').textContent = k.joined;
+  document.getElementById('kpi-left').textContent = k.left;
+  document.getElementById('kpi-retention').textContent = k.retention + '%';
+  document.getElementById('kpi-tenure').innerHTML = k.tenure + '<span style="font-size:16px;font-weight:400">年</span>';
+  const jd = k.joinedDelta;
+  document.getElementById('kpi-joined-delta').textContent = (jd>=0?'▲':'▼')+' 先月比 '+(jd>=0?'+':'')+jd+'名';
+  document.getElementById('kpi-joined-delta').className = 'kpi-delta '+(jd>=0?'up':'down');
+  const ld = k.leftDelta;
+  document.getElementById('kpi-left-delta').textContent = (ld<=0?'▼':'▲')+' 先月比 '+(ld>=0?'+':'')+ld+'名';
+  document.getElementById('kpi-left-delta').className = 'kpi-delta '+(ld<=0?'up':'down');
+  const rd = k.retentionDelta;
+  document.getElementById('kpi-retention-delta').textContent = (rd>=0?'▲':'▼')+' 前月比 '+(rd>=0?'+':'')+rd+'pt';
+
+  dc('headcount');
+  charts.headcount = new Chart(document.getElementById('headcountChart').getContext('2d'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'在籍人数', data:d.headcount.slice(12-n), backgroundColor:'#52b78855', borderColor:'#2d6a4f', borderWidth:2, borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:false, min:Math.max(0,Math.min(...d.headcount)-10) } } }
+  });
+
+  const total = d.departments.reduce((s,r)=>s+r.count,0);
+  document.getElementById('deptTbody').innerHTML = d.departments.map(r => {
+    const diff = r.count - r.prev;
+    return `<tr><td>${r.name}</td><td><strong>${r.count}</strong></td><td>${(r.count/total*100).toFixed(1)}%</td><td class="${diff>0?'trend-up':diff<0?'trend-down':'trend-neu'}">${diff>0?'+':''}${diff}</td></tr>`;
+  }).join('');
+}
+
+function renderDiversity() {
+  const d = DATA;
+  dc('nationality');
+  charts.nationality = new Chart(document.getElementById('nationalityChart').getContext('2d'), {
+    type:'bar',
+    data:{ labels:d.nationality.map(x=>x.name), datasets:[{ label:'人数', data:d.nationality.map(x=>x.count), backgroundColor:d.nationality.map(x=>x.color), borderRadius:4 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true } } }
+  });
+
+  dc('age');
+  charts.age = new Chart(document.getElementById('ageChart').getContext('2d'), {
+    type:'bar',
+    data:{ labels:d.ageLabels, datasets:[{ label:'人数', data:d.age, backgroundColor:'#52b78899', borderColor:'#2d6a4f', borderWidth:2, borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+  });
+
+  const gT = d.gender.male + d.gender.female + d.gender.other;
+  document.getElementById('genderBars').innerHTML = [
+    ['男性', d.gender.male, '#1d6fa4'],
+    ['女性', d.gender.female, '#e63946'],
+    ['その他・未回答', d.gender.other, '#aaa'],
+  ].map(([lbl,cnt,col]) => `<div class="prog-row"><div class="prog-label">${lbl}</div><div class="prog-bar-wrap"><div class="prog-bar" style="width:${(cnt/gT*100).toFixed(1)}%;background:${col}"></div></div><div class="prog-val">${cnt}名 (${(cnt/gT*100).toFixed(1)}%)</div></div>`).join('')
+    + `<div style="font-size:12px;color:#aaa;margin-top:12px">総計 ${gT}名</div>`;
+
+  dc('empType');
+  charts.empType = new Chart(document.getElementById('empTypeChart').getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:d.empType.map(x=>x.name), datasets:[{ data:d.empType.map(x=>x.count), backgroundColor:d.empType.map(x=>x.color), borderWidth:2, borderColor:'#fff' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ font:{ size:12 } } } } }
+  });
+
+  const fT = d.nationality.filter(x=>!x.name.includes('日本')).reduce((s,x)=>s+x.count,0);
+  document.getElementById('visaSection').innerHTML =
+    `<div style="font-size:13px;color:#666;margin-bottom:14px">外国籍社員 <strong>${fT}名</strong> の在留資格内訳</div>` +
+    d.visa.map(v => {
+      const p = (v.count/fT*100).toFixed(1);
+      return `<div class="prog-row"><div class="prog-label" style="min-width:220px"><span class="visa-tag">${v.name}</span></div><div class="prog-bar-wrap"><div class="prog-bar" style="width:${p}%;background:var(--gc-green)"></div></div><div class="prog-val">${v.count}名 (${p}%)</div></div>`;
+    }).join('');
+}
+
+function renderAttrition() {
+  const d = DATA; const { labels, n } = periodSlice();
+
+  dc('joinLeave');
+  charts.joinLeave = new Chart(document.getElementById('joinLeaveChart').getContext('2d'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      { label:'入社', data:d.joinLeave.join.slice(12-n), backgroundColor:'#52b788bb', borderColor:'#2d6a4f', borderWidth:1.5, borderRadius:4 },
+      { label:'退社', data:d.joinLeave.leave.slice(12-n), backgroundColor:'#e6394699', borderColor:'#c1121f', borderWidth:1.5, borderRadius:4 }
+    ] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
+  });
+
+  dc('attrTrend');
+  charts.attrTrend = new Chart(document.getElementById('attritionTrendChart').getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets:[
+      { label:'月次離職率(%)', data:d.attrRate.slice(12-n), borderColor:'#e63946', backgroundColor:'#e6394620', fill:true, tension:0.4, pointRadius:4, yAxisID:'y' },
+      { label:'年率換算(%)', data:d.attrAnnual.slice(12-n), borderColor:'#f4a261', borderDash:[5,4], tension:0.4, pointRadius:3, yAxisID:'y2' }
+    ] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } },
+      scales:{ y:{ position:'left', title:{ display:true, text:'月次 (%)' } }, y2:{ position:'right', title:{ display:true, text:'年率換算 (%)' }, grid:{ drawOnChartArea:false } } } }
+  });
+
+  document.getElementById('deptAttrTbody').innerHTML = d.deptAttr.map((r,i) =>
+    `<tr><td><span class="rank">${i+1}</span></td><td>${r.dept}</td><td><div style="display:inline-block;width:${r.rate*7}px;height:8px;background:${r.rate>5?'var(--red)':'var(--gc-light)'};border-radius:4px;vertical-align:middle;margin-right:6px"></div>${r.rate.toFixed(1)}%</td><td>${r.count}名</td></tr>`
+  ).join('');
+
+  dc('attrType');
+  charts.attrType = new Chart(document.getElementById('attrTypeChart').getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:['自発的離職','非自発的離職'], datasets:[{ data:[d.attrType.voluntary,d.attrType.involuntary], backgroundColor:['#e63946','#f4a261'], borderWidth:2, borderColor:'#fff' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, cutout:'60%' }
+  });
+  const aT = d.attrType.voluntary + d.attrType.involuntary;
+  document.getElementById('attrTypeLegend').innerHTML = [
+    ['自発的離職', d.attrType.voluntary, '#e63946'],
+    ['非自発的離職', d.attrType.involuntary, '#f4a261'],
+  ].map(([lbl,cnt,col]) => `<div class="prog-row"><div class="prog-label">${lbl}</div><div class="prog-bar-wrap"><div class="prog-bar" style="width:${(cnt/aT*100).toFixed(0)}%;background:${col}"></div></div><div class="prog-val">${cnt}名</div></div>`).join('');
+
+  dc('channel');
+  charts.channel = new Chart(document.getElementById('channelChart').getContext('2d'), {
+    type:'bar',
+    data:{ labels:d.channels.map(x=>x.name), datasets:[{ label:'採用人数', data:d.channels.map(x=>x.count), backgroundColor:d.channels.map(x=>x.color), borderRadius:6, borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
+  });
+}
+
+function renderCosts() {
+  const d = DATA; const { labels, n } = periodSlice();
+
+  dc('costByChannel');
+  charts.costByChannel = new Chart(document.getElementById('costByChannelChart').getContext('2d'), {
+    type:'bar',
+    data:{ labels:d.channels.map(x=>x.name), datasets:[{ label:'採用コスト(円)', data:d.costByChannel, backgroundColor:d.channels.map(x=>x.color), borderRadius:6, borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:ctx=>'¥'+(ctx.raw/10000).toFixed(0)+'万' } } }, scales:{ y:{ ticks:{ callback:v=>'¥'+(v/10000)+'万' } } } }
+  });
+
+  dc('costTrend');
+  charts.costTrend = new Chart(document.getElementById('costTrendChart').getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'1人当たり採用コスト', data:d.costTrend.slice(12-n), borderColor:'#2d6a4f', backgroundColor:'#2d6a4f22', fill:true, tension:0.4, pointRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:ctx=>'¥'+(ctx.raw/1000).toFixed(0)+'K' } } }, scales:{ y:{ ticks:{ callback:v=>'¥'+(v/1000)+'K' } } } }
+  });
+
+  dc('payrollRatio');
+  charts.payrollRatio = new Chart(document.getElementById('payrollRatioChart').getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'人件費比率(%)', data:d.payrollRatio.slice(12-n), borderColor:'#f4a261', backgroundColor:'#f4a26122', fill:true, tension:0.4, pointRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ min:34, max:42, ticks:{ callback:v=>v+'%' } } } }
+  });
+
+  const tT = d.training.reduce((s,t)=>s+t.cost,0);
+  document.getElementById('trainingBreakdown').innerHTML =
+    `<div style="font-size:12px;color:#aaa;margin-bottom:12px">合計: <strong style="color:var(--gc-dark);font-size:16px">¥${(tT/10000).toFixed(0)}万</strong></div>` +
+    d.training.map(t => `<div class="metric-row"><div class="metric-name">${t.name}</div><div><span class="metric-val">¥${(t.cost/10000).toFixed(0)}</span><span class="metric-unit">万円</span><span style="font-size:12px;color:#aaa;margin-left:8px">(${(t.cost/tT*100).toFixed(1)}%)</span></div></div>`).join('');
+}
+
+function renderTab(name) {
+  if (!DATA) return;
+  const map = { overview: renderOverview, diversity: renderDiversity, attrition: renderAttrition, costs: renderCosts };
+  if (map[name]) map[name]();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  renderTab(name);
+}
+
+function changePeriod(val) {
+  PERIOD = val;
+  const cur = document.querySelector('.tab-panel.active');
+  const m = { 'tab-overview':'overview','tab-diversity':'diversity','tab-attrition':'attrition','tab-costs':'costs' };
+  if (cur) renderTab(m[cur.id]);
+}
+
+async function init() {
+  const gas = await fetchGAS();
+  DATA = gas || SAMPLE;
+  const now = new Date();
+  document.getElementById('lastUpdated').textContent =
+    `更新: ${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}` +
+    (gas ? ' (GAS)' : ' (サンプルデータ)');
+  renderOverview();
+}
+init();
+<\/script>
+
+<!--
+/* GAS ADDITIONS NEEDED:
+   Add the following to your Google Apps Script doGet(e) function:
+
+   if (e.parameter.action === 'getHRDashboard') return getHRDashboard();
+
+   function getHRDashboard() {
+     // Sheet names: '社員マスタ', '採用コスト', '人件費'
+     // Social Master columns: id, name, dept, nationality, gender, empType, joinDate, leaveDate, age, visaType
+     // Cost columns: month, channel, cost, hired
+     // Payroll columns: month, totalPayroll, revenue
+     var ss = SpreadsheetApp.getActiveSpreadsheet();
+     // ... aggregate data and return:
+     return ContentService.createTextOutput(JSON.stringify({
+       kpi: { total, joined, left, retention, tenure, joinedDelta, leftDelta, retentionDelta },
+       headcount: [/* 12 monthly values */],
+       departments: [{ name, count, prev }],
+       nationality: [{ name, count, color }],
+       gender: { male, female, other },
+       empType: [{ name, count, color }],
+       age: [/* 6 age buckets */],
+       ageLabels: ['〜24','25-34','35-44','45-54','55-64','65〜'],
+       visa: [{ name, count }],
+       joinLeave: { join: [/* 12 months */], leave: [/* 12 months */] },
+       attrRate:    [/* 12 monthly % */],
+       attrAnnual:  [/* annualized % */],
+       deptAttr: [{ dept, rate, count }],
+       attrType: { voluntary, involuntary },
+       channels: [{ name, count, color }],
+       costByChannel: [/* costs in yen */],
+       costTrend:     [/* 12 monthly cost-per-hire */],
+       payrollRatio:  [/* 12 monthly % */],
+       training: [{ name, cost }],
+     })).setMimeType(ContentService.MimeType.JSON);
+   }
+*/
+-->
+</body>
+</html>

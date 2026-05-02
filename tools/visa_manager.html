@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在留資格・ビザ管理 | Green Carbon HR Tools</title>
+<style>
+:root {
+  --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+  --gc-dark: #1b4332; --bg: #f0fdf4; --border: #b7e4c7; --text: #1a1a2e;
+  --red: #fee2e2; --red-border: #fca5a5; --red-text: #991b1b;
+  --yellow: #fef9c3; --yellow-border: #fde047; --yellow-text: #854d0e;
+  --orange: #ffedd5; --orange-border: #fdba74; --orange-text: #9a3412;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.header {
+  background: linear-gradient(135deg, var(--gc-dark) 0%, #40916c 100%);
+  color: white; padding: 0 24px;
+  display: flex; align-items: center; gap: 16px;
+  height: 56px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.header a.back { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px; display:flex; align-items:center; gap:4px; }
+.header a.back:hover { color: white; }
+.header h1 { font-size: 18px; font-weight: 800; flex:1; }
+.header .badge { font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; }
+.badge-connected { background:#22c55e; color:white; }
+.badge-fallback  { background:#f59e0b; color:white; }
+.summary-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 14px; padding: 20px 24px; background: white;
+  border-bottom: 1px solid var(--border);
+}
+.summary-card {
+  border-radius: 12px; padding: 16px 20px; cursor: pointer;
+  border: 2px solid transparent; transition: all 0.2s;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.summary-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.summary-card.active { border-width: 2px; border-style: solid; }
+.sc-total.active  { border-color: var(--gc-green); }
+.sc-urgent.active { border-color: var(--red-text); }
+.sc-warn.active   { border-color: var(--orange-text); }
+.sc-safe.active   { border-color: var(--gc-green); }
+.summary-card .sc-label { font-size: 12px; font-weight: 600; opacity: 0.75; }
+.summary-card .sc-num { font-size: 32px; font-weight: 900; }
+.summary-card .sc-sub { font-size: 11px; opacity: 0.6; }
+.sc-total  { background: var(--gc-pale); color: var(--gc-dark); }
+.sc-urgent { background: var(--red); color: var(--red-text); }
+.sc-warn   { background: var(--orange); color: var(--orange-text); }
+.sc-safe   { background: #f0fdf4; color: var(--gc-dark); }
+.main-layout { display: flex; gap: 0; min-height: calc(100vh - 56px - 120px); }
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: white; border-right: 1px solid var(--border);
+  padding: 20px 16px; overflow-y: auto;
+}
+.sidebar h3 { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px; }
+.sidebar h3:not(:first-child) { margin-top: 20px; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.filter-btn {
+  padding: 8px 12px; border-radius: 8px; border: 1px solid transparent;
+  background: none; cursor: pointer; font-size: 13px; text-align: left;
+  color: var(--text); transition: all 0.15s;
+}
+.filter-btn:hover { background: var(--gc-pale); }
+.filter-btn.active { background: var(--gc-pale); border-color: var(--gc-light); color: var(--gc-dark); font-weight: 600; }
+.search-box {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 13px; outline: none; color: var(--text);
+  margin-bottom: 6px;
+}
+.search-box:focus { border-color: var(--gc-light); }
+.alert-btn {
+  width: 100%; margin-top: 20px; padding: 10px;
+  background: var(--gc-dark); color: white; border: none;
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s;
+}
+.alert-btn:hover { background: var(--gc-green); }
+.table-area { flex: 1; padding: 20px; overflow-x: auto; }
+.table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.table-header h2 { font-size: 16px; font-weight: 700; color: var(--gc-dark); }
+.record-count { font-size: 13px; color: #777; }
+.visa-table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.visa-table th {
+  background: var(--gc-dark); color: white;
+  padding: 11px 12px; text-align: left; font-size: 11px;
+  font-weight: 700; letter-spacing: 0.5px; white-space: nowrap;
+}
+.visa-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+.visa-table tr:last-child td { border-bottom: none; }
+.visa-table tbody tr { cursor: pointer; transition: filter 0.15s; }
+.visa-table tbody tr:hover { filter: brightness(0.96); }
+.row-urgent { background: #fee2e2; }
+.row-warn60  { background: #fef9c3; }
+.row-warn90  { background: #ffedd5; }
+.row-safe    { background: white; }
+.status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: 600; }
+.status-pending  { background: #f3f4f6; color: #6b7280; }
+.status-prep     { background: #dbeafe; color: #1d4ed8; }
+.status-applied  { background: #fef3c7; color: #d97706; }
+.status-approved { background: #dcfce7; color: #15803d; }
+.days-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+.days-red    { background: #fca5a5; color: #7f1d1d; }
+.days-yellow { background: #fde68a; color: #78350f; }
+.days-orange { background: #fed7aa; color: #7c2d12; }
+.days-green  { background: #bbf7d0; color: #14532d; }
+.action-btn {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid var(--gc-light);
+  background: white; color: var(--gc-green); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.action-btn:hover { background: var(--gc-pale); }
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+.modal-overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+.modal {
+  background: white; border-radius: 16px; width: 680px; max-width: 95vw;
+  max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); opacity:0 } to { transform: translateY(0); opacity:1 } }
+.modal-header {
+  background: linear-gradient(135deg, var(--gc-dark), #40916c);
+  color: white; padding: 20px 24px; display: flex; align-items: flex-start; justify-content: space-between;
+}
+.modal-header h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.modal-header p { font-size: 13px; opacity: 0.8; }
+.modal-close {
+  background: rgba(255,255,255,0.2); border: none; color: white;
+  width: 32px; height: 32px; border-radius: 8px; font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.35); }
+.modal-tabs { display: flex; border-bottom: 2px solid var(--border); background: #fafafa; }
+.tab-btn { padding: 12px 20px; font-size: 13px; font-weight: 600; color: #777; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+.tab-btn.active { color: var(--gc-dark); border-bottom-color: var(--gc-green); }
+.tab-btn:hover { color: var(--gc-dark); background: var(--gc-pale); }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.info-item label { display: block; font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.info-item .val { font-size: 14px; color: var(--text); font-weight: 500; }
+.status-select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text); outline: none; cursor: pointer; background: white; }
+.status-select:focus { border-color: var(--gc-light); }
+.save-status-btn { margin-top: 10px; padding: 8px 20px; background: var(--gc-green); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.save-status-btn:hover { background: var(--gc-dark); }
+.history-list { display: flex; flex-direction: column; gap: 12px; }
+.history-item { padding: 14px; background: #f8fafc; border-radius: 10px; border-left: 3px solid var(--gc-light); font-size: 13px; }
+.history-item .h-date { font-weight: 700; color: var(--gc-dark); margin-bottom: 4px; }
+.history-item .h-detail { color: #555; line-height: 1.5; }
+.memo-area { width: 100%; min-height: 120px; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; resize: vertical; font-family: inherit; outline: none; }
+.memo-area:focus { border-color: var(--gc-light); }
+.memo-save-btn { margin-top: 8px; padding: 8px 20px; background: var(--gc-green); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.memo-timeline { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.memo-entry { padding: 12px; background: #f8fafc; border-radius: 10px; border-left: 3px solid var(--gc-pale); font-size: 13px; }
+.memo-entry .me-meta { font-size: 11px; color: #999; margin-bottom: 4px; }
+.memo-entry .me-text { color: var(--text); line-height: 1.5; }
+.alert-modal { width: 420px; }
+.alert-field { margin-bottom: 16px; }
+.alert-field label { display: block; font-size: 13px; font-weight: 600; color: var(--gc-dark); margin-bottom: 6px; }
+.alert-field input[type=number] { width: 90px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+.alert-field input:focus { border-color: var(--gc-light); }
+.alert-field .af-unit { font-size: 13px; color: #777; margin-left: 8px; }
+.toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.toggle { width: 40px; height: 22px; background: #ddd; border-radius: 11px; position: relative; cursor: pointer; transition: background 0.2s; border: none; }
+.toggle.on { background: var(--gc-green); }
+.toggle::after { content:''; position:absolute; width:18px; height:18px; background:white; border-radius:50%; top:2px; left:2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle.on::after { left: 20px; }
+.toggle-label { font-size: 13px; color: var(--text); }
+.save-alert-btn { width:100%; padding:11px; background:var(--gc-green); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; margin-top:8px; }
+.save-alert-btn:hover { background: var(--gc-dark); }
+.success-toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; background: var(--gc-dark); color: white; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { transform: translateX(100px); opacity:0 } to { transform:translateX(0); opacity:1 } }
+.empty-state { text-align:center; padding:60px 20px; color:#999; }
+.empty-state .es-icon { font-size:48px; margin-bottom:12px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}</script>
+
+<div class="header">
+  <a class="back" href="../index.html">← ホームに戻る</a>
+  <h1>🛂 在留資格・ビザ管理ダッシュボード</h1>
+  <span class="badge badge-fallback" id="gasBadge">● サンプルデータ</span>
+</div>
+
+<div class="summary-bar">
+  <div class="summary-card sc-total active" onclick="setUrgencyFilter('all')" id="sc-all">
+    <div class="sc-label">管理対象</div>
+    <div class="sc-num" id="sc-total-num">0</div>
+    <div class="sc-sub">外国籍社員（全員）</div>
+  </div>
+  <div class="summary-card sc-urgent" onclick="setUrgencyFilter('urgent')" id="sc-urgent">
+    <div class="sc-label">🔴 要対応</div>
+    <div class="sc-num" id="sc-urgent-num">0</div>
+    <div class="sc-sub">残30日以内（緊急）</div>
+  </div>
+  <div class="summary-card sc-warn" onclick="setUrgencyFilter('warn')" id="sc-warn">
+    <div class="sc-label">🟡 要注意</div>
+    <div class="sc-num" id="sc-warn-num">0</div>
+    <div class="sc-sub">残31〜90日</div>
+  </div>
+  <div class="summary-card sc-safe" onclick="setUrgencyFilter('safe')" id="sc-safe">
+    <div class="sc-label">🟢 安全圏</div>
+    <div class="sc-num" id="sc-safe-num">0</div>
+    <div class="sc-sub">残91日以上</div>
+  </div>
+</div>
+
+<div class="main-layout">
+  <div class="sidebar">
+    <h3>テキスト検索</h3>
+    <input class="search-box" type="text" placeholder="氏名・社員番号で検索..." id="searchInput" oninput="applyFilters()">
+    <h3>緊急度</h3>
+    <div class="filter-group">
+      <button class="filter-btn active" data-urgency="all" onclick="setUrgencyFilter('all')">すべて</button>
+      <button class="filter-btn" data-urgency="urgent" onclick="setUrgencyFilter('urgent')">🔴 30日以内（緊急）</button>
+      <button class="filter-btn" data-urgency="warn" onclick="setUrgencyFilter('warn')">🟡🟠 31〜90日</button>
+      <button class="filter-btn" data-urgency="safe" onclick="setUrgencyFilter('safe')">🟢 91日以上</button>
+    </div>
+    <h3>在留資格種別</h3>
+    <div class="filter-group">
+      <button class="filter-btn active" data-visa="all" onclick="setVisaFilter('all')">すべて</button>
+      <button class="filter-btn" data-visa="技術・人文知識・国際業務" onclick="setVisaFilter('技術・人文知識・国際業務')">技術・人文・国際</button>
+      <button class="filter-btn" data-visa="特定技能" onclick="setVisaFilter('特定技能')">特定技能</button>
+      <button class="filter-btn" data-visa="高度専門職" onclick="setVisaFilter('高度専門職')">高度専門職</button>
+      <button class="filter-btn" data-visa="企業内転勤" onclick="setVisaFilter('企業内転勤')">企業内転勤</button>
+      <button class="filter-btn" data-visa="配偶者等" onclick="setVisaFilter('配偶者等')">配偶者等</button>
+      <button class="filter-btn" data-visa="その他" onclick="setVisaFilter('その他')">その他</button>
+    </div>
+    <h3>国籍</h3>
+    <div class="filter-group" id="nationalityFilters"></div>
+    <button class="alert-btn" onclick="openAlertModal()">🔔 アラート設定</button>
+  </div>
+
+  <div class="table-area">
+    <div class="table-header">
+      <h2>在留資格一覧</h2>
+      <span class="record-count" id="recordCount"></span>
+    </div>
+    <table class="visa-table">
+      <thead>
+        <tr>
+          <th>氏名</th>
+          <th>国籍</th>
+          <th>部門</th>
+          <th>在留資格種別</th>
+          <th>在留カード</th>
+          <th>有効期限</th>
+          <th>残日数</th>
+          <th>更新状況</th>
+          <th>担当者</th>
+          <th>アクション</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-state hidden" id="emptyState">
+      <div class="es-icon">🔍</div>
+      <p>条件に一致する社員が見つかりません</p>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay hidden" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h2 id="mName"></h2><p id="mSub"></p></div>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="tab-btn active" onclick="switchTab('basic')">👤 基本情報</button>
+      <button class="tab-btn" onclick="switchTab('visa')">🛂 在留資格</button>
+      <button class="tab-btn" onclick="switchTab('history')">📋 更新履歴</button>
+      <button class="tab-btn" onclick="switchTab('memo')">📝 メモ</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-content active" id="tab-basic">
+        <div class="info-grid">
+          <div class="info-item"><label>社員番号</label><div class="val" id="m-empid"></div></div>
+          <div class="info-item"><label>国籍</label><div class="val" id="m-nationality"></div></div>
+          <div class="info-item"><label>生年月日</label><div class="val" id="m-dob"></div></div>
+          <div class="info-item"><label>入社日</label><div class="val" id="m-joindate"></div></div>
+          <div class="info-item"><label>部門</label><div class="val" id="m-dept"></div></div>
+          <div class="info-item"><label>役職</label><div class="val" id="m-title"></div></div>
+          <div class="info-item"><label>メールアドレス</label><div class="val" id="m-email"></div></div>
+          <div class="info-item"><label>担当HR</label><div class="val" id="m-hrpic"></div></div>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-visa">
+        <div class="info-grid" style="margin-bottom:20px">
+          <div class="info-item"><label>在留資格種別</label><div class="val" id="m-visatype"></div></div>
+          <div class="info-item"><label>在留カード番号</label><div class="val" id="m-cardno"></div></div>
+          <div class="info-item"><label>有効期限</label><div class="val" id="m-expiry"></div></div>
+          <div class="info-item"><label>残日数</label><div class="val" id="m-days"></div></div>
+          <div class="info-item"><label>就労制限</label><div class="val" id="m-restriction"></div></div>
+          <div class="info-item"><label>在留期間</label><div class="val" id="m-period"></div></div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:16px;">
+          <label style="display:block;font-size:12px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">更新申請ステータス変更</label>
+          <select class="status-select" id="m-status-select">
+            <option value="pending">未着手</option>
+            <option value="prep">準備中</option>
+            <option value="applied">申請済</option>
+            <option value="approved">承認済・完了</option>
+          </select>
+          <br><button class="save-status-btn" onclick="saveStatus()">💾 ステータスを保存</button>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-history">
+        <div class="history-list" id="m-history"></div>
+      </div>
+      <div class="tab-content" id="tab-memo">
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--gc-dark);margin-bottom:8px;">新しいメモを追加</label>
+        <textarea class="memo-area" id="memoInput" placeholder="担当者メモ・面談記録・注意事項など..."></textarea>
+        <button class="memo-save-btn" onclick="saveMemo()">📝 メモを保存</button>
+        <div class="memo-timeline" id="m-memos"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT SETTINGS MODAL -->
+<div class="modal-overlay hidden" id="alertModal">
+  <div class="modal alert-modal">
+    <div class="modal-header">
+      <div><h2>🔔 アラート設定</h2><p>有効期限が近づいた際の通知タイミングを設定</p></div>
+      <button class="modal-close" onclick="closeModal('alertModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-field">
+        <div class="toggle-row">
+          <button class="toggle on" id="toggle-slack" onclick="this.classList.toggle('on')"></button>
+          <span class="toggle-label">Slack通知</span>
+        </div>
+        <div class="toggle-row">
+          <button class="toggle on" id="toggle-email" onclick="this.classList.toggle('on')"></button>
+          <span class="toggle-label">メール通知</span>
+        </div>
+      </div>
+      <div class="alert-field">
+        <label>第1アラート（早期）</label>
+        <input type="number" id="alert1" value="90"> <span class="af-unit">日前</span>
+      </div>
+      <div class="alert-field">
+        <label>第2アラート（注意）</label>
+        <input type="number" id="alert2" value="60"> <span class="af-unit">日前</span>
+      </div>
+      <div class="alert-field">
+        <label>第3アラート（緊急）</label>
+        <input type="number" id="alert3" value="30"> <span class="af-unit">日前</span>
+      </div>
+      <div class="alert-field">
+        <label>通知先Slackチャンネル（任意）</label>
+        <input type="text" id="slackChannel" value="#hr-visa-alerts" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;">
+      </div>
+      <button class="save-alert-btn" onclick="saveAlertSettings()">設定を保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TODAY = new Date();
+TODAY.setHours(0,0,0,0);
+function daysUntil(dateStr) {
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.round((d - TODAY) / 86400000);
+}
+function addDays(n) {
+  const d = new Date(TODAY); d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+const FLAGS = {'インドネシア':'🇮🇩','ベトナム':'🇻🇳','フィリピン':'🇵🇭','ネパール':'🇳🇵','タイ':'🇹🇭','ミャンマー':'🇲🇲','インド':'🇮🇳','バングラデシュ':'🇧🇩','中国':'🇨🇳','韓国':'🇰🇷','スリランカ':'🇱🇰','カンボジア':'🇰🇭','マレーシア':'🇲🇾'};
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQMe-yzdgvpDibaHidbzuxUFp0V-mWB7lnuhUWj33CBvPPvOQQus2smuICCaaJIyM/exec';
+
+const SAMPLE_DATA = [
+  {id:'GC-2847',name:'アフマッド・スバギョ',nameKana:'Ahmad Subagyo',nationality:'インドネシア',dept:'製造・現場',title:'シニアオペレーター',dob:'1990-03-15',joinDate:'2021-06-01',email:'a.subagyo@green-carbon.inc',visaType:'特定技能',cardNo:'RC1234567X',expiry:addDays(12),period:'1年',restriction:'なし（特定産業分野）',status:'prep',hrPic:'田中 優子',history:[{date:'2022-06-01',type:'特定技能1号 更新',by:'田中 優子',note:'初回更新・問題なし'},{date:'2021-06-01',type:'特定技能1号 取得',by:'佐藤 健',note:'入社時取得'}]},
+  {id:'GC-3012',name:'グエン・ティ・フオン',nameKana:'Nguyen Thi Huong',nationality:'ベトナム',dept:'研究開発',title:'研究員',dob:'1994-07-22',joinDate:'2022-04-01',email:'nt.huong@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH9876543A',expiry:addDays(8),period:'3年',restriction:'なし',status:'applied',hrPic:'山田 花子',history:[{date:'2022-04-01',type:'技術・人文知識・国際業務 取得',by:'山田 花子',note:'入社に伴い取得'}]},
+  {id:'GC-2654',name:'サンティアゴ・レイエス',nameKana:'Santiago Reyes',nationality:'フィリピン',dept:'ITシステム',title:'エンジニア',dob:'1988-11-30',joinDate:'2020-09-15',email:'s.reyes@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH2345678B',expiry:addDays(21),period:'3年',restriction:'なし',status:'prep',hrPic:'田中 優子',history:[{date:'2023-09-15',type:'技術・人文知識・国際業務 更新',by:'田中 優子',note:'3年更新承認済'}]},
+  {id:'GC-3301',name:'チャン・ヴァン・ドゥック',nameKana:'Tran Van Duc',nationality:'ベトナム',dept:'製造・現場',title:'オペレーター',dob:'1997-05-10',joinDate:'2023-04-01',email:'tv.duc@green-carbon.inc',visaType:'特定技能',cardNo:'RC5678901C',expiry:addDays(18),period:'1年',restriction:'なし（特定産業分野）',status:'pending',hrPic:'山田 花子',history:[{date:'2023-04-01',type:'特定技能1号 取得',by:'山田 花子',note:'新規取得'}]},
+  {id:'GC-2901',name:'プラヤ・スリニバス',nameKana:'Priya Srinivas',nationality:'インド',dept:'研究開発',title:'上席研究員',dob:'1985-02-28',joinDate:'2019-10-01',email:'p.srinivas@green-carbon.inc',visaType:'高度専門職',cardNo:'HS0001234D',expiry:addDays(27),period:'5年',restriction:'なし',status:'prep',hrPic:'田中 優子',history:[{date:'2022-10-01',type:'高度専門職1号ロ 更新',by:'田中 優子',note:'5年更新'}]},
+  {id:'GC-2788',name:'ウィジャヤ・クスマ',nameKana:'Wijaya Kusuma',nationality:'インドネシア',dept:'製造・現場',title:'オペレーター',dob:'1995-08-14',joinDate:'2022-10-01',email:'w.kusuma@green-carbon.inc',visaType:'特定技能',cardNo:'RC2345678E',expiry:addDays(35),period:'1年',restriction:'なし（特定産業分野）',status:'prep',hrPic:'山田 花子',history:[{date:'2022-10-01',type:'特定技能1号 取得',by:'山田 花子',note:'新規'}]},
+  {id:'GC-3089',name:'レ・ティ・マイ',nameKana:'Le Thi Mai',nationality:'ベトナム',dept:'管理部',title:'経理担当',dob:'1993-12-05',joinDate:'2021-11-15',email:'lt.mai@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH3456789F',expiry:addDays(42),period:'3年',restriction:'なし',status:'prep',hrPic:'田中 優子',history:[{date:'2021-11-15',type:'技術・人文知識・国際業務 取得',by:'田中 優子',note:'入社時'}]},
+  {id:'GC-2612',name:'フアン・カルロス・ロペス',nameKana:'Juan Carlos Lopez',nationality:'フィリピン',dept:'営業',title:'営業担当',dob:'1990-04-19',joinDate:'2021-03-01',email:'jc.lopez@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH4567890G',expiry:addDays(55),period:'3年',restriction:'なし',status:'pending',hrPic:'山田 花子',history:[{date:'2021-03-01',type:'技術・人文知識・国際業務 取得',by:'山田 花子',note:''}]},
+  {id:'GC-3198',name:'ラム・プラサド・シャルマ',nameKana:'Ram Prasad Sharma',nationality:'ネパール',dept:'ITシステム',title:'開発エンジニア',dob:'1992-09-11',joinDate:'2022-07-01',email:'rp.sharma@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH5678901H',expiry:addDays(48),period:'3年',restriction:'なし',status:'prep',hrPic:'田中 優子',history:[{date:'2022-07-01',type:'技術・人文知識・国際業務 取得',by:'田中 優子',note:''}]},
+  {id:'GC-2523',name:'スパッチャリ・チャイヤラック',nameKana:'Supatchari Chaiyarak',nationality:'タイ',dept:'研究開発',title:'研究員',dob:'1991-06-30',joinDate:'2020-05-01',email:'s.chaiyarak@green-carbon.inc',visaType:'高度専門職',cardNo:'HS0002345I',expiry:addDays(38),period:'5年',restriction:'なし',status:'prep',hrPic:'山田 花子',history:[{date:'2020-05-01',type:'高度専門職1号ロ 取得',by:'佐藤 健',note:''}]},
+  {id:'GC-3245',name:'アグス・プラボウォ',nameKana:'Agus Prabowo',nationality:'インドネシア',dept:'製造・現場',title:'ライン長',dob:'1987-01-20',joinDate:'2019-04-01',email:'a.prabowo@green-carbon.inc',visaType:'特定技能',cardNo:'RC3456789J',expiry:addDays(68),period:'1年',restriction:'なし（特定産業分野）',status:'pending',hrPic:'田中 優子',history:[{date:'2022-04-01',type:'特定技能1号 更新',by:'田中 優子',note:''}]},
+  {id:'GC-2967',name:'ファン・ティ・ラン',nameKana:'Phan Thi Lan',nationality:'ベトナム',dept:'総務',title:'総務担当',dob:'1996-03-08',joinDate:'2023-01-16',email:'pt.lan@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH6789012K',expiry:addDays(75),period:'1年',restriction:'なし',status:'pending',hrPic:'山田 花子',history:[{date:'2023-01-16',type:'技術・人文知識・国際業務 取得',by:'山田 花子',note:'新規'}]},
+  {id:'GC-2834',name:'マリア・サントス',nameKana:'Maria Santos',nationality:'フィリピン',dept:'人事',title:'HRアシスタント',dob:'1994-10-15',joinDate:'2021-08-01',email:'m.santos@green-carbon.inc',visaType:'配偶者等',cardNo:'SP0001234L',expiry:addDays(83),period:'3年',restriction:'なし（就労可）',status:'pending',hrPic:'田中 優子',history:[{date:'2021-08-01',type:'配偶者等 取得',by:'田中 優子',note:''}]},
+  {id:'GC-3056',name:'デルタ・クスマニンルム',nameKana:'Delta Kusmaninrum',nationality:'インドネシア',dept:'製造・現場',title:'オペレーター',dob:'1998-07-03',joinDate:'2023-07-01',email:'d.kusmaninrum@green-carbon.inc',visaType:'特定技能',cardNo:'RC4567890M',expiry:addDays(71),period:'1年',restriction:'なし（特定産業分野）',status:'pending',hrPic:'山田 花子',history:[{date:'2023-07-01',type:'特定技能1号 取得',by:'山田 花子',note:''}]},
+  {id:'GC-2745',name:'バブ・クマール・グルン',nameKana:'Babu Kumar Gurung',nationality:'ネパール',dept:'製造・現場',title:'オペレーター',dob:'1993-11-25',joinDate:'2022-04-01',email:'bk.gurung@green-carbon.inc',visaType:'特定技能',cardNo:'RC5678902N',expiry:addDays(87),period:'1年',restriction:'なし（特定産業分野）',status:'pending',hrPic:'田中 優子',history:[{date:'2022-04-01',type:'特定技能1号 取得',by:'田中 優子',note:''}]},
+  {id:'GC-2401',name:'スリ・ラハユ',nameKana:'Sri Rahayu',nationality:'インドネシア',dept:'研究開発',title:'シニア研究員',dob:'1985-05-12',joinDate:'2018-04-01',email:'s.rahayu@green-carbon.inc',visaType:'高度専門職',cardNo:'HS0003456O',expiry:addDays(120),period:'5年',restriction:'なし',status:'approved',hrPic:'山田 花子',history:[{date:'2023-04-01',type:'高度専門職1号ロ 更新',by:'山田 花子',note:'5年更新済'}]},
+  {id:'GC-2890',name:'グエン・ドゥック・アン',nameKana:'Nguyen Duc Anh',nationality:'ベトナム',dept:'ITシステム',title:'リードエンジニア',dob:'1989-08-22',joinDate:'2020-01-06',email:'nd.anh@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH7890123P',expiry:addDays(180),period:'5年',restriction:'なし',status:'approved',hrPic:'田中 優子',history:[{date:'2023-01-06',type:'技術・人文知識・国際業務 更新',by:'田中 優子',note:'5年更新'}]},
+  {id:'GC-2678',name:'ルシタ・デラ・クルス',nameKana:'Lucita dela Cruz',nationality:'フィリピン',dept:'営業',title:'エリアマネージャー',dob:'1986-12-01',joinDate:'2017-09-01',email:'l.delacruz@green-carbon.inc',visaType:'企業内転勤',cardNo:'IT0001234Q',expiry:addDays(290),period:'3年',restriction:'なし',status:'approved',hrPic:'山田 花子',history:[{date:'2023-09-01',type:'企業内転勤 更新',by:'山田 花子',note:'3年更新'}]},
+  {id:'GC-3112',name:'ウッタム・タパ',nameKana:'Uttam Thapa',nationality:'ネパール',dept:'製造・現場',title:'チーフオペレーター',dob:'1991-04-18',joinDate:'2021-10-01',email:'u.thapa@green-carbon.inc',visaType:'特定技能',cardNo:'RC6789013R',expiry:addDays(150),period:'1年',restriction:'なし（特定産業分野）',status:'approved',hrPic:'田中 優子',history:[{date:'2023-10-01',type:'特定技能1号 更新',by:'田中 優子',note:''}]},
+  {id:'GC-2560',name:'ニポン・タナサック',nameKana:'Nipon Tanasak',nationality:'タイ',dept:'研究開発',title:'研究員',dob:'1993-02-14',joinDate:'2020-10-01',email:'n.tanasak@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH8901234S',expiry:addDays(210),period:'3年',restriction:'なし',status:'approved',hrPic:'山田 花子',history:[{date:'2023-10-01',type:'技術・人文知識・国際業務 更新',by:'山田 花子',note:''}]},
+  {id:'GC-2389',name:'ソウ・ムン・ベクシット',nameKana:'Soe Mun Bekxit',nationality:'ミャンマー',dept:'製造・現場',title:'オペレーター',dob:'1996-06-20',joinDate:'2022-06-01',email:'sm.bekxit@green-carbon.inc',visaType:'特定技能',cardNo:'RC7890124T',expiry:addDays(240),period:'1年',restriction:'なし（特定産業分野）',status:'approved',hrPic:'田中 優子',history:[{date:'2023-06-01',type:'特定技能1号 更新',by:'田中 優子',note:''}]},
+  {id:'GC-3022',name:'イルファン・ファウジ',nameKana:'Irfan Fauzi',nationality:'インドネシア',dept:'品質管理',title:'品質管理担当',dob:'1990-09-07',joinDate:'2021-04-01',email:'i.fauzi@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH9012345U',expiry:addDays(320),period:'3年',restriction:'なし',status:'approved',hrPic:'山田 花子',history:[{date:'2021-04-01',type:'技術・人文知識・国際業務 取得',by:'山田 花子',note:''}]},
+  {id:'GC-3178',name:'ドゥオン・ティ・トゥ',nameKana:'Duong Thi Thu',nationality:'ベトナム',dept:'経営企画',title:'戦略プランナー',dob:'1988-01-15',joinDate:'2019-07-01',email:'dt.thu@green-carbon.inc',visaType:'高度専門職',cardNo:'HS0004567V',expiry:addDays(400),period:'5年',restriction:'なし',status:'approved',hrPic:'田中 優子',history:[{date:'2022-07-01',type:'高度専門職1号ロ 更新',by:'田中 優子',note:'5年更新'}]},
+  {id:'GC-2746',name:'ロベルト・バウティスタ',nameKana:'Roberto Bautista',nationality:'フィリピン',dept:'製造・現場',title:'オペレーター',dob:'1994-03-23',joinDate:'2022-11-01',email:'r.bautista@green-carbon.inc',visaType:'特定技能',cardNo:'RC8901235W',expiry:addDays(270),period:'1年',restriction:'なし（特定産業分野）',status:'approved',hrPic:'山田 花子',history:[{date:'2022-11-01',type:'特定技能1号 取得',by:'山田 花子',note:''}]},
+  {id:'GC-2499',name:'ビシャル・パウデル',nameKana:'Bishal Paudel',nationality:'ネパール',dept:'ITシステム',title:'インフラエンジニア',dob:'1992-07-11',joinDate:'2021-01-04',email:'b.paudel@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH0123456X',expiry:addDays(365),period:'3年',restriction:'なし',status:'approved',hrPic:'田中 優子',history:[{date:'2021-01-04',type:'技術・人文知識・国際業務 取得',by:'田中 優子',note:''}]},
+  {id:'GC-3334',name:'スコン・チャイポン',nameKana:'Sukon Chairpon',nationality:'タイ',dept:'研究開発',title:'研究員',dob:'1995-11-02',joinDate:'2023-05-08',email:'s.chairpon@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH1234567Y',expiry:addDays(460),period:'1年',restriction:'なし',status:'approved',hrPic:'山田 花子',history:[{date:'2023-05-08',type:'技術・人文知識・国際業務 取得',by:'山田 花子',note:'新規'}]},
+  {id:'GC-2611',name:'スティー・ヌグラハ',nameKana:'Suti Nugraha',nationality:'インドネシア',dept:'総務',title:'総務担当',dob:'1993-05-28',joinDate:'2021-06-01',email:'s.nugraha@green-carbon.inc',visaType:'配偶者等',cardNo:'SP0002345Z',expiry:addDays(500),period:'3年',restriction:'なし（就労可）',status:'approved',hrPic:'田中 優子',history:[{date:'2021-06-01',type:'配偶者等 取得',by:'田中 優子',note:''}]},
+  {id:'GC-2933',name:'ファン・バン・ミン',nameKana:'Pham Van Minh',nationality:'ベトナム',dept:'製造・現場',title:'シニアオペレーター',dob:'1989-08-10',joinDate:'2020-08-03',email:'pv.minh@green-carbon.inc',visaType:'特定技能',cardNo:'RC9012346A2',expiry:addDays(310),period:'1年',restriction:'なし（特定産業分野）',status:'approved',hrPic:'山田 花子',history:[{date:'2023-08-03',type:'特定技能1号 更新',by:'山田 花子',note:'3回目更新'}]},
+  {id:'GC-3267',name:'クリシュナ・バハドゥル・タマン',nameKana:'Krishna Bahadur Tamang',nationality:'ネパール',dept:'製造・現場',title:'オペレーター',dob:'1997-02-17',joinDate:'2023-09-01',email:'kb.tamang@green-carbon.inc',visaType:'特定技能',cardNo:'RC0123457B2',expiry:addDays(480),period:'1年',restriction:'なし（特定産業分野）',status:'approved',hrPic:'田中 優子',history:[{date:'2023-09-01',type:'特定技能1号 取得',by:'田中 優子',note:'新規取得'}]},
+  {id:'GC-2488',name:'アユ・ラハユ・ニングシー',nameKana:'Ayu Rahayu Ningsih',nationality:'インドネシア',dept:'人事',title:'HRビジネスパートナー',dob:'1987-10-05',joinDate:'2018-10-01',email:'ar.ningsih@green-carbon.inc',visaType:'技術・人文知識・国際業務',cardNo:'TH2345678C2',expiry:addDays(560),period:'5年',restriction:'なし',status:'approved',hrPic:'山田 花子',history:[{date:'2023-10-01',type:'技術・人文知識・国際業務 更新',by:'山田 花子',note:'5年更新'}]},
+  {id:'GC-3090',name:'チャン・ティ・キム・アン',nameKana:'Tran Thi Kim Anh',nationality:'ベトナム',dept:'経営企画',title:'アナリスト',dob:'1993-04-30',joinDate:'2022-03-14',email:'ttk.anh@green-carbon.inc',visaType:'高度専門職',cardNo:'HS0005678D2',expiry:addDays(620),period:'5年',restriction:'なし',status:'approved',hrPic:'田中 優子',history:[{date:'2022-03-14',type:'高度専門職1号ロ 取得',by:'田中 優子',note:'入社時取得'}]},
+  {id:'GC-2312',name:'アレックス・マナロ',nameKana:'Alex Manalo',nationality:'フィリピン',dept:'ITシステム',title:'プロジェクトマネージャー',dob:'1984-06-15',joinDate:'2016-04-01',email:'a.manalo@green-carbon.inc',visaType:'企業内転勤',cardNo:'IT0002345E2',expiry:addDays(730),period:'3年',restriction:'なし',status:'approved',hrPic:'山田 花子',history:[{date:'2023-04-01',type:'企業内転勤 更新',by:'山田 花子',note:'継続更新'}]},
+  {id:'GC-2905',name:'スバシュ・チェトリ',nameKana:'Subash Chhetri',nationality:'ネパール',dept:'製造・現場',title:'オペレーター',dob:'1998-09-12',joinDate:'2024-04-01',email:'s.chhetri@green-carbon.inc',visaType:'特定技能',cardNo:'RC1234560F2',expiry:addDays(340),period:'1年',restriction:'なし（特定産業分野）',status:'approved',hrPic:'田中 優子',history:[{date:'2024-04-01',type:'特定技能1号 取得',by:'田中 優子',note:'新規取得'}]},
+];
+
+function getStatuses() { try { return JSON.parse(sessionStorage.getItem('visa-statuses')) || {}; } catch(e) { return {}; } }
+function saveStatuses(obj) { sessionStorage.setItem('visa-statuses', JSON.stringify(obj)); }
+function getMemos(id) { try { return JSON.parse(sessionStorage.getItem('visa-memos-'+id)) || []; } catch(e) { return []; } }
+function saveMemos(id, arr) { sessionStorage.setItem('visa-memos-'+id, JSON.stringify(arr)); }
+
+(function() {
+  const st = getStatuses();
+  SAMPLE_DATA.forEach(e => { if (!st[e.id]) st[e.id] = e.status; });
+  saveStatuses(st);
+})();
+
+let activeUrgency='all', activeVisa='all', activeNationality='all', currentEmployeeId=null;
+let visaData = [];
+
+async function fetchFromGAS() {
+  try {
+    const res = await fetch(GAS_URL+'?action=getVisaRecords', {mode:'cors'});
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if (data && data.length) {
+      document.getElementById('gasBadge').textContent = '● GAS接続中';
+      document.getElementById('gasBadge').className = 'badge badge-connected';
+      return data;
+    }
+  } catch(e) { console.log('GAS fallback:', e.message); }
+  return null;
+}
+
+function getUrgencyLevel(days) {
+  if (days <= 30) return 'urgent';
+  if (days <= 60) return 'warn60';
+  if (days <= 90) return 'warn90';
+  return 'safe';
+}
+function getDaysBadge(days) {
+  if (days < 0) return '<span class="days-badge days-red">期限切れ</span>';
+  if (days <= 30) return '<span class="days-badge days-red">残'+days+'日</span>';
+  if (days <= 60) return '<span class="days-badge days-yellow">残'+days+'日</span>';
+  if (days <= 90) return '<span class="days-badge days-orange">残'+days+'日</span>';
+  return '<span class="days-badge days-green">残'+days+'日</span>';
+}
+function getStatusBadge(status) {
+  const m = {pending:['status-pending','未着手'],prep:['status-prep','準備中'],applied:['status-applied','申請済'],approved:['status-approved','承認済']};
+  const [cls,lbl] = m[status]||m.pending;
+  return '<span class="status-badge '+cls+'">'+lbl+'</span>';
+}
+function getRowClass(level) {
+  return {urgent:'row-urgent',warn60:'row-warn60',warn90:'row-warn90',safe:'row-safe'}[level]||'row-safe';
+}
+
+function updateSummary() {
+  let total=0, urgent=0, warn=0, safe=0;
+  visaData.forEach(e => {
+    const d=daysUntil(e.expiry); total++;
+    if(d<=30) urgent++; else if(d<=90) warn++; else safe++;
+  });
+  document.getElementById('sc-total-num').textContent=total;
+  document.getElementById('sc-urgent-num').textContent=urgent;
+  document.getElementById('sc-warn-num').textContent=warn;
+  document.getElementById('sc-safe-num').textContent=safe;
+}
+
+function buildNationalityFilters() {
+  const nations=[...new Set(visaData.map(e=>e.nationality))].sort();
+  document.getElementById('nationalityFilters').innerHTML=
+    '<button class="filter-btn active" data-nat="all" onclick="setNatFilter(\'all\')">すべて</button>'+
+    nations.map(n=>'<button class="filter-btn" data-nat="'+n+'" onclick="setNatFilter(\''+n+'\')">'+(FLAGS[n]||'🌏')+' '+n+'</button>').join('');
+}
+
+function renderTable() {
+  const statuses=getStatuses();
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  let rows=visaData.filter(emp=>{
+    const days=daysUntil(emp.expiry), level=getUrgencyLevel(days);
+    if(activeUrgency==='urgent'&&level!=='urgent') return false;
+    if(activeUrgency==='warn'&&level!=='warn60'&&level!=='warn90') return false;
+    if(activeUrgency==='safe'&&level!=='safe') return false;
+    if(activeVisa!=='all'&&emp.visaType!==activeVisa) return false;
+    if(activeNationality!=='all'&&emp.nationality!==activeNationality) return false;
+    if(q&&!(emp.name.toLowerCase().includes(q)||emp.id.toLowerCase().includes(q)||(emp.nameKana||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  rows.sort((a,b)=>daysUntil(a.expiry)-daysUntil(b.expiry));
+  document.getElementById('recordCount').textContent=rows.length+' 件表示';
+  const tbody=document.getElementById('tableBody');
+  const empty=document.getElementById('emptyState');
+  if(!rows.length){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  tbody.innerHTML=rows.map(emp=>{
+    const days=daysUntil(emp.expiry),level=getUrgencyLevel(days);
+    const status=statuses[emp.id]||emp.status;
+    const card=emp.cardNo.slice(-4);
+    return '<tr class="'+getRowClass(level)+'" onclick="openModal(\''+emp.id+'\')">'
+      +'<td><strong>'+emp.name+'</strong><br><span style="font-size:11px;color:#777">'+emp.nameKana+'</span></td>'
+      +'<td>'+(FLAGS[emp.nationality]||'🌏')+' '+emp.nationality+'</td>'
+      +'<td>'+emp.dept+'</td>'
+      +'<td style="font-size:12px">'+emp.visaType+'</td>'
+      +'<td style="font-family:monospace;color:#555">****'+card+'</td>'
+      +'<td>'+emp.expiry+'</td>'
+      +'<td>'+getDaysBadge(days)+'</td>'
+      +'<td>'+getStatusBadge(status)+'</td>'
+      +'<td style="font-size:12px">'+emp.hrPic+'</td>'
+      +'<td><button class="action-btn" onclick="event.stopPropagation();openModal(\''+emp.id+'\')">詳細</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function setUrgencyFilter(val) {
+  activeUrgency=val;
+  document.querySelectorAll('[data-urgency]').forEach(b=>b.classList.toggle('active',b.dataset.urgency===val));
+  document.querySelectorAll('.summary-card').forEach(c=>c.classList.remove('active'));
+  const m={all:'sc-all',urgent:'sc-urgent',warn:'sc-warn',safe:'sc-safe'};
+  if(m[val]) document.getElementById(m[val])?.classList.add('active');
+  renderTable();
+}
+function setVisaFilter(val) {
+  activeVisa=val;
+  document.querySelectorAll('[data-visa]').forEach(b=>b.classList.toggle('active',b.dataset.visa===val));
+  renderTable();
+}
+function setNatFilter(val) {
+  activeNationality=val;
+  document.querySelectorAll('[data-nat]').forEach(b=>b.classList.toggle('active',b.dataset.nat===val));
+  renderTable();
+}
+function applyFilters() { renderTable(); }
+
+function openModal(empId) {
+  const emp=visaData.find(e=>e.id===empId); if(!emp) return;
+  currentEmployeeId=empId;
+  const statuses=getStatuses(), days=daysUntil(emp.expiry);
+  document.getElementById('mName').textContent=emp.name;
+  document.getElementById('mSub').textContent=emp.id+' | '+emp.dept+' | '+emp.title;
+  document.getElementById('m-empid').textContent=emp.id;
+  document.getElementById('m-nationality').textContent=(FLAGS[emp.nationality]||'🌏')+' '+emp.nationality;
+  document.getElementById('m-dob').textContent=emp.dob;
+  document.getElementById('m-joindate').textContent=emp.joinDate;
+  document.getElementById('m-dept').textContent=emp.dept;
+  document.getElementById('m-title').textContent=emp.title;
+  document.getElementById('m-email').textContent=emp.email;
+  document.getElementById('m-hrpic').textContent=emp.hrPic;
+  document.getElementById('m-visatype').textContent=emp.visaType;
+  document.getElementById('m-cardno').textContent=emp.cardNo.slice(0,-4).replace(/./g,'*')+emp.cardNo.slice(-4);
+  document.getElementById('m-expiry').textContent=emp.expiry;
+  document.getElementById('m-days').innerHTML=getDaysBadge(days);
+  document.getElementById('m-restriction').textContent=emp.restriction;
+  document.getElementById('m-period').textContent=emp.period;
+  document.getElementById('m-status-select').value=statuses[empId]||emp.status;
+  document.getElementById('m-history').innerHTML=(emp.history||[]).map(h=>
+    '<div class="history-item"><div class="h-date">'+h.date+' — '+h.type+'</div><div class="h-detail">担当: '+h.by+(h.note?' ／ '+h.note:'')+'</div></div>'
+  ).join('')||'<p style="color:#999;font-size:13px">履歴なし</p>';
+  renderMemos(empId);
+  switchTab('basic');
+  document.getElementById('detailModal').classList.remove('hidden');
+}
+function renderMemos(empId) {
+  const memos=getMemos(empId);
+  document.getElementById('m-memos').innerHTML=memos.length
+    ?memos.slice().reverse().map(m=>'<div class="memo-entry"><div class="me-meta">'+m.date+' — '+m.by+'</div><div class="me-text">'+m.text+'</div></div>').join('')
+    :'<p style="color:#999;font-size:13px">メモなし</p>';
+}
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function switchTab(tab) {
+  const tabs=['basic','visa','history','memo'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+function saveStatus() {
+  if(!currentEmployeeId) return;
+  const val=document.getElementById('m-status-select').value;
+  const statuses=getStatuses(); statuses[currentEmployeeId]=val; saveStatuses(statuses);
+  const emp=visaData.find(e=>e.id===currentEmployeeId);
+  const lbl={pending:'未着手',prep:'準備中',applied:'申請済',approved:'承認済・完了'}[val];
+  if(emp){emp.history=emp.history||[];emp.history.push({date:TODAY.toISOString().slice(0,10),type:'ステータス変更 → '+lbl,by:'担当者',note:''});
+    document.getElementById('m-history').innerHTML=emp.history.map(h=>'<div class="history-item"><div class="h-date">'+h.date+' — '+h.type+'</div><div class="h-detail">担当: '+h.by+(h.note?' ／ '+h.note:'')+'</div></div>').join('');}
+  renderTable(); showToast('✅ ステータスを保存しました');
+  fetch(GAS_URL+'?action=saveVisaRecord',{method:'POST',mode:'cors',body:JSON.stringify({id:currentEmployeeId,status:val,updatedAt:new Date().toISOString()})}).catch(()=>{});
+}
+function saveMemo() {
+  if(!currentEmployeeId) return;
+  const text=document.getElementById('memoInput').value.trim(); if(!text) return;
+  const memos=getMemos(currentEmployeeId);
+  memos.push({date:TODAY.toISOString().slice(0,10),by:'野村 裕太',text});
+  saveMemos(currentEmployeeId,memos); document.getElementById('memoInput').value='';
+  renderMemos(currentEmployeeId); showToast('📝 メモを保存しました');
+}
+function openAlertModal() {
+  try{const s=JSON.parse(sessionStorage.getItem('visa-alert-settings')||'{}');
+    if(s.alert1)document.getElementById('alert1').value=s.alert1;
+    if(s.alert2)document.getElementById('alert2').value=s.alert2;
+    if(s.alert3)document.getElementById('alert3').value=s.alert3;
+    if(s.slackChannel)document.getElementById('slackChannel').value=s.slackChannel;
+    if(s.slack===false)document.getElementById('toggle-slack').classList.remove('on');
+    if(s.email===false)document.getElementById('toggle-email').classList.remove('on');
+  }catch(e){}
+  document.getElementById('alertModal').classList.remove('hidden');
+}
+function saveAlertSettings() {
+  sessionStorage.setItem('visa-alert-settings',JSON.stringify({
+    alert1:document.getElementById('alert1').value,
+    alert2:document.getElementById('alert2').value,
+    alert3:document.getElementById('alert3').value,
+    slackChannel:document.getElementById('slackChannel').value,
+    slack:document.getElementById('toggle-slack').classList.contains('on'),
+    email:document.getElementById('toggle-email').classList.contains('on'),
+  }));
+  closeModal('alertModal'); showToast('🔔 アラート設定を保存しました');
+}
+function showToast(msg) {
+  const t=document.createElement('div'); t.className='success-toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+}
+document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeModal('detailModal');});
+document.getElementById('alertModal').addEventListener('click',function(e){if(e.target===this)closeModal('alertModal');});
+
+async function init() {
+  const data=await fetchFromGAS();
+  visaData=data||SAMPLE_DATA;
+  updateSummary(); buildNationalityFilters(); renderTable();
+}
+init();
+</script>
+
+<!--
+/* GAS ADDITIONS NEEDED:
+   以下をGASのdoGet/doPost関数内に追加してください。
+
+   // ── getVisaRecords ──
+   if (action === 'getVisaRecords') {
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('VisaRecords');
+     if (!sheet) return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
+     const rows = sheet.getDataRange().getValues();
+     const headers = rows[0];
+     const data = rows.slice(1).map(row => {
+       const obj = {}; headers.forEach((h, i) => obj[h] = row[i]); return obj;
+     });
+     return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+   }
+
+   // ── saveVisaRecord ──
+   if (action === 'saveVisaRecord') {
+     const body = JSON.parse(e.postData.contents);
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('VisaRecords');
+     const data = sheet.getDataRange().getValues();
+     const idCol = data[0].indexOf('id');
+     for (let i = 1; i < data.length; i++) {
+       if (data[i][idCol] === body.id) {
+         sheet.getRange(i+1, data[0].indexOf('status')+1).setValue(body.status);
+         sheet.getRange(i+1, data[0].indexOf('updatedAt')+1).setValue(body.updatedAt);
+         break;
+       }
+     }
+     return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON);
+   }
+
+   // VisaRecordsシートの列:
+   // id, name, nameKana, nationality, dept, title, dob, joinDate, email,
+   // visaType, cardNo, expiry, period, restriction, status, hrPic, updatedAt
+*/
+-->
+</body>
+</html>

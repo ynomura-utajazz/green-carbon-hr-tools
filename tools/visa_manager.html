@@ -182,6 +182,53 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); 
 .empty-state { text-align:center; padding:60px 20px; color:#999; }
 .empty-state .es-icon { font-size:48px; margin-bottom:12px; }
 .hidden { display: none !important; }
+
+.doc-status-pill{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.ds-none{background:#f3f4f6;color:#6b7280;}
+.ds-prep{background:#fef9c3;color:#854d0e;}
+.ds-collected{background:#dbeafe;color:#1d4ed8;}
+.ds-confirmed{background:#dcfce7;color:#15803d;}
+.doc-progress-bar{width:100%;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin:8px 0;}
+.doc-progress-fill{height:100%;background:var(--gc-green);border-radius:4px;transition:width 0.4s;}
+.doc-table{width:100%;border-collapse:collapse;font-size:12px;}
+.doc-table th{background:#f8fafc;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#666;border-bottom:1px solid var(--border);}
+.doc-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.doc-table tr:last-child td{border-bottom:none;}
+.doc-status-sel{padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;outline:none;background:white;cursor:pointer;}
+.gen-btn{padding:3px 8px;border:1px solid var(--gc-light);border-radius:6px;font-size:11px;background:white;color:var(--gc-green);cursor:pointer;font-weight:600;}
+.gen-btn:hover{background:var(--gc-pale);}
+.tl-wrap{position:relative;padding-left:28px;}
+.tl-line{position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--border);}
+.tl-item{position:relative;margin-bottom:18px;}
+.tl-dot{position:absolute;left:-23px;width:14px;height:14px;border-radius:50%;border:2px solid white;top:3px;box-sizing:border-box;}
+.tl-done{background:var(--gc-green);}
+.tl-now{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.25);}
+.tl-future{background:#d1d5db;}
+.tl-date{font-size:11px;color:#999;margin-bottom:2px;}
+.tl-title{font-size:13px;font-weight:700;color:var(--gc-dark);}
+.tl-desc{font-size:12px;color:#666;margin-top:2px;line-height:1.5;}
+.doc-panel-area{display:none;flex:1;padding:20px;overflow-y:auto;}
+.doc-panel-area.active{display:block;}
+.gen-modal{width:600px;}
+.gen-textarea{width:100%;min-height:260px;padding:14px;border:1.5px solid var(--border);border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.8;outline:none;resize:vertical;background:#f8fafc;color:var(--text);}
+.gen-textarea:focus{border-color:var(--gc-light);}
+.web-step{background:#f8fafc;border-radius:10px;padding:12px 16px;border-left:3px solid var(--gc-light);margin-bottom:10px;}
+.web-step-num{font-size:16px;font-weight:900;color:var(--gc-green);margin-right:8px;}
+.web-step-title{font-size:14px;font-weight:700;color:var(--gc-dark);}
+.web-step-desc{font-size:12px;color:#555;margin-top:4px;line-height:1.6;}
+.ext-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--gc-green);color:white;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;margin:4px 4px 0 0;border:none;cursor:pointer;}
+.ext-btn:hover{background:var(--gc-dark);}
+.doc-cat-label{font-size:10px;font-weight:700;color:white;padding:2px 7px;border-radius:8px;display:inline-block;}
+.cat-app{background:#7c3aed;}
+.cat-personal{background:#0369a1;}
+.cat-company{background:#059669;}
+.doc-panel-card{background:white;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;}
+.doc-panel-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+.dpc-name{font-size:14px;font-weight:700;color:var(--gc-dark);}
+.dpc-sub{font-size:12px;color:#777;margin-top:2px;}
+.dpc-bar{flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin:0 12px;}
+.dpc-fill{height:100%;background:var(--gc-green);border-radius:3px;}
+.dpc-pct{font-size:12px;font-weight:700;color:var(--gc-dark);min-width:36px;text-align:right;}
 </style>
 </head>
 <body>
@@ -240,6 +287,8 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); 
     <h3>国籍</h3>
     <div class="filter-group" id="nationalityFilters"></div>
     <button class="alert-btn" onclick="openAlertModal()">🔔 アラート設定</button>
+    <button class="alert-btn" style="margin-top:8px;background:#1d4ed8;" onclick="toggleDocPanel()">📁 書類管理パネル</button>
+    <button class="alert-btn" style="margin-top:8px;background:#7c3aed;" onclick="openWebGuide()">🌐 WEB申請ガイド</button>
   </div>
 
   <div class="table-area">
@@ -271,6 +320,17 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); 
   </div>
 </div>
 
+
+<!-- DOCUMENT PANEL -->
+<div class="doc-panel-area" id="docPanelArea">
+  <div class="table-header">
+    <h2>📁 書類管理パネル — 全社員</h2>
+    <button onclick="toggleDocPanel()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 一覧に戻る</button>
+  </div>
+  <p style="font-size:13px;color:#777;margin-bottom:16px;">在留資格種別ごとの必要書類収集状況。クリックで詳細・書類管理を開きます。</p>
+  <div id="docPanelList"></div>
+</div>
+
 <!-- DETAIL MODAL -->
 <div class="modal-overlay hidden" id="detailModal">
   <div class="modal">
@@ -281,6 +341,8 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); 
     <div class="modal-tabs">
       <button class="tab-btn active" onclick="switchTab('basic')">👤 基本情報</button>
       <button class="tab-btn" onclick="switchTab('visa')">🛂 在留資格</button>
+      <button class="tab-btn" onclick="switchTab('docs')">📁 書類管理</button>
+      <button class="tab-btn" onclick="switchTab('timeline')">🗓 申請スケジュール</button>
       <button class="tab-btn" onclick="switchTab('history')">📋 更新履歴</button>
       <button class="tab-btn" onclick="switchTab('memo')">📝 メモ</button>
     </div>
@@ -316,6 +378,25 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); 
           </select>
           <br><button class="save-status-btn" onclick="saveStatus()">💾 ステータスを保存</button>
         </div>
+      </div>
+
+      <div class="tab-content" id="tab-docs">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--gc-dark);">書類収集進捗</div>
+            <div class="doc-progress-bar"><div class="doc-progress-fill" id="m-doc-progress" style="width:0%"></div></div>
+            <div style="font-size:11px;color:#777;" id="m-doc-progress-label"></div>
+          </div>
+          <button class="action-btn" onclick="openDocGenerator()" style="padding:7px 14px;font-size:12px;">✏️ 書類を生成</button>
+        </div>
+        <table class="doc-table">
+          <thead><tr><th>書類名</th><th>種別</th><th>書式</th><th>ステータス</th><th>備考</th></tr></thead>
+          <tbody id="m-doc-list"></tbody>
+        </table>
+      </div>
+      <div class="tab-content" id="tab-timeline">
+        <div style="font-size:13px;color:#777;margin-bottom:16px;">有効期限から逆算した申請スケジュールです。</div>
+        <div class="tl-wrap"><div class="tl-line"></div><div id="m-timeline-list"></div></div>
       </div>
       <div class="tab-content" id="tab-history">
         <div class="history-list" id="m-history"></div>
@@ -582,10 +663,12 @@ function renderMemos(empId) {
 }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function switchTab(tab) {
-  const tabs=['basic','visa','history','memo'];
+  const tabs=['basic','visa','docs','timeline','history','memo'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===tab));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='docs'&&currentEmployeeId) renderDocTab(currentEmployeeId);
+  if(tab==='timeline'&&currentEmployeeId){ const emp=visaData.find(e=>e.id===currentEmployeeId); if(emp) renderTimelineTab(emp); }
 }
 function saveStatus() {
   if(!currentEmployeeId) return;
@@ -643,6 +726,276 @@ async function init() {
 init();
 </script>
 
+
+// ==================== DOCUMENT DATA ====================
+const REQUIRED_DOCS = {
+  '技術・人文知識・国際業務': [
+    {id:'app_form', name:'在留期間更新許可申請書', form:'様式第3号', cat:'app', note:'入管窓口・オンライン'},
+    {id:'photo', name:'証明写真（縦4cm×横3cm）', form:'–', cat:'personal', note:'3ヶ月以内・無背景'},
+    {id:'passport', name:'パスポートのコピー（全ページ）', form:'–', cat:'personal', note:'有効期限確認'},
+    {id:'residence_card', name:'在留カードのコピー（表裏）', form:'–', cat:'personal', note:''},
+    {id:'employment_contract', name:'雇用契約書のコピー', form:'–', cat:'company', note:'最新版・押印済'},
+    {id:'degree', name:'学位・卒業証明書（日本語訳付き）', form:'–', cat:'personal', note:'最終学歴'},
+    {id:'company_registry', name:'会社登記事項証明書', form:'–', cat:'company', note:'3ヶ月以内発行'},
+    {id:'tax_cert', name:'法人税の納税証明書', form:'–', cat:'company', note:'直近年度'},
+    {id:'employment_cert', name:'在職証明書', form:'会社発行', cat:'company', note:'会社印押印必須', gen:'employment'},
+    {id:'salary_cert_doc', name:'給与証明書（源泉徴収票）', form:'会社発行', cat:'company', note:'直近年度', gen:'salary'},
+  ],
+  '特定技能': [
+    {id:'app_form', name:'在留期間更新許可申請書', form:'様式第3号', cat:'app', note:''},
+    {id:'photo', name:'証明写真（縦4cm×横3cm）', form:'–', cat:'personal', note:'3ヶ月以内撮影'},
+    {id:'passport', name:'パスポートのコピー', form:'–', cat:'personal', note:''},
+    {id:'residence_card', name:'在留カードのコピー（表裏）', form:'–', cat:'personal', note:''},
+    {id:'employment_contract_sp', name:'特定技能雇用契約書', form:'省令様式', cat:'company', note:'特定技能専用様式'},
+    {id:'skill_cert', name:'技能試験合格証明書', form:'–', cat:'personal', note:'技能実習2号修了者は修了証明書可'},
+    {id:'japanese_cert', name:'日本語試験合格証明書', form:'–', cat:'personal', note:'分野により免除あり'},
+    {id:'health_cert', name:'健康診断証明書', form:'–', cat:'personal', note:'3ヶ月以内発行'},
+    {id:'tax_payment', name:'住民税の納税証明書', form:'–', cat:'personal', note:'非課税証明書も可'},
+    {id:'insurance_proof', name:'社会保険料納付証明', form:'–', cat:'company', note:''},
+    {id:'support_plan', name:'1号特定技能外国人支援計画書', form:'省令様式', cat:'company', note:'支援委託の場合は委託契約書'},
+    {id:'employment_cert', name:'在職証明書', form:'会社発行', cat:'company', note:'', gen:'employment'},
+    {id:'salary_cert_doc', name:'給与証明書', form:'会社発行', cat:'company', note:'', gen:'salary'},
+  ],
+  '高度専門職': [
+    {id:'app_form', name:'在留期間更新許可申請書', form:'様式第3号', cat:'app', note:''},
+    {id:'photo', name:'証明写真（縦4cm×横3cm）', form:'–', cat:'personal', note:''},
+    {id:'passport', name:'パスポートのコピー', form:'–', cat:'personal', note:''},
+    {id:'residence_card', name:'在留カードのコピー（表裏）', form:'–', cat:'personal', note:''},
+    {id:'point_calc', name:'高度専門職ポイント計算表', form:'別紙様式', cat:'app', note:'ポイント証明書類と合わせて提出'},
+    {id:'degree', name:'最終学歴証明書', form:'–', cat:'personal', note:'ポイント加算用'},
+    {id:'employment_contract', name:'雇用契約書（報酬額明記）', form:'–', cat:'company', note:''},
+    {id:'company_registry', name:'会社登記事項証明書', form:'–', cat:'company', note:'3ヶ月以内'},
+    {id:'employment_cert', name:'在職証明書', form:'会社発行', cat:'company', note:'', gen:'employment'},
+    {id:'salary_cert_doc', name:'給与証明書（年収300万円以上確認）', form:'会社発行', cat:'company', note:'', gen:'salary'},
+    {id:'research_paper', name:'研究論文・特許等の証明', form:'–', cat:'personal', note:'ポイント加算がある場合'},
+  ],
+  '企業内転勤': [
+    {id:'app_form', name:'在留期間更新許可申請書', form:'様式第3号', cat:'app', note:''},
+    {id:'photo', name:'証明写真（縦4cm×横3cm）', form:'–', cat:'personal', note:''},
+    {id:'passport', name:'パスポートのコピー', form:'–', cat:'personal', note:''},
+    {id:'residence_card', name:'在留カードのコピー（表裏）', form:'–', cat:'personal', note:''},
+    {id:'transfer_order', name:'転勤命令書', form:'会社発行', cat:'company', note:'本社・転勤先双方の署名'},
+    {id:'overseas_cert', name:'転勤元在籍証明書', form:'転勤元発行', cat:'company', note:'1年以上の在籍要件確認'},
+    {id:'org_chart', name:'組織図（転勤元・転勤先）', form:'–', cat:'company', note:''},
+    {id:'employment_contract', name:'雇用契約書', form:'–', cat:'company', note:''},
+    {id:'company_registry', name:'会社登記事項証明書', form:'–', cat:'company', note:''},
+    {id:'employment_cert', name:'在職証明書', form:'会社発行', cat:'company', note:'', gen:'employment'},
+    {id:'salary_cert_doc', name:'給与証明書', form:'会社発行', cat:'company', note:'', gen:'salary'},
+  ],
+  '配偶者等': [
+    {id:'app_form', name:'在留期間更新許可申請書', form:'様式第3号', cat:'app', note:''},
+    {id:'photo', name:'証明写真（縦4cm×横3cm）', form:'–', cat:'personal', note:''},
+    {id:'passport', name:'パスポートのコピー', form:'–', cat:'personal', note:''},
+    {id:'residence_card', name:'在留カードのコピー（表裏）', form:'–', cat:'personal', note:''},
+    {id:'marriage_cert', name:'婚姻証明書（日本語訳付き）', form:'–', cat:'personal', note:'原本または公証コピー'},
+    {id:'spouse_id', name:'配偶者のパスポートまたは在留カード', form:'–', cat:'personal', note:''},
+    {id:'family_register', name:'戸籍謄本（日本人配偶者の場合）', form:'–', cat:'personal', note:'3ヶ月以内発行'},
+    {id:'residence_cert', name:'住民票（世帯全員記載）', form:'–', cat:'personal', note:'3ヶ月以内発行'},
+    {id:'spouse_income', name:'配偶者の課税・納税証明書', form:'–', cat:'company', note:'生計維持の証明'},
+    {id:'employment_cert', name:'在職証明書（就労の場合）', form:'会社発行', cat:'company', note:'', gen:'employment'},
+  ],
+};
+const DEFAULT_DOCS = [
+  {id:'app_form', name:'在留期間更新許可申請書', form:'様式第3号', cat:'app', note:'入管局指定書式'},
+  {id:'photo', name:'証明写真（縦4cm×横3cm）', form:'–', cat:'personal', note:'3ヶ月以内撮影'},
+  {id:'passport', name:'パスポートのコピー', form:'–', cat:'personal', note:''},
+  {id:'residence_card', name:'在留カードのコピー（表裏）', form:'–', cat:'personal', note:''},
+  {id:'employment_cert', name:'在職証明書', form:'会社発行', cat:'company', note:'', gen:'employment'},
+  {id:'salary_cert_doc', name:'給与証明書', form:'会社発行', cat:'company', note:'', gen:'salary'},
+];
+const CAT_LABELS = {app:['申請書類','cat-app'], personal:['本人書類','cat-personal'], company:['会社書類','cat-company']};
+const DOC_STATUS_LABELS = {none:'未収集', prep:'準備中', collected:'収集済', confirmed:'確認済'};
+const DOC_STATUS_CSS = {none:'ds-none', prep:'ds-prep', collected:'ds-collected', confirmed:'ds-confirmed'};
+
+function getDocStatuses(empId){try{return JSON.parse(sessionStorage.getItem('visa-doc-'+empId))||{};}catch(e){return {};}}
+function saveDocStatuses(empId,obj){sessionStorage.setItem('visa-doc-'+empId,JSON.stringify(obj));}
+function updateDocStatus(empId,docId,status){
+  const s=getDocStatuses(empId); s[docId]=status; saveDocStatuses(empId,s);
+  fetch(GAS_URL+'?action=saveDocStatus',{method:'POST',mode:'cors',body:JSON.stringify({empId,docId,status,updatedAt:new Date().toISOString()})}).catch(()=>{});
+  if(currentEmployeeId===empId) refreshDocProgress(empId);
+  renderDocPanel();
+}
+function getDocsForVisa(visaType){return REQUIRED_DOCS[visaType]||DEFAULT_DOCS;}
+function calcDocProgress(empId, visaType){
+  const docs=getDocsForVisa(visaType), st=getDocStatuses(empId);
+  const done=docs.filter(d=>st[d.id]==='collected'||st[d.id]==='confirmed').length;
+  return {done, total:docs.length, pct: docs.length?Math.round(done/docs.length*100):0};
+}
+function refreshDocProgress(empId){
+  const emp=visaData.find(e=>e.id===empId); if(!emp) return;
+  const {done,total,pct}=calcDocProgress(empId,emp.visaType);
+  document.getElementById('m-doc-progress').style.width=pct+'%';
+  document.getElementById('m-doc-progress-label').textContent=done+' / '+total+' 書類収集済（'+pct+'%）';
+}
+function renderDocTab(empId){
+  const emp=visaData.find(e=>e.id===empId); if(!emp) return;
+  const docs=getDocsForVisa(emp.visaType), st=getDocStatuses(empId);
+  refreshDocProgress(empId);
+  const tbody=document.getElementById('m-doc-list');
+  tbody.innerHTML=docs.map(d=>{
+    const status=st[d.id]||'none';
+    const [catLabel,catCls]=CAT_LABELS[d.cat]||['–',''];
+    const genBtn=d.gen?'<button class="gen-btn" onclick="generateDocFor(''+d.gen+'',''+empId+'')">生成</button>':'';
+    return '<tr>'
+      +'<td><strong style="font-size:12px">'+d.name+'</strong></td>'
+      +'<td><span class="doc-cat-label '+catCls+'">'+catLabel+'</span></td>'
+      +'<td style="color:#777;font-size:11px">'+d.form+'</td>'
+      +'<td><select class="doc-status-sel" onchange="updateDocStatus(''+empId+'',''+d.id+'',this.value)">'
+        +Object.entries(DOC_STATUS_LABELS).map(([v,l])=>'<option value="'+v+'"'+(status===v?' selected':'')+'>'+l+'</option>').join('')
+      +'</select></td>'
+      +'<td style="font-size:11px;color:#777">'+d.note+' '+genBtn+'</td>'
+      +'</tr>';
+  }).join('');
+}
+function renderTimelineTab(emp){
+  const expiry=new Date(emp.expiry);
+  expiry.setHours(0,0,0,0);
+  const daysLeft=daysUntil(emp.expiry);
+  const pts=[
+    {offset:-90,title:'書類準備開始',desc:'必要書類のリストアップ・担当者割り当て・会社書類の準備着手'},
+    {offset:-60,title:'書類収集完了目標',desc:'全書類の収集完了。会社発行書類（在職証明書・給与証明書）の準備完了'},
+    {offset:-30,title:'入管局へ申請提出',desc:'管轄の出入国在留管理局窓口 or オンライン申請システムで提出'},
+    {offset:0,title:'在留期限',desc:'現在の在留カード有効期限（この日までに申請済であれば超過後も適法在留）',isExpiry:true},
+    {offset:60,title:'審査結果（目安）',desc:'申請から約2〜3ヶ月で結果通知（繁忙期は4ヶ月超の場合も）。許可後は窓口で新カード受け取り'},
+  ];
+  const list=document.getElementById('m-timeline-list');
+  list.innerHTML=pts.map(pt=>{
+    const d=new Date(expiry); d.setDate(d.getDate()+pt.offset);
+    const dateStr=d.toISOString().slice(0,10);
+    const isPast=d<TODAY, isNow=Math.abs(daysLeft-(-pt.offset))<15&&!pt.isExpiry;
+    const dotCls=pt.isExpiry?(daysLeft<=0?'tl-done':'tl-now'):isPast?'tl-done':isNow?'tl-now':'tl-future';
+    return '<div class="tl-item"><div class="tl-dot '+dotCls+'"></div>'
+      +'<div class="tl-date">'+dateStr+(pt.isExpiry?' 〔在留期限〕':'')+'</div>'
+      +'<div class="tl-title">'+(isPast?'✅ ':'')+(pt.isExpiry&&daysLeft<=0?'⚠️ ':'')+pt.title+'</div>'
+      +'<div class="tl-desc">'+pt.desc+'</div></div>';
+  }).join('');
+}
+
+// ==================== DOC PANEL ====================
+let docPanelActive=false;
+function toggleDocPanel(){
+  docPanelActive=!docPanelActive;
+  document.getElementById('docPanelArea').classList.toggle('active',docPanelActive);
+  document.querySelector('.table-area').style.display=docPanelActive?'none':'';
+  if(docPanelActive) renderDocPanel();
+}
+function renderDocPanel(){
+  const statuses=getStatuses();
+  let rows=visaData.slice().sort((a,b)=>{
+    const pa=calcDocProgress(a.id,a.visaType), pb=calcDocProgress(b.id,b.visaType);
+    return pa.pct-pb.pct;
+  });
+  document.getElementById('docPanelList').innerHTML=rows.map(emp=>{
+    const {done,total,pct}=calcDocProgress(emp.id,emp.visaType);
+    const days=daysUntil(emp.expiry);
+    const urgClass=days<=30?'days-red':days<=60?'days-yellow':days<=90?'days-orange':'days-green';
+    return '<div class="doc-panel-card" onclick="openModal(''+emp.id+'')" title="クリックで詳細を開く">'
+      +'<div style="min-width:140px"><div class="dpc-name">'+(FLAGS[emp.nationality]||'🌏')+' '+emp.name+'</div>'
+      +'<div class="dpc-sub">'+emp.visaType+' <span class="days-badge '+urgClass+'" style="font-size:10px">残'+days+'日</span></div></div>'
+      +'<div class="dpc-bar"><div class="dpc-fill" style="width:'+pct+'%"></div></div>'
+      +'<div class="dpc-pct">'+pct+'%</div>'
+      +'<div style="font-size:12px;color:#777;min-width:60px;text-align:right">'+done+'/'+total+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ==================== DOCUMENT GENERATOR ====================
+function openDocGenerator(){
+  document.getElementById('genModal').classList.remove('hidden');
+  document.getElementById('genModalTitle').textContent='📄 書類生成';
+  document.getElementById('genModalSub').textContent=currentEmployeeId?visaData.find(e=>e.id===currentEmployeeId)?.name||'':'';
+  document.getElementById('genDocText').value='';
+}
+function generateDocFor(type,empId){
+  currentEmployeeId=empId||currentEmployeeId;
+  document.getElementById('genModal').classList.remove('hidden');
+  document.getElementById('genModalSub').textContent=visaData.find(e=>e.id===currentEmployeeId)?.name||'';
+  generateDoc(type);
+}
+function generateDoc(type){
+  const emp=visaData.find(e=>e.id===currentEmployeeId); if(!emp) return;
+  const today=TODAY.toISOString().slice(0,10);
+  const year=TODAY.getFullYear(), month=TODAY.getMonth()+1, day=TODAY.getDate();
+  let text='';
+  if(type==='employment'){
+    text='在　職　証　明　書\n'+'─'.repeat(40)+'\n\n'
+      +'氏　　名：'+emp.name+'\n'
+      +'国　　籍：'+emp.nationality+'\n'
+      +'生年月日：'+emp.dob+'\n'
+      +'所　属：'+emp.dept+'\n'
+      +'職　位：'+emp.title+'\n'
+      +'雇用形態：正社員\n'
+      +'入社年月日：'+emp.joinDate+'\n\n'
+      +'上記の者が当社に在職していることを証明します。\n\n'
+      +'　発行日：'+year+'年'+month+'月'+day+'日\n\n'
+      +'　Green Carbon 株式会社\n'
+      +'　代表取締役　　　　　　　　　　　印\n'
+      +'　〒XXX-XXXX 東京都XX区XXXXXX\n'
+      +'　Tel: 03-XXXX-XXXX\n\n'
+      +'※ 本証明書は在留資格申請の目的のみに使用してください。';
+  } else if(type==='salary'){
+    text='給　与　証　明　書\n'+'─'.repeat(40)+'\n\n'
+      +'氏　　名：'+emp.name+'\n'
+      +'国　　籍：'+emp.nationality+'\n'
+      +'所　属：'+emp.dept+'\n'
+      +'職　位：'+emp.title+'\n'
+      +'入社年月日：'+emp.joinDate+'\n\n'
+      +'【給与明細（直近月）】\n'
+      +'　基本給　　：￥XXX,XXX\n'
+      +'　各種手当　：￥XXX,XXX\n'
+      +'　支給合計　：￥XXX,XXX\n\n'
+      +'【年収（直近年度）】\n'
+      +'　年間総支給額：￥X,XXX,XXX\n\n'
+      +'上記の通り相違ないことを証明します。\n\n'
+      +'　発行日：'+year+'年'+month+'月'+day+'日\n\n'
+      +'　Green Carbon 株式会社\n'
+      +'　代表取締役　　　　　　　　　　　印';
+  } else if(type==='reason'){
+    text='在留期間更新申請に係る理由書\n'+'─'.repeat(40)+'\n\n'
+      +'　　在留資格：'+emp.visaType+'\n'
+      +'　　申請人氏名：'+emp.name+'\n'
+      +'　　在留カード番号：'+emp.cardNo+'\n\n'
+      +'１．更新申請の理由\n'
+      +'　申請人は'+emp.joinDate+'より当社（Green Carbon株式会社）に勤務しており、'
+      +'現在も引き続き同社において業務に従事しております。\n'
+      +'　当社の業務遂行のために、在留期間の更新が必要であることから本申請を行います。\n\n'
+      +'２．勤務内容の概要\n'
+      +'　所　属：'+emp.dept+'\n'
+      +'　職　位：'+emp.title+'\n'
+      +'　業務内容：[具体的な業務内容を記載してください]\n\n'
+      +'３．今後の見通し\n'
+      +'　引き続き同社での業務に従事する予定であり、在留期間の更新が認められた場合には'
+      +'適法に就労を継続する予定です。\n\n'
+      +'　'+year+'年'+month+'月'+day+'日\n\n'
+      +'　Green Carbon 株式会社\n'
+      +'　代表取締役　　　　　　　　　　　印';
+  } else if(type==='guarantee'){
+    text='身　元　保　証　書\n'+'─'.repeat(40)+'\n\n'
+      +'被保証人氏名：'+emp.name+'\n'
+      +'国　　　　籍：'+emp.nationality+'\n'
+      +'生　年　月　日：'+emp.dob+'\n'
+      +'在 留 資 格：'+emp.visaType+'\n\n'
+      +'私は上記の者の身元を保証し、同人が本邦において法令を遵守し、'
+      +'かつその者が本邦において行うべき一切の義務を確実に履行することを保証します。\n\n'
+      +'　発行日：'+year+'年'+month+'月'+day+'日\n\n'
+      +'　氏　名：[保証人氏名]　　　　　　　　　　　印\n'
+      +'　住　所：[保証人住所]\n'
+      +'　電　話：[連絡先]\n'
+      +'　保証人との関係：[勤務先・所属会社等]';
+  }
+  document.getElementById('genDocText').value=text;
+  showToast('📄 書類テキストを生成しました');
+}
+function copyGenDoc(){
+  const el=document.getElementById('genDocText');
+  el.select(); document.execCommand('copy');
+  showToast('📋 クリップボードにコピーしました');
+}
+function openWebGuide(){ document.getElementById('webGuideModal').classList.remove('hidden'); }
+document.getElementById('genModal').addEventListener('click',function(e){if(e.target===this)closeModal('genModal');});
+document.getElementById('webGuideModal').addEventListener('click',function(e){if(e.target===this)closeModal('webGuideModal');});
+
+
 <!--
 /* GAS ADDITIONS NEEDED:
    以下をGASのdoGet/doPost関数内に追加してください。
@@ -657,6 +1010,24 @@ init();
        const obj = {}; headers.forEach((h, i) => obj[h] = row[i]); return obj;
      });
      return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+   }
+
+   // ── saveDocStatus ──
+   if (action === 'saveDocStatus') {
+     const body = JSON.parse(e.postData.contents);
+     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DocStatuses')
+       || SpreadsheetApp.getActiveSpreadsheet().insertSheet('DocStatuses');
+     // Upsert row: empId, docId, status, updatedAt
+     const data = sheet.getDataRange().getValues();
+     for (let i = 1; i < data.length; i++) {
+       if (data[i][0] === body.empId && data[i][1] === body.docId) {
+         sheet.getRange(i+1, 3).setValue(body.status);
+         sheet.getRange(i+1, 4).setValue(body.updatedAt);
+         return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON);
+       }
+     }
+     sheet.appendRow([body.empId, body.docId, body.status, body.updatedAt]);
+     return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON);
    }
 
    // ── saveVisaRecord ──
@@ -680,5 +1051,53 @@ init();
    // visaType, cardNo, expiry, period, restriction, status, hrPic, updatedAt
 */
 -->
+<!-- DOCUMENT GENERATOR MODAL -->
+<div class="modal-overlay hidden" id="genModal">
+  <div class="modal gen-modal">
+    <div class="modal-header">
+      <div><h2 id="genModalTitle">📄 書類生成</h2><p id="genModalSub"></p></div>
+      <button class="modal-close" onclick="closeModal('genModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button onclick="generateDoc('employment')" style="padding:7px 14px;border:1px solid var(--gc-light);border-radius:8px;background:white;color:var(--gc-green);font-size:13px;font-weight:600;cursor:pointer;">📋 在職証明書</button>
+        <button onclick="generateDoc('salary')" style="padding:7px 14px;border:1px solid var(--gc-light);border-radius:8px;background:white;color:var(--gc-green);font-size:13px;font-weight:600;cursor:pointer;">💴 給与証明書</button>
+        <button onclick="generateDoc('reason')" style="padding:7px 14px;border:1px solid var(--gc-light);border-radius:8px;background:white;color:var(--gc-green);font-size:13px;font-weight:600;cursor:pointer;">📝 更新理由書</button>
+        <button onclick="generateDoc('guarantee')" style="padding:7px 14px;border:1px solid var(--gc-light);border-radius:8px;background:white;color:var(--gc-green);font-size:13px;font-weight:600;cursor:pointer;">🤝 身元保証書</button>
+      </div>
+      <textarea class="gen-textarea" id="genDocText" placeholder="ボタンを押すと書類テキストが生成されます。コピーして編集・印刷してください。"></textarea>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button onclick="copyGenDoc()" style="padding:8px 18px;background:var(--gc-green);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">📋 コピー</button>
+        <span style="font-size:12px;color:#999;align-self:center;">※ 内容を確認のうえ、会社印を押印して使用してください</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WEB APPLICATION GUIDE MODAL -->
+<div class="modal-overlay hidden" id="webGuideModal">
+  <div class="modal" style="width:620px;">
+    <div class="modal-header">
+      <div><h2>🌐 WEB申請ガイド</h2><p>在留申請オンラインシステムの利用手順</p></div>
+      <button class="modal-close" onclick="closeModal('webGuideModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;">
+        ⚠️ <strong>申請できる方：</strong>申請人本人、法定代理人、取次者（行政書士等）、所属機関の職員（届出済み）
+      </div>
+      <div class="web-step"><span class="web-step-num">1</span><span class="web-step-title">利用者情報登録（初回のみ）</span><div class="web-step-desc">在留申請オンラインシステム（<strong>e-VISA</strong>）にアクセスし、メールアドレスで新規登録。本人確認書類（マイナンバーカード等）をアップロードして利用者登録を完了させます。</div></div>
+      <div class="web-step"><span class="web-step-num">2</span><span class="web-step-title">申請書類のデジタル準備</span><div class="web-step-desc">必要書類をスキャンまたは写真撮影してPDF化。ファイルサイズは1件4MB以内。証明写真は JPG/PNG形式（350×480px推奨）。</div></div>
+      <div class="web-step"><span class="web-step-num">3</span><span class="web-step-title">申請書入力・書類アップロード</span><div class="web-step-desc">システム上で申請書を入力し、必要書類を添付してオンライン提出。手数料は後日窓口またはオンラインで支払い。</div></div>
+      <div class="web-step"><span class="web-step-num">4</span><span class="web-step-title">審査・進捗確認</span><div class="web-step-desc">システム上で審査状況を確認。不備がある場合はシステム経由で連絡が届きます。審査期間は通常2〜3ヶ月（繁忙期は4ヶ月超の場合も）。</div></div>
+      <div class="web-step"><span class="web-step-num">5</span><span class="web-step-title">許可後の手続き</span><div class="web-step-desc">許可通知後、出入国在留管理局窓口に本人が出頭して新しい在留カードを受け取ります（郵送不可）。手数料4,000円（収入印紙）。</div></div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:700;color:var(--gc-dark);margin-bottom:8px;">関連リンク</div>
+        <a class="ext-btn" href="https://www.isa.go.jp/en/applications/online-application.html" target="_blank">🔗 在留申請オンラインシステム</a>
+        <a class="ext-btn" href="https://www.moj.go.jp/isa/applications/procedures/nyuukokukanri10_00003.html" target="_blank">📋 必要書類一覧（法務省）</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

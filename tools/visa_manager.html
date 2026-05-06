@@ -208,6 +208,25 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); 
   .modal-close,.modal-tabs .tab-btn:not(.active){display:none;}
   .print-hide{display:none!important;}
 }
+
+/* CSV Import Modal */
+.import-modal{width:640px;}
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;background:#fafafa;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--gc-light);background:var(--gc-pale);}
+.drop-zone-icon{font-size:40px;margin-bottom:8px;}
+.drop-zone p{font-size:13px;color:#777;}
+.drop-zone strong{color:var(--gc-green);}
+.import-preview{max-height:280px;overflow-y:auto;margin-top:16px;}
+.import-preview table{width:100%;border-collapse:collapse;font-size:11px;}
+.import-preview th{background:var(--gc-dark);color:white;padding:6px 8px;font-size:10px;position:sticky;top:0;}
+.import-preview td{padding:5px 8px;border-bottom:1px solid #f0f0f0;}
+.import-preview tr:nth-child(even) td{background:#f8fafc;}
+.import-err{color:#dc2626;font-size:12px;margin-top:8px;padding:10px;background:#fee2e2;border-radius:8px;}
+.import-ok{color:#15803d;font-size:12px;margin-top:8px;padding:10px;background:#dcfce7;border-radius:8px;}
+.sync-indicator{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 10px;border-radius:20px;}
+.sync-ok{background:#dcfce7;color:#15803d;}
+.sync-err{background:#fee2e2;color:#991b1b;}
+.sync-pending{background:#fef3c7;color:#d97706;}
 </style>
 </head>
 <body>
@@ -219,6 +238,8 @@ body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); 
   <span class="badge badge-fallback" id="gasBadge">● サンプルデータ</span>
   <button class="header-btn add" onclick="openAddEmployee()">＋ 社員追加</button>
   <button class="header-btn" onclick="exportCSV()">📊 CSV出力</button>
+  <button class="header-btn" onclick="openImportModal()" style="background:#0369a1;border-color:#0284c7;">📥 CSVインポート</button>
+  <span id="syncIndicator" class="sync-indicator sync-pending" style="font-size:11px;">⏳ 確認中</span>
 </div>
 
 <div class="summary-bar">
@@ -1112,6 +1133,41 @@ function printDocList(){
 <h1>📋 書類チェックリスト</h1>
 <p>${emp.name}（${emp.id}）　在留資格: ${emp.visaType}　有効期限: ${emp.expiry}　出力日: ${TODAY.toISOString().slice(0,10)}</p>
 <table><thead><tr><th>書類名</th><th>種別</th><th>書式</th><th>ステータス</th><th>備考</th></tr></thead><tbody>${rows}</tbody></table>
+
+<!-- CSV IMPORT MODAL -->
+<div class="modal-overlay hidden" id="importModal">
+  <div class="modal import-modal">
+    <div class="modal-header">
+      <div><h2>📥 CSVインポート</h2><p>社員データを一括取り込み</p></div>
+      <button class="modal-close" onclick="closeModal('importModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button onclick="downloadTemplate()" style="padding:8px 16px;background:var(--gc-green);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">📋 テンプレートをダウンロード</button>
+        <span style="font-size:12px;color:#777;align-self:center;">← まずテンプレートをダウンロードしてデータを入力してください</span>
+      </div>
+      <div class="drop-zone" id="csvDropZone"
+        ondrop="handleCsvDrop(event)" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')"
+        onclick="document.getElementById('csvFileInput').click()">
+        <div class="drop-zone-icon">📂</div>
+        <p>CSVファイルをここにドロップ<br>または <strong>クリックしてファイルを選択</strong></p>
+        <p style="font-size:11px;margin-top:8px;">UTF-8またはShift-JIS対応 / Excelで編集したCSVも可</p>
+      </div>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCsvFile(this.files[0])">
+      <div id="importFeedback"></div>
+      <div class="import-preview" id="importPreview"></div>
+      <div id="importActions" style="display:none;margin-top:16px;display:none;">
+        <div style="font-size:13px;font-weight:600;color:var(--gc-dark);margin-bottom:8px;" id="importSummary"></div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="executeImport(false)" style="padding:10px 20px;background:var(--gc-green);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">✅ 追加のみ（既存を保持）</button>
+          <button onclick="executeImport(true)" style="padding:10px 20px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🔄 全件置き換え</button>
+          <button onclick="document.getElementById('importActions').style.display='none';document.getElementById('importPreview').innerHTML='';document.getElementById('importFeedback').innerHTML='';" style="padding:10px 16px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:13px;">キャンセル</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body></html>`);
   win.document.close();win.focus();win.print();
 }
@@ -1254,6 +1310,341 @@ async function init(){
   updateSummary();buildNationalityFilters();renderTable();
 }
 init();
+
+
+// ==================== CSV IMPORT ====================
+const CSV_TEMPLATE_HEADERS = [
+  '社員番号','氏名','ローマ字氏名','国籍','部門','役職',
+  '生年月日(YYYY-MM-DD)','入社日(YYYY-MM-DD)','メールアドレス',
+  '在留資格種別','在留カード番号','在留期限(YYYY-MM-DD)',
+  '在留期間','就労制限','担当HR'
+];
+const CSV_SAMPLE_ROW = [
+  'GC-1001','アフマッド・スバギョ','Ahmad Subagyo','インドネシア','製造・現場','オペレーター',
+  '1990-03-15','2021-06-01','name@green-carbon.inc',
+  '特定技能','RC1234567X','2025-06-15',
+  '1年','なし（特定産業分野）','田中 優子'
+];
+
+let importedRows = [];
+
+function downloadTemplate() {
+  const rows = [CSV_TEMPLATE_HEADERS, CSV_SAMPLE_ROW];
+  const csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'visa_import_template.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('📋 テンプレートをダウンロードしました');
+}
+
+function openImportModal() {
+  importedRows = [];
+  document.getElementById('importFeedback').innerHTML = '';
+  document.getElementById('importPreview').innerHTML = '';
+  document.getElementById('importActions').style.display = 'none';
+  document.getElementById('csvDropZone').classList.remove('drag-over');
+  document.getElementById('importModal').classList.remove('hidden');
+}
+
+function handleCsvDrop(e) {
+  e.preventDefault();
+  document.getElementById('csvDropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleCsvFile(file);
+}
+
+function handleCsvFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      parseCsvContent(e.target.result);
+    } catch(err) {
+      document.getElementById('importFeedback').innerHTML =
+        '<div class="import-err">❌ 読み込みエラー: ' + err.message + '</div>';
+    }
+  };
+  // Try UTF-8 first, then Shift-JIS
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCsvContent(text) {
+  // Handle BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) throw new Error('データ行がありません');
+
+  // Simple CSV parse (handles quoted fields)
+  function parseRow(line) {
+    const result = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    result.push(cur.trim()); return result;
+  }
+
+  const header = parseRow(lines[0]);
+  const rows = lines.slice(1).map(l => parseRow(l));
+
+  // Map columns — support both template headers and common variations
+  const colMap = {
+    '社員番号': 'id', 'id': 'id',
+    '氏名': 'name', 'name': 'name',
+    'ローマ字氏名': 'nameKana', 'ローマ字': 'nameKana', 'nameKana': 'nameKana',
+    '国籍': 'nationality', 'nationality': 'nationality',
+    '部門': 'dept', 'department': 'dept', 'dept': 'dept',
+    '役職': 'title', 'title': 'title',
+    '生年月日(YYYY-MM-DD)': 'dob', '生年月日': 'dob', 'dob': 'dob',
+    '入社日(YYYY-MM-DD)': 'joinDate', '入社日': 'joinDate', 'joinDate': 'joinDate',
+    'メールアドレス': 'email', 'email': 'email', 'Email': 'email',
+    '在留資格種別': 'visaType', 'visaType': 'visaType', '在留資格': 'visaType',
+    '在留カード番号': 'cardNo', 'cardNo': 'cardNo', '在留カード': 'cardNo',
+    '在留期限(YYYY-MM-DD)': 'expiry', '在留期限': 'expiry', '有効期限': 'expiry', 'expiry': 'expiry',
+    '在留期間': 'period', 'period': 'period',
+    '就労制限': 'restriction', 'restriction': 'restriction',
+    '担当HR': 'hrPic', 'hrPic': 'hrPic', '担当者': 'hrPic',
+    '更新状況': 'status', 'status': 'status',
+  };
+
+  const mapped = header.map(h => colMap[h] || null);
+  const required = ['id','name','nationality','dept','visaType','expiry'];
+  const missingReq = required.filter(r => !mapped.includes(r));
+  if (missingReq.length) {
+    const labels = {'id':'社員番号','name':'氏名','nationality':'国籍','dept':'部門','visaType':'在留資格種別','expiry':'在留期限'};
+    throw new Error('必須列が見つかりません: ' + missingReq.map(k=>labels[k]||k).join('、'));
+  }
+
+  const validVisaTypes = ['技術・人文知識・国際業務','特定技能','高度専門職','企業内転勤','配偶者等','その他'];
+  let errors = [], parsed = [];
+
+  rows.forEach((row, idx) => {
+    const emp = {status:'pending', history:[], history:[]};
+    mapped.forEach((field, i) => { if (field) emp[field] = row[i] || ''; });
+    // Validation
+    if (!emp.id) { errors.push('行'+(idx+2)+': 社員番号が空です'); return; }
+    if (!emp.name) { errors.push('行'+(idx+2)+': 氏名が空です'); return; }
+    if (!emp.expiry || !/^\d{4}-\d{2}-\d{2}$/.test(emp.expiry)) {
+      errors.push('行'+(idx+2)+' ('+emp.id+'): 在留期限の形式が不正です (YYYY-MM-DD)'); return;
+    }
+    if (emp.visaType && !validVisaTypes.includes(emp.visaType)) {
+      emp.visaType = 'その他'; // 不明な場合はその他に
+    }
+    if (!emp.visaType) emp.visaType = 'その他';
+    emp.cardNo = emp.cardNo || '(未登録)';
+    emp.period = emp.period || '–';
+    emp.restriction = emp.restriction || '–';
+    emp.history = [{date:TODAY.toISOString().slice(0,10), type:'CSVインポート', by:'野村 裕太', note:''}];
+    parsed.push(emp);
+  });
+
+  importedRows = parsed;
+
+  // Show errors
+  let fb = '';
+  if (errors.length) fb += '<div class="import-err">⚠️ 以下の行をスキップしました:<br>' + errors.join('<br>') + '</div>';
+  if (parsed.length) fb += '<div class="import-ok">✅ '+parsed.length+'名のデータを読み込みました。内容を確認して「取り込む」を押してください。</div>';
+  document.getElementById('importFeedback').innerHTML = fb;
+
+  // Show preview (first 20 rows)
+  if (parsed.length) {
+    const previewCols = ['id','name','nationality','dept','visaType','expiry'];
+    const previewLabels = ['社員番号','氏名','国籍','部門','在留資格','在留期限'];
+    const tableHtml = '<table><thead><tr>'+previewLabels.map(l=>'<th>'+l+'</th>').join('')+'</tr></thead><tbody>'
+      + parsed.slice(0,20).map(e=>'<tr>'+previewCols.map(c=>'<td>'+(e[c]||'')+'</td>').join('')+'</tr>').join('')
+      + (parsed.length>20?'<tr><td colspan="6" style="text-align:center;color:#999;padding:8px">... 他 '+(parsed.length-20)+' 名</td></tr>':'')
+      + '</tbody></table>';
+    document.getElementById('importPreview').innerHTML = tableHtml;
+    document.getElementById('importSummary').textContent = parsed.length+'名 / '+rows.length+'行 を読み込み完了。取り込み方法を選択してください。';
+    document.getElementById('importActions').style.display = 'block';
+  }
+}
+
+function executeImport(replaceAll) {
+  if (!importedRows.length) return;
+  if (replaceAll) {
+    if (!confirm('全件置き換え: 現在の全社員データを削除してインポートデータに置き換えます。\nよろしいですか？')) return;
+    visaData = importedRows;
+  } else {
+    // 追加 or 上書き（同一IDは上書き）
+    const newIds = new Set(importedRows.map(e=>e.id));
+    const kept = visaData.filter(e=>!newIds.has(e.id));
+    visaData = [...kept, ...importedRows];
+  }
+  saveAllEmployees(visaData);
+  // GASにも同期
+  syncAllToGAS();
+  updateSummary(); buildNationalityFilters(); renderTable();
+  closeModal('importModal');
+  showToast('✅ '+importedRows.length+'名を取り込みました');
+  importedRows = [];
+}
+
+// ==================== GAS SYNC (強化版) ====================
+let gasConnected = false;
+
+function updateSyncIndicator(state, msg) {
+  const el = document.getElementById('syncIndicator');
+  if (!el) return;
+  const states = {
+    ok:      {cls:'sync-ok',      text:'● GAS同期中'},
+    err:     {cls:'sync-err',     text:'● オフライン（ローカル）'},
+    pending: {cls:'sync-pending', text:'⏳ 接続確認中'},
+  };
+  const s = states[state] || states.pending;
+  el.className = 'sync-indicator ' + s.cls;
+  el.textContent = msg || s.text;
+}
+
+async function gasGet(params) {
+  const url = GAS_URL + '?' + Object.entries(params).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  const res = await fetch(url, {mode:'cors'});
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function gasPost(action, body) {
+  const res = await fetch(GAS_URL + '?action=' + action, {
+    method: 'POST', mode: 'cors',
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function syncAllToGAS() {
+  if (!gasConnected) return;
+  try {
+    await gasPost('saveAllEmployees', {employees: visaData});
+  } catch(e) { console.warn('GAS sync failed:', e.message); }
+}
+
+async function saveEmployeeToGAS(emp) {
+  if (!gasConnected) return;
+  try { await gasPost('saveEmployee', emp); } catch(e) { console.warn('GAS saveEmployee:', e.message); }
+}
+
+async function deleteEmployeeFromGAS(id) {
+  if (!gasConnected) return;
+  try { await gasPost('deleteEmployee', {id}); } catch(e) { console.warn('GAS deleteEmployee:', e.message); }
+}
+
+// ==================== OVERRIDE SAVE FUNCTIONS FOR GAS SYNC ====================
+
+const _origSaveEmployee = saveEmployee;
+function saveEmployee() {
+  // Capture employee object before calling original logic
+  const id = document.getElementById('ei-id').value.trim();
+  const name = document.getElementById('ei-name').value.trim();
+  const visaType = document.getElementById('ei-visatype').value;
+  const expiry = document.getElementById('ei-expiry').value;
+  const nationality = document.getElementById('ei-nationality').value;
+  const dept = document.getElementById('ei-dept').value.trim();
+  if (!id||!name||!visaType||!expiry||!nationality||!dept) {
+    alert('必須項目（社員番号・氏名・国籍・部門・在留資格・有効期限）を入力してください'); return;
+  }
+  const emp = {
+    id, name,
+    nameKana: document.getElementById('ei-namekana').value.trim(),
+    nationality, dept,
+    title: document.getElementById('ei-title').value.trim(),
+    dob: document.getElementById('ei-dob').value,
+    joinDate: document.getElementById('ei-joindate').value,
+    email: document.getElementById('ei-email').value.trim(),
+    visaType,
+    cardNo: document.getElementById('ei-cardno').value.trim() || '(未登録)',
+    expiry,
+    period: document.getElementById('ei-period').value,
+    restriction: document.getElementById('ei-restriction').value.trim() || '–',
+    hrPic: document.getElementById('ei-hrpic').value.trim(),
+    status: 'pending',
+  };
+  if (editingEmployeeId) {
+    const idx = visaData.findIndex(e => e.id === editingEmployeeId);
+    if (idx >= 0) {
+      emp.history = visaData[idx].history || [];
+      emp.history.push({date:TODAY.toISOString().slice(0,10), type:'情報更新', by:'野村 裕太', note:''});
+      emp.status = visaData[idx].status || 'pending';
+      visaData[idx] = emp;
+    }
+  } else {
+    if (visaData.find(e => e.id === id)) { alert('社員番号 '+id+' は既に使用されています'); return; }
+    emp.history = [{date:TODAY.toISOString().slice(0,10), type:'新規登録', by:'野村 裕太', note:''}];
+    visaData.push(emp);
+  }
+  saveAllEmployees(visaData);
+  saveEmployeeToGAS(emp);
+  updateSummary(); buildNationalityFilters(); renderTable();
+  closeModal('empModal');
+  showToast(editingEmployeeId ? '✅ 社員情報を更新しました' : '✅ 社員を追加しました（'+name+'）');
+}
+
+const _origDeleteEmployee = deleteEmployee;
+function deleteEmployee() {
+  if (!editingEmployeeId) return;
+  const emp = visaData.find(e => e.id === editingEmployeeId);
+  if (!emp) return;
+  if (!confirm(emp.name+' を削除しますか？\nこの操作は取り消せません。')) return;
+  visaData = visaData.filter(e => e.id !== editingEmployeeId);
+  saveAllEmployees(visaData);
+  deleteEmployeeFromGAS(editingEmployeeId);
+  updateSummary(); buildNationalityFilters(); renderTable();
+  closeModal('empModal');
+  if (currentEmployeeId === editingEmployeeId) closeModal('detailModal');
+  showToast('🗑️ '+emp.name+' を削除しました');
+}
+
+// ==================== ENHANCED INIT (GAS-first) ====================
+async function init() {
+  updateSyncIndicator('pending');
+  try {
+    const data = await gasGet({action: 'getAll'});
+    if (data && data.employees && data.employees.length) {
+      gasConnected = true;
+      visaData = data.employees;
+      // Merge GAS statuses
+      const st = data.statuses || {};
+      const localSt = getStatuses();
+      Object.assign(localSt, st);
+      saveStatuses(localSt);
+      // Merge GAS doc statuses
+      if (data.docStatuses) {
+        Object.entries(data.docStatuses).forEach(([empId, docs]) => {
+          saveDocStatuses(empId, docs);
+        });
+      }
+      // Merge GAS memos
+      if (data.memos) {
+        Object.entries(data.memos).forEach(([empId, memos]) => {
+          saveMemos(empId, memos);
+        });
+      }
+      saveAllEmployees(visaData);
+      updateSyncIndicator('ok');
+      document.getElementById('gasBadge').textContent = '● GAS接続中';
+      document.getElementById('gasBadge').className = 'badge badge-connected';
+    } else {
+      throw new Error('No data from GAS');
+    }
+  } catch(e) {
+    console.log('GAS unavailable, using localStorage:', e.message);
+    gasConnected = false;
+    updateSyncIndicator('err');
+    visaData = getAllEmployees();
+  }
+  // Sync statuses
+  const st = getStatuses();
+  visaData.forEach(e => { if (!st[e.id]) st[e.id] = e.status || 'pending'; });
+  saveStatuses(st);
+  updateSummary(); buildNationalityFilters(); renderTable();
+}
+
 </script>
 </body>
 </html>

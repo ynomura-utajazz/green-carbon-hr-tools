@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>給与帯・昇給管理 | Green Carbon HR Tools</title>
+  <script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --green-dark: #2d6a4f;
+      --green-mid: #40916c;
+      --green-light: #52b788;
+      --green-pale: #d8f3dc;
+      --green-bg: #f0faf4;
+      --gray-100: #f8f9fa;
+      --gray-200: #e9ecef;
+      --gray-300: #dee2e6;
+      --gray-500: #6c757d;
+      --gray-700: #495057;
+      --gray-900: #212529;
+      --danger: #dc3545;
+      --warning: #fd7e14;
+      --info: #0dcaf0;
+      --white: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-900);
+      min-height: 100vh;
+    }
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+      color: var(--white);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-back {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.3);
+      transition: background 0.2s;
+    }
+    .header-back:hover { background: rgba(255,255,255,0.15); }
+    .header-title { font-size: 20px; font-weight: 700; }
+    .header-subtitle { font-size: 13px; opacity: 0.8; margin-left: auto; }
+
+    /* Tabs */
+    .tabs-wrapper {
+      background: var(--white);
+      border-bottom: 2px solid var(--green-pale);
+      padding: 0 24px;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 14px 20px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-500);
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--green-mid); background: var(--green-bg); }
+    .tab-btn.active { color: var(--green-dark); border-bottom-color: var(--green-dark); }
+
+    /* Main content */
+    .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--white);
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .badge {
+      font-size: 11px;
+      background: var(--green-pale);
+      color: var(--green-dark);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* Grade selector */
+    .grade-filter {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .grade-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 2px solid var(--green-light);
+      background: var(--white);
+      color: var(--green-dark);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .grade-btn.active, .grade-btn:hover {
+      background: var(--green-dark);
+      color: var(--white);
+      border-color: var(--green-dark);
+    }
+
+    /* Salary band table */
+    .band-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .band-table th {
+      background: var(--green-dark);
+      color: var(--white);
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .band-table th:first-child { border-radius: 8px 0 0 0; }
+    .band-table th:last-child { border-radius: 0 8px 0 0; }
+    .band-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: middle; }
+    .band-table tr:hover td { background: var(--green-bg); }
+    .band-table tr:last-child td { border-bottom: none; }
+
+    /* Salary bar */
+    .salary-bar-container {
+      position: relative;
+      height: 28px;
+      background: var(--gray-200);
+      border-radius: 14px;
+      min-width: 200px;
+      overflow: visible;
+    }
+    .salary-bar-range {
+      position: absolute;
+      height: 100%;
+      background: linear-gradient(90deg, #b7e4c7, #52b788);
+      border-radius: 14px;
+      opacity: 0.85;
+    }
+    .salary-bar-mid {
+      position: absolute;
+      top: -4px;
+      width: 3px;
+      height: calc(100% + 8px);
+      background: var(--green-dark);
+      border-radius: 2px;
+      transform: translateX(-50%);
+    }
+    .salary-bar-mid::after {
+      content: attr(data-label);
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: var(--green-dark);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    /* Market markers */
+    .market-marker {
+      position: absolute;
+      top: 4px;
+      width: 2px;
+      height: calc(100% - 8px);
+      transform: translateX(-50%);
+    }
+    .market-marker.p25 { background: #e07b39; }
+    .market-marker.p50 { background: #c0392b; }
+    .market-marker.p75 { background: #8e44ad; }
+    .market-marker::before {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .market-marker.p25::before { color: #e07b39; }
+    .market-marker.p50::before { color: #c0392b; }
+    .market-marker.p75::before { color: #8e44ad; }
+
+    /* Edit button */
+    .btn-edit {
+      padding: 4px 10px;
+      background: var(--white);
+      border: 1px solid var(--green-light);
+      border-radius: 6px;
+      color: var(--green-dark);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-edit:hover { background: var(--green-pale); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 28px;
+      width: 480px;
+      max-width: 95vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 20px;
+    }
+    .form-row { margin-bottom: 14px; }
+    .form-label { font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 4px; display: block; }
+    .form-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { outline: none; border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(82,183,136,0.2); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .btn-primary {
+      padding: 9px 20px;
+      background: var(--green-dark);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: var(--green-mid); }
+    .btn-cancel {
+      padding: 9px 20px;
+      background: var(--gray-200);
+      color: var(--gray-700);
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-cancel:hover { background: var(--gray-300); }
+
+    /* Legend */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; font-size: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+    /* Charts grid */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-container { position: relative; height: 300px; }
+
+    /* Stats row */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-box {
+      background: var(--white);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      border-top: 3px solid var(--green-light);
+    }
+    .stat-val { font-size: 28px; font-weight: 700; color: var(--green-dark); }
+    .stat-lbl { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .filter-select {
+      padding: 7px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 13px;
+      background: var(--white);
+      cursor: pointer;
+    }
+    .filter-select:focus { outline: none; border-color: var(--green-light); }
+
+    /* Table generic */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      padding: 9px 10px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid var(--gray-200);
+      white-space: nowrap;
+    }
+    .data-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-200); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--green-bg); }
+
+    /* CompaRatio badge */
+    .cr-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .cr-low { background: #fff3cd; color: #856404; }
+    .cr-normal { background: #d1e7dd; color: #0f5132; }
+    .cr-high { background: #f8d7da; color: #842029; }
+
+    /* Raise simulation */
+    .budget-bar-wrapper { margin-bottom: 20px; }
+    .budget-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .budget-bar-bg {
+      height: 20px;
+      background: var(--gray-200);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .budget-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green-light), var(--green-dark));
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+    .budget-bar-fill.over { background: linear-gradient(90deg, #fd7e14, #dc3545); }
+
+    .raise-input {
+      width: 80px;
+      padding: 4px 7px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 13px;
+      text-align: right;
+    }
+    .raise-input:focus { outline: none; border-color: var(--green-light); }
+
+    .eval-badge {
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      text-align: center;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .eval-S { background: #ffd700; color: #5a4500; }
+    .eval-A { background: #c8e6c9; color: #1b5e20; }
+    .eval-B { background: #e3f2fd; color: #0d47a1; }
+    .eval-C { background: #fff8e1; color: #f57f17; }
+    .eval-D { background: #fce4ec; color: #880e4f; }
+
+    .btn-confirm {
+      padding: 10px 24px;
+      background: var(--green-dark);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-confirm:hover { background: var(--green-mid); }
+
+    /* History charts */
+    .history-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    @media (max-width: 900px) { .history-grid { grid-template-columns: 1fr; } }
+
+    /* Outlier table */
+    .outlier-row td { color: var(--danger) !important; font-weight: 600; }
+    .outlier-over td { color: var(--warning) !important; font-weight: 600; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--green-dark);
+      color: var(--white);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 2000;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .main { padding: 12px; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .history-grid { grid-template-columns: 1fr; }
+      .band-table, .data-table { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a href="../index.html" class="header-back">← 戻る</a>
+  <span class="header-title">💰 給与帯・昇給管理</span>
+  <span class="header-subtitle">Salary Band & Raise Management</span>
+</div>
+
+<!-- Tabs -->
+<div class="tabs-wrapper">
+  <button class="tab-btn active" onclick="switchTab('band')">📊 給与帯設定</button>
+  <button class="tab-btn" onclick="switchTab('dist')">👥 社員給与分布</button>
+  <button class="tab-btn" onclick="switchTab('sim')">🔄 昇給シミュレーション</button>
+  <button class="tab-btn" onclick="switchTab('hist')">📈 昇給履歴・分析</button>
+</div>
+
+<div class="main">
+
+  <!-- ① 給与帯設定タブ -->
+  <div id="tab-band" class="tab-panel active">
+    <div class="card">
+      <div class="card-title">
+        給与帯設定（等級×役職）
+        <span class="badge">クリックで編集</span>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#b7e4c7,#52b788)"></div> Min〜Maxレンジ</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2d6a4f;width:3px;height:12px;border-radius:2px"></div> Mid</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e07b39;width:3px;height:12px"></div> P25市場</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c0392b;width:3px;height:12px"></div> P50市場</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#8e44ad;width:3px;height:12px"></div> P75市場</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="band-table" id="bandTable">
+          <thead>
+            <tr>
+              <th style="width:70px">等級</th>
+              <th style="width:130px">役職</th>
+              <th style="width:90px">Min（万円）</th>
+              <th style="width:90px">Mid（万円）</th>
+              <th style="width:90px">Max（万円）</th>
+              <th style="min-width:260px">給与帯（視覚化）</th>
+              <th style="width:70px">編集</th>
+            </tr>
+          </thead>
+          <tbody id="bandTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 社員給与分布タブ -->
+  <div id="tab-dist" class="tab-panel">
+    <div class="filter-bar">
+      <label style="font-size:13px;font-weight:600;">部門：</label>
+      <select class="filter-select" id="deptFilter" onchange="renderDistTab()">
+        <option value="all">全部門</option>
+        <option value="エンジニアリング">エンジニアリング</option>
+        <option value="営業">営業</option>
+        <option value="マーケティング">マーケティング</option>
+        <option value="コーポレート">コーポレート</option>
+        <option value="カスタマーサクセス">カスタマーサクセス</option>
+      </select>
+    </div>
+
+    <div class="stats-row" id="distStats"></div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">散布図：等級別年収分布（給与帯オーバーレイ）</div>
+        <div class="chart-container"><canvas id="scatterChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">CompaRatio 分布ヒストグラム</div>
+        <div class="chart-container"><canvas id="histChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">給与帯外れ値リスト <span class="badge" id="outlierCount">0件</span></div>
+      <table class="data-table" id="outlierTable">
+        <thead>
+          <tr>
+            <th>氏名</th><th>部門</th><th>等級</th><th>役職</th>
+            <th>現給与（万円）</th><th>Min</th><th>Max</th><th>状況</th>
+          </tr>
+        </thead>
+        <tbody id="outlierBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ③ 昇給シミュレーションタブ -->
+  <div id="tab-sim" class="tab-panel">
+    <div class="card">
+      <div class="card-title">昇給ラウンド設定</div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">対象年度</label>
+          <select class="form-input" id="simYear">
+            <option>2026年度</option><option>2027年度</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">予算総額（万円）</label>
+          <input class="form-input" type="number" id="totalBudget" value="1800" oninput="recalcSim()">
+        </div>
+        <div class="form-row">
+          <label class="form-label">配分方針</label>
+          <select class="form-input" id="allocPolicy" onchange="recalcSim()">
+            <option value="eval">評価連動（S=8% A=5% B=3% C=1% D=0%）</option>
+            <option value="flat">一律（全員均等配分）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">予算消化率</div>
+      <div class="budget-bar-wrapper">
+        <div class="budget-label">
+          <span id="budgetUsedLabel">試算合計: 0万円 / 予算: 1,800万円</span>
+          <span id="budgetPctLabel" style="color:var(--green-dark);font-size:16px">0%</span>
+        </div>
+        <div class="budget-bar-bg">
+          <div class="budget-bar-fill" id="budgetFill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">社員別昇給調整</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="simTable">
+          <thead>
+            <tr>
+              <th>氏名</th><th>部門</th><th>等級</th><th>評価</th>
+              <th>現給与（万円）</th><th>CompaRatio</th>
+              <th>推奨昇給率(%)</th><th>昇給率(%)</th>
+              <th>昇給額（万円）</th><th>昇給後給与（万円）</th>
+            </tr>
+          </thead>
+          <tbody id="simTableBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+        <button class="btn-confirm" onclick="confirmRaises()">✅ 昇給を確定（GASに保存）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 昇給履歴・分析タブ -->
+  <div id="tab-hist" class="tab-panel">
+    <div class="card">
+      <div class="card-title">社員別昇給履歴</div>
+      <div class="filter-bar">
+        <select class="filter-select" id="histEmpFilter" onchange="renderHistTab()">
+          <option value="all">全社員</option>
+        </select>
+        <select class="filter-select" id="histDeptFilter" onchange="renderHistTab()">
+          <option value="all">全部門</option>
+          <option value="エンジニアリング">エンジニアリング</option>
+          <option value="営業">営業</option>
+          <option value="マーケティング">マーケティング</option>
+          <option value="コーポレート">コーポレート</option>
+          <option value="カスタマーサクセス">カスタマーサクセス</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>氏名</th><th>部門</th><th>年度</th><th>昇給前（万円）</th>
+              <th>昇給後（万円）</th><th>昇給率(%)</th><th>評価</th><th>理由</th>
+            </tr>
+          </thead>
+          <tbody id="histTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="history-grid">
+      <div class="card">
+        <div class="card-title">年度別平均昇給率推移</div>
+        <div class="chart-container"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">部門別昇給率比較</div>
+        <div class="chart-container"><canvas id="deptChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">等級別分布推移（積み上げ棒グラフ）</div>
+      <div class="chart-container" style="height:320px"><canvas id="gradeDistChart"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title" id="editModalTitle">給与帯を編集</div>
+    <input type="hidden" id="editGrade">
+    <input type="hidden" id="editRole">
+    <div class="form-row">
+      <label class="form-label">等級</label>
+      <input class="form-input" id="editGradeLabel" readonly style="background:var(--gray-100)">
+    </div>
+    <div class="form-row">
+      <label class="form-label">役職</label>
+      <input class="form-input" id="editRoleLabel" readonly style="background:var(--gray-100)">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-label">Min（万円）</label>
+        <input class="form-input" type="number" id="editMin">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Mid（万円）</label>
+        <input class="form-input" type="number" id="editMid">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Max（万円）</label>
+        <input class="form-input" type="number" id="editMax">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveBand()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================
+   DATA
+========================================== */
+
+// 給与帯マスター
+const ROLES = ['一般','シニア','リード','マネージャー','シニアマネージャー','部長','執行役員'];
+const GRADES = ['G1','G2','G3','G4','G5','G6','G7','G8'];
+
+// 等級別基本レンジ（万円）
+const BASE_BANDS = {
+  G1: {min:300, mid:375, max:450},
+  G2: {min:400, mid:475, max:550},
+  G3: {min:500, mid:600, max:700},
+  G4: {min:650, mid:750, max:850},
+  G5: {min:800, mid:950, max:1100},
+  G6: {min:1000, mid:1250, max:1500},
+  G7: {min:1400, mid:1750, max:2100},
+  G8: {min:1800, mid:2400, max:3000},
+};
+
+// 役職係数（Min/Maxに掛ける）
+const ROLE_FACTORS = {
+  '一般':       {f:1.00},
+  'シニア':     {f:1.08},
+  'リード':     {f:1.18},
+  'マネージャー': {f:1.25},
+  'シニアマネージャー': {f:1.35},
+  '部長':       {f:1.50},
+  '執行役員':   {f:1.75},
+};
+
+// 市場データ（P25/P50/P75 万円）
+const MARKET_DATA = {
+  G1: {p25:310, p50:360, p75:420},
+  G2: {p25:420, p50:480, p75:530},
+  G3: {p25:520, p50:610, p75:680},
+  G4: {p25:660, p50:760, p75:830},
+  G5: {p25:810, p50:960, p75:1080},
+  G6: {p25:1020, p50:1260, p75:1480},
+  G7: {p25:1380, p50:1720, p75:2050},
+  G8: {p25:1780, p50:2350, p75:2950},
+};
+
+// salaryBands: grade -> role -> {min, mid, max}
+let salaryBands = {};
+GRADES.forEach(g => {
+  salaryBands[g] = {};
+  ROLES.forEach(r => {
+    const base = BASE_BANDS[g];
+    const f = ROLE_FACTORS[r].f;
+    salaryBands[g][r] = {
+      min: Math.round(base.min * f / 10) * 10,
+      mid: Math.round(base.mid * f / 10) * 10,
+      max: Math.round(base.max * f / 10) * 10,
+    };
+  });
+});
+
+// サンプル社員データ（20名）
+const EMPLOYEES = [
+  {id:1, name:'田中 健一', dept:'エンジニアリング', grade:'G4', role:'マネージャー', salary:780, eval:'A'},
+  {id:2, name:'山本 麻衣', dept:'エンジニアリング', grade:'G3', role:'シニア', salary:580, eval:'S'},
+  {id:3, name:'佐藤 大輔', dept:'エンジニアリング', grade:'G3', role:'一般', salary:510, eval:'B'},
+  {id:4, name:'高橋 由美', dept:'マーケティング', grade:'G3', role:'シニア', salary:600, eval:'A'},
+  {id:5, name:'伊藤 翔太', dept:'営業', grade:'G4', role:'リード', salary:700, eval:'A'},
+  {id:6, name:'渡辺 香織', dept:'コーポレート', grade:'G2', role:'シニア', salary:460, eval:'B'},
+  {id:7, name:'中村 純一', dept:'エンジニアリング', grade:'G5', role:'シニアマネージャー', salary:1050, eval:'S'},
+  {id:8, name:'小林 美穂', dept:'マーケティング', grade:'G2', role:'一般', salary:390, eval:'C'},
+  {id:9, name:'加藤 慎司', dept:'営業', grade:'G3', role:'マネージャー', salary:680, eval:'B'},
+  {id:10, name:'吉田 奈々', dept:'カスタマーサクセス', grade:'G2', role:'シニア', salary:470, eval:'A'},
+  {id:11, name:'山田 浩二', dept:'エンジニアリング', grade:'G4', role:'リード', salary:830, eval:'S'},
+  {id:12, name:'松本 彩花', dept:'コーポレート', grade:'G3', role:'一般', salary:490, eval:'B'},
+  {id:13, name:'井上 達也', dept:'営業', grade:'G5', role:'マネージャー', salary:920, eval:'A'},
+  {id:14, name:'木村 絵里', dept:'マーケティング', grade:'G3', role:'リード', salary:640, eval:'B'},
+  {id:15, name:'林 正樹', dept:'エンジニアリング', grade:'G2', role:'一般', salary:410, eval:'C'},
+  {id:16, name:'清水 真由', dept:'カスタマーサクセス', grade:'G3', role:'シニア', salary:550, eval:'A'},
+  {id:17, name:'森田 龍一', dept:'コーポレート', grade:'G5', role:'部長', salary:1320, eval:'B'},
+  {id:18, name:'橋本 明子', dept:'営業', grade:'G2', role:'一般', salary:280, eval:'D'},
+  {id:19, name:'西村 健太', dept:'エンジニアリング', grade:'G4', role:'シニア', salary:790, eval:'A'},
+  {id:20, name:'岡田 純子', dept:'マーケティング', grade:'G4', role:'マネージャー', salary:870, eval:'S'},
+];
+
+// 昇給履歴サンプル（2021〜2025）
+const SALARY_HISTORY = [];
+const years = [2021,2022,2023,2024,2025];
+const evalsByYear = {
+  2021:['B','A','B','A','B','C','A','C','B','A','A','B','B','B','C','A','B','C','B','A'],
+  2022:['A','S','B','B','A','B','S','B','A','A','A','B','B','A','B','A','B','D','A','A'],
+  2023:['B','A','C','A','B','B','A','C','B','B','S','B','A','B','B','B','A','C','B','S'],
+  2024:['A','A','B','S','A','C','S','B','B','A','A','B','A','B','C','A','B','D','S','A'],
+  2025:['S','A','B','A','A','B','S','C','A','A','S','B','A','B','C','A','B','D','A','S'],
+};
+const evalRates = {S:0.08,A:0.05,B:0.03,C:0.01,D:0};
+const RAISE_REASONS = {S:'優秀評価・特別貢献', A:'高評価', B:'標準昇給', C:'小幅調整', D:'賃上げなし'};
+
+EMPLOYEES.forEach((emp, i) => {
+  let prevSalary = emp.salary;
+  // Reverse-calculate base salary for 2020
+  years.forEach(yr => {
+    const ev = evalsByYear[yr][i];
+    const rate = evalRates[ev];
+    const baseSalary = Math.round(prevSalary / (1 + rate) / 10) * 10;
+    const afterSalary = prevSalary;
+    // store from oldest to newest
+    SALARY_HISTORY.push({
+      empId: emp.id, name: emp.name, dept: emp.dept,
+      year: yr, before: baseSalary, after: afterSalary,
+      rate: (rate * 100).toFixed(1), eval: ev,
+      reason: RAISE_REASONS[ev]
+    });
+    prevSalary = baseSalary;
+  });
+});
+// reverse so oldest first
+SALARY_HISTORY.sort((a,b) => a.year - b.year || a.empId - b.empId);
+
+/* ==========================================
+   HELPERS
+========================================== */
+function getCompaRatio(emp) {
+  const band = salaryBands[emp.grade]?.[emp.role];
+  if(!band) return 100;
+  return Math.round(emp.salary / band.mid * 100);
+}
+
+function showToast(msg, color='var(--green-dark)') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ==========================================
+   TAB SWITCHING
+========================================== */
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+
+  if(name==='dist') renderDistTab();
+  if(name==='sim') renderSimTab();
+  if(name==='hist') renderHistTab();
+}
+
+/* ==========================================
+   ① 給与帯設定タブ
+========================================== */
+function renderBandTable() {
+  const tbody = document.getElementById('bandTableBody');
+  tbody.innerHTML = '';
+
+  // Only show 給与帯 for grade × representative roles
+  const displayRoles = ['一般','シニア','マネージャー','部長'];
+
+  GRADES.forEach(g => {
+    displayRoles.forEach(r => {
+      const band = salaryBands[g][r];
+      const mkt = MARKET_DATA[g];
+      const absoluteMin = BASE_BANDS[g].min * ROLE_FACTORS['一般'].f; // absolute floor for bar scale
+      const absoluteMax = BASE_BANDS[g].max * ROLE_FACTORS['執行役員'].f * 1.05;
+
+      const barWidth = 280; // px
+      const toX = (v) => ((v - absoluteMin) / (absoluteMax - absoluteMin) * barWidth);
+      const rangeLeft = toX(band.min);
+      const rangeW = toX(band.max) - toX(band.min);
+      const midX = toX(band.mid);
+      const p25X = toX(mkt.p25);
+      const p50X = toX(mkt.p50);
+      const p75X = toX(mkt.p75);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${g}</strong></td>
+        <td>${r}</td>
+        <td>${band.min.toLocaleString()}</td>
+        <td>${band.mid.toLocaleString()}</td>
+        <td>${band.max.toLocaleString()}</td>
+        <td>
+          <div class="salary-bar-container" style="width:${barWidth}px; margin:12px 0;">
+            <div class="salary-bar-range" style="left:${rangeLeft}px; width:${rangeW}px;"></div>
+            <div class="salary-bar-mid" style="left:${midX}px;" data-label="Mid"></div>
+            <div class="market-marker p25" style="left:${p25X}px;" data-label="P25"></div>
+            <div class="market-marker p50" style="left:${p50X}px;" data-label="P50"></div>
+            <div class="market-marker p75" style="left:${p75X}px;" data-label="P75"></div>
+          </div>
+        </td>
+        <td><button class="btn-edit" onclick="openEditModal('${g}','${r}')">編集</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function openEditModal(grade, role) {
+  const band = salaryBands[grade][role];
+  document.getElementById('editModalTitle').textContent = `給与帯を編集：${grade} / ${role}`;
+  document.getElementById('editGrade').value = grade;
+  document.getElementById('editRole').value = role;
+  document.getElementById('editGradeLabel').value = grade;
+  document.getElementById('editRoleLabel').value = role;
+  document.getElementById('editMin').value = band.min;
+  document.getElementById('editMid').value = band.mid;
+  document.getElementById('editMax').value = band.max;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+}
+
+function saveBand() {
+  const g = document.getElementById('editGrade').value;
+  const r = document.getElementById('editRole').value;
+  const min = parseInt(document.getElementById('editMin').value);
+  const mid = parseInt(document.getElementById('editMid').value);
+  const max = parseInt(document.getElementById('editMax').value);
+  if(isNaN(min)||isNaN(mid)||isNaN(max)||min>=mid||mid>=max) {
+    showToast('⚠️ Min < Mid < Max の順で入力してください', '#dc3545');
+    return;
+  }
+  salaryBands[g][r] = {min, mid, max};
+  closeModal();
+  renderBandTable();
+  showToast(`✅ ${g}/${r} の給与帯を保存しました（GAS連携待機）`);
+  // GAS call would go here: saveSalaryBandGAS(g, r, min, mid, max);
+}
+
+/* ==========================================
+   ② 社員給与分布タブ
+========================================== */
+let scatterChartObj = null;
+let histChartObj = null;
+
+function renderDistTab() {
+  const dept = document.getElementById('deptFilter').value;
+  const emps = dept==='all' ? EMPLOYEES : EMPLOYEES.filter(e=>e.dept===dept);
+
+  // Stats
+  const crs = emps.map(e=>getCompaRatio(e));
+  const avgCR = Math.round(crs.reduce((a,b)=>a+b,0)/crs.length);
+  const salaries = emps.map(e=>e.salary);
+  const avgSal = Math.round(salaries.reduce((a,b)=>a+b,0)/salaries.length);
+  const outliers = emps.filter(e => {
+    const b = salaryBands[e.grade]?.[e.role];
+    return b && (e.salary < b.min || e.salary > b.max);
+  });
+
+  document.getElementById('distStats').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${emps.length}</div><div class="stat-lbl">対象社員数</div></div>
+    <div class="stat-box"><div class="stat-val">${avgSal.toLocaleString()}</div><div class="stat-lbl">平均年収（万円）</div></div>
+    <div class="stat-box"><div class="stat-val">${avgCR}%</div><div class="stat-lbl">平均CompaRatio</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--danger)">${outliers.length}</div><div class="stat-lbl">帯外れ値</div></div>
+  `;
+
+  // Scatter chart
+  const gradeNums = {G1:1,G2:2,G3:3,G4:4,G5:5,G6:6,G7:7,G8:8};
+  const deptColors = {
+    'エンジニアリング':'rgba(82,183,136,0.8)',
+    '営業':'rgba(52,152,219,0.8)',
+    'マーケティング':'rgba(230,126,34,0.8)',
+    'コーポレート':'rgba(155,89,182,0.8)',
+    'カスタマーサクセス':'rgba(231,76,60,0.8)'
+  };
+  const scatterData = emps.map(e=>({
+    x: gradeNums[e.grade],
+    y: e.salary,
+    label: e.name,
+    color: deptColors[e.dept] || 'rgba(100,100,100,0.7)'
+  }));
+
+  // Band range lines as bar chart overlay
+  const bandRanges = GRADES.map(g => {
+    const band = salaryBands[g]['一般'];
+    return {grade: gradeNums[g], min: band.min, max: band.max, mid: band.mid};
+  });
+
+  if(scatterChartObj) scatterChartObj.destroy();
+  const ctx1 = document.getElementById('scatterChart').getContext('2d');
+  scatterChartObj = new Chart(ctx1, {
+    data: {
+      datasets: [
+        {
+          type: 'scatter',
+          label: '社員',
+          data: scatterData.map(d=>({x:d.x, y:d.y})),
+          backgroundColor: scatterData.map(d=>d.color),
+          pointRadius: 7,
+          pointHoverRadius: 9,
+        },
+        {
+          type: 'bar',
+          label: '給与帯（一般）',
+          data: bandRanges.map(b=>({x:b.grade, y:[b.min, b.max]})),
+          backgroundColor: 'rgba(82,183,136,0.15)',
+          borderColor: 'rgba(45,106,79,0.4)',
+          borderWidth: 1,
+          barPercentage: 0.6,
+          categoryPercentage: 1,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: {
+          type:'linear', min:0.5, max:8.5,
+          ticks: {callback: v => 'G'+v, stepSize:1},
+          title: {display:true, text:'等級'}
+        },
+        y: {
+          title: {display:true, text:'年収（万円）'},
+          ticks: {callback: v => v.toLocaleString()}
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              if(ctx.datasetIndex===0) {
+                const d = scatterData[ctx.dataIndex];
+                return `${d.label}: ${ctx.parsed.y.toLocaleString()}万円`;
+              }
+              return `給与帯: ${ctx.parsed.y}万円`;
+            }
+          }
+        },
+        legend: {display:true}
+      }
+    }
+  });
+
+  // CompaRatio histogram
+  const buckets = Array.from({length:10},(_,i)=>({label:`${70+i*10}%`, count:0}));
+  emps.forEach(e=>{
+    const cr = getCompaRatio(e);
+    const idx = Math.min(Math.max(Math.floor((cr-70)/10),0),9);
+    buckets[idx].count++;
+  });
+
+  if(histChartObj) histChartObj.destroy();
+  const ctx2 = document.getElementById('histChart').getContext('2d');
+  histChartObj = new Chart(ctx2, {
+    type:'bar',
+    data:{
+      labels: buckets.map(b=>b.label),
+      datasets:[{
+        label:'社員数',
+        data: buckets.map(b=>b.count),
+        backgroundColor: buckets.map((_,i)=>{
+          if(i<2) return 'rgba(253,126,20,0.7)';
+          if(i<8) return 'rgba(82,183,136,0.7)';
+          return 'rgba(220,53,69,0.7)';
+        }),
+        borderRadius: 4,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{title:{display:true,text:'CompaRatio'}},
+        y:{title:{display:true,text:'人数'},ticks:{stepSize:1}}
+      }
+    }
+  });
+
+  // Outlier table
+  document.getElementById('outlierCount').textContent = outliers.length+'件';
+  const tbody = document.getElementById('outlierBody');
+  tbody.innerHTML = '';
+  if(outliers.length===0){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray-500);padding:20px">帯外れ値なし ✅</td></tr>';
+  } else {
+    outliers.forEach(e=>{
+      const b = salaryBands[e.grade][e.role];
+      const under = e.salary < b.min;
+      const tr = document.createElement('tr');
+      tr.className = under ? 'outlier-row' : 'outlier-over';
+      tr.innerHTML = `
+        <td>${e.name}</td><td>${e.dept}</td><td>${e.grade}</td><td>${e.role}</td>
+        <td>${e.salary.toLocaleString()}</td>
+        <td>${b.min.toLocaleString()}</td>
+        <td>${b.max.toLocaleString()}</td>
+        <td>${under ? '⬇️ レンジ下限以下' : '⬆️ レンジ上限超過'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+/* ==========================================
+   ③ 昇給シミュレーション
+========================================== */
+let simData = [];
+
+function renderSimTab() {
+  simData = EMPLOYEES.map(e=>{
+    const cr = getCompaRatio(e);
+    const baseRate = evalRates[e.eval] || 0;
+    return {
+      ...e,
+      cr,
+      suggestedRate: (baseRate*100).toFixed(1),
+      overrideRate: (baseRate*100).toFixed(1),
+    };
+  });
+  renderSimTable();
+  recalcSim();
+}
+
+function renderSimTable() {
+  const tbody = document.getElementById('simTableBody');
+  tbody.innerHTML = '';
+  simData.forEach((e,i)=>{
+    const rate = parseFloat(simData[i].overrideRate);
+    const amount = Math.round(e.salary * rate / 100);
+    const after = e.salary + amount;
+    const crClass = e.cr<80?'cr-low':e.cr>120?'cr-high':'cr-normal';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${e.name}</td>
+      <td>${e.dept}</td>
+      <td>${e.grade}</td>
+      <td><span class="eval-badge eval-${e.eval}">${e.eval}</span></td>
+      <td>${e.salary.toLocaleString()}</td>
+      <td><span class="cr-badge ${crClass}">${e.cr}%</span></td>
+      <td>${e.suggestedRate}%</td>
+      <td>
+        <input class="raise-input" type="number" step="0.1" min="0" max="30"
+          value="${simData[i].overrideRate}"
+          oninput="updateOverride(${i}, this.value)">%
+      </td>
+      <td>${amount.toLocaleString()}</td>
+      <td>${after.toLocaleString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateOverride(idx, val) {
+  simData[idx].overrideRate = val;
+  recalcSim();
+  // Update the row amounts without full re-render
+  const rows = document.querySelectorAll('#simTableBody tr');
+  if(rows[idx]){
+    const rate = parseFloat(val)||0;
+    const e = simData[idx];
+    const amount = Math.round(e.salary * rate / 100);
+    const after = e.salary + amount;
+    const cells = rows[idx].querySelectorAll('td');
+    cells[8].textContent = amount.toLocaleString();
+    cells[9].textContent = after.toLocaleString();
+  }
+}
+
+function recalcSim() {
+  const budget = parseInt(document.getElementById('totalBudget').value)||0;
+  const policy = document.getElementById('allocPolicy').value;
+
+  let totalRaise = 0;
+  if(policy==='flat' && simData.length>0) {
+    // flat: distribute budget evenly
+    const perPerson = Math.round(budget/simData.length);
+    simData.forEach((e,i)=>{
+      const rate = Math.round(perPerson/e.salary*1000)/10;
+      simData[i].overrideRate = rate.toFixed(1);
+    });
+    renderSimTable();
+  }
+
+  simData.forEach(e=>{
+    const rate = parseFloat(e.overrideRate)||0;
+    totalRaise += Math.round(e.salary * rate / 100);
+  });
+
+  const pct = budget>0 ? Math.round(totalRaise/budget*100) : 0;
+  const fill = document.getElementById('budgetFill');
+  fill.style.width = Math.min(pct,100)+'%';
+  fill.className = 'budget-bar-fill'+(pct>100?' over':'');
+  document.getElementById('budgetUsedLabel').textContent =
+    `試算合計: ${totalRaise.toLocaleString()}万円 / 予算: ${budget.toLocaleString()}万円`;
+  document.getElementById('budgetPctLabel').textContent = pct+'%';
+  document.getElementById('budgetPctLabel').style.color = pct>100?'var(--danger)':'var(--green-dark)';
+}
+
+function confirmRaises() {
+  const total = simData.reduce((sum,e)=>{
+    return sum + Math.round(e.salary*(parseFloat(e.overrideRate)||0)/100);
+  },0);
+  if(!confirm(`昇給を確定します。\n総昇給額: ${total.toLocaleString()}万円\nよろしいですか？`)) return;
+
+  // GAS call would go here: confirmRaiseGAS(simData);
+  showToast(`✅ 昇給確定済み（総額 ${total.toLocaleString()}万円）— GAS保存処理を実行しました`);
+}
+
+/* ==========================================
+   ④ 昇給履歴・分析
+========================================== */
+let trendChartObj=null, deptChartObj=null, gradeDistChartObj=null;
+
+function renderHistTab() {
+  const empFilter = document.getElementById('histEmpFilter').value;
+  const deptFilter = document.getElementById('histDeptFilter').value;
+
+  // Populate employee filter if empty
+  const sel = document.getElementById('histEmpFilter');
+  if(sel.options.length===1){
+    EMPLOYEES.forEach(e=>{
+      const opt = document.createElement('option');
+      opt.value = e.name; opt.textContent = e.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  let hist = SALARY_HISTORY;
+  if(empFilter!=='all') hist = hist.filter(h=>h.name===empFilter);
+  if(deptFilter!=='all') hist = hist.filter(h=>h.dept===deptFilter);
+
+  // Table
+  const tbody = document.getElementById('histTableBody');
+  tbody.innerHTML = '';
+  if(hist.length===0){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray-500)">データなし</td></tr>';
+  } else {
+    hist.forEach(h=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${h.name}</td><td>${h.dept}</td><td>${h.year}年度</td>
+        <td>${h.before.toLocaleString()}</td><td>${h.after.toLocaleString()}</td>
+        <td><span class="cr-badge ${parseFloat(h.rate)>=5?'cr-normal':parseFloat(h.rate)>0?'cr-low':'cr-high'}">${h.rate}%</span></td>
+        <td><span class="eval-badge eval-${h.eval}">${h.eval}</span></td>
+        <td>${h.reason}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Trend chart: year × avg raise rate
+  const yearAvg = {};
+  years.forEach(yr=>{
+    const rows = SALARY_HISTORY.filter(h=>h.year===yr);
+    const avg = rows.reduce((s,h)=>s+parseFloat(h.rate),0)/rows.length;
+    yearAvg[yr] = Math.round(avg*10)/10;
+  });
+
+  if(trendChartObj) trendChartObj.destroy();
+  trendChartObj = new Chart(document.getElementById('trendChart').getContext('2d'),{
+    type:'line',
+    data:{
+      labels: years.map(y=>y+'年'),
+      datasets:[{
+        label:'平均昇給率(%)',
+        data: years.map(y=>yearAvg[y]),
+        borderColor:'#2d6a4f', backgroundColor:'rgba(82,183,136,0.1)',
+        borderWidth:2.5, fill:true, tension:0.4,
+        pointBackgroundColor:'#2d6a4f', pointRadius:5,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{y:{title:{display:true,text:'昇給率(%)'},min:0}},
+      plugins:{legend:{display:false}}
+    }
+  });
+
+  // Dept chart: avg raise by dept (all years)
+  const depts = ['エンジニアリング','営業','マーケティング','コーポレート','カスタマーサクセス'];
+  const deptAvg = depts.map(d=>{
+    const rows = SALARY_HISTORY.filter(h=>h.dept===d);
+    if(!rows.length) return 0;
+    return Math.round(rows.reduce((s,h)=>s+parseFloat(h.rate),0)/rows.length*10)/10;
+  });
+
+  if(deptChartObj) deptChartObj.destroy();
+  deptChartObj = new Chart(document.getElementById('deptChart').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels: depts,
+      datasets:[{
+        label:'平均昇給率(%)',
+        data: deptAvg,
+        backgroundColor:['rgba(82,183,136,0.7)','rgba(52,152,219,0.7)','rgba(230,126,34,0.7)','rgba(155,89,182,0.7)','rgba(231,76,60,0.7)'],
+        borderRadius:6,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{title:{display:true,text:'昇給率(%)'},min:0}}
+    }
+  });
+
+  // Grade dist chart: headcount by grade per year (stacked)
+  const gradeColors = {
+    G1:'#d8f3dc',G2:'#b7e4c7',G3:'#74c69d',
+    G4:'#52b788',G5:'#40916c',G6:'#2d6a4f',G7:'#1b4332',G8:'#081c15'
+  };
+  // simulate headcount growth
+  const gradeCountsByYear = {};
+  years.forEach(yr=>{
+    gradeCountsByYear[yr] = {};
+    GRADES.forEach(g=>{ gradeCountsByYear[yr][g] = 0; });
+    EMPLOYEES.forEach(e=>{
+      // assume grade doesn't change dramatically for demo
+      gradeCountsByYear[yr][e.grade]++;
+    });
+    // add slight variation
+    const g3 = gradeCountsByYear[yr];
+    g3.G1 = Math.max(1, g3.G1 + (yr-2023));
+    g3.G5 = Math.max(0, g3.G5 + Math.floor((yr-2022)/2));
+  });
+
+  if(gradeDistChartObj) gradeDistChartObj.destroy();
+  gradeDistChartObj = new Chart(document.getElementById('gradeDistChart').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels: years.map(y=>y+'年'),
+      datasets: GRADES.map(g=>({
+        label:g,
+        data: years.map(y=>gradeCountsByYear[y][g]),
+        backgroundColor: gradeColors[g],
+        borderRadius:3,
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{x:{stacked:true},y:{stacked:true,title:{display:true,text:'人数'}}},
+      plugins:{legend:{position:'right'}}
+    }
+  });
+}
+
+/* ==========================================
+   INIT
+========================================== */
+renderBandTable();
+</script>
+
+<!-- ============================================================
+  GAS (Google Apps Script) 関数雛形
+  以下を GAS プロジェクトに追加して Web App としてデプロイし、
+  各関数呼び出し箇所の URL を実際のエンドポイントに差し替えてください。
+  ============================================================
+
+const SHEET_ID = 'YOUR_SPREADSHEET_ID';
+
+/**
+ * 全等級×役職の給与帯を返す
+ * @return {Object[]} [{grade, role, min, mid, max}]
+ */
+// function getSalaryBands() {
+//   const ss = SpreadsheetApp.openById(SHEET_ID);
+//   const sh = ss.getSheetByName('SalaryBands');
+//   const data = sh.getDataRange().getValues();
+//   return data.slice(1).map(r => ({grade:r[0],role:r[1],min:r[2],mid:r[3],max:r[4]}));
+// }
+
+/**
+ * 単一の給与帯を保存（上書き）
+ * @param {string} grade
+ * @param {string} role
+ * @param {number} min
+ * @param {number} mid
+ * @param {number} max
+ */
+// function saveSalaryBand(grade, role, min, mid, max) {
+//   const ss = SpreadsheetApp.openById(SHEET_ID);
+//   const sh = ss.getSheetByName('SalaryBands');
+//   const data = sh.getDataRange().getValues();
+//   for(let i=1;i<data.length;i++){
+//     if(data[i][0]===grade && data[i][1]===role){
+//       sh.getRange(i+1,3,1,3).setValues([[min,mid,max]]);
+//       return {status:'ok'};
+//     }
+//   }
+//   sh.appendRow([grade,role,min,mid,max]);
+//   return {status:'created'};
+// }
+
+/**
+ * 全社員の給与情報を返す
+ * @return {Object[]} [{id, name, dept, grade, role, salary, eval}]
+ */
+// function getEmployeeSalaries() {
+//   const ss = SpreadsheetApp.openById(SHEET_ID);
+//   const sh = ss.getSheetByName('Employees');
+//   const data = sh.getDataRange().getValues();
+//   return data.slice(1).map(r => ({
+//     id:r[0],name:r[1],dept:r[2],grade:r[3],role:r[4],salary:r[5],eval:r[6]
+//   }));
+// }
+
+/**
+ * 昇給シミュレーション結果をプレビュー（保存なし）
+ * @param {string} year
+ * @param {number} totalBudget
+ * @param {Object[]} overrides [{empId, rate}]
+ * @return {Object} {totalRaise, budgetPct, details}
+ */
+// function simulateRaise(year, totalBudget, overrides) {
+//   // overrides: [{empId, rate}]
+//   const emps = getEmployeeSalaries();
+//   let totalRaise = 0;
+//   const details = emps.map(e => {
+//     const ov = overrides.find(o=>o.empId===e.id);
+//     const rate = ov ? ov.rate : evalRates[e.eval] * 100;
+//     const amount = Math.round(e.salary * rate / 100);
+//     totalRaise += amount;
+//     return {...e, rate, amount, after: e.salary + amount};
+//   });
+//   return {totalRaise, budgetPct: Math.round(totalRaise/totalBudget*100), details};
+// }
+
+/**
+ * 昇給を確定してスプレッドシートに保存
+ * @param {string} year
+ * @param {Object[]} raisedEmployees [{empId, before, after, rate, eval, reason}]
+ * @return {Object} {status, savedCount}
+ */
+// function confirmRaise(year, raisedEmployees) {
+//   const ss = SpreadsheetApp.openById(SHEET_ID);
+//   const histSh = ss.getSheetByName('RaiseHistory');
+//   const empSh = ss.getSheetByName('Employees');
+//   const empData = empSh.getDataRange().getValues();
+//   raisedEmployees.forEach(r => {
+//     histSh.appendRow([r.empId, r.name, r.dept, year, r.before, r.after, r.rate, r.eval, r.reason]);
+//     for(let i=1;i<empData.length;i++){
+//       if(empData[i][0]===r.empId){ empSh.getRange(i+1,6).setValue(r.after); break; }
+//     }
+//   });
+//   return {status:'ok', savedCount: raisedEmployees.length};
+// }
+
+/**
+ * 昇給履歴を取得
+ * @param {string|null} empId  null で全社員
+ * @param {string|null} dept   null で全部門
+ * @return {Object[]}
+ */
+// function getSalaryHistory(empId, dept) {
+//   const ss = SpreadsheetApp.openById(SHEET_ID);
+//   const sh = ss.getSheetByName('RaiseHistory');
+//   const data = sh.getDataRange().getValues();
+//   return data.slice(1)
+//     .filter(r => (!empId || r[0]==empId) && (!dept || r[2]==dept))
+//     .map(r => ({empId:r[0],name:r[1],dept:r[2],year:r[3],before:r[4],after:r[5],rate:r[6],eval:r[7],reason:r[8]}));
+// }
+
+-->
+</body>
+</html>

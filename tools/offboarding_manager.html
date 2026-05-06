@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オフボーディング管理 | Green Carbon HR Tools</title>
+  <script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --green-dark: #2d6a4f;
+      --green-mid: #40916c;
+      --green-light: #52b788;
+      --green-pale: #b7e4c7;
+      --green-bg: #d8f3dc;
+      --text-dark: #1b2b1f;
+      --text-mid: #3a5a40;
+      --gray-light: #f4f4f4;
+      --gray-mid: #e0e0e0;
+      --white: #fff;
+      --red: #d62828;
+      --red-light: #ffe0e0;
+      --orange: #e76f51;
+      --yellow: #f4a261;
+      --blue: #457b9d;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0f7f2; color: var(--text-dark); }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+      color: #fff; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-icon { font-size: 2rem; }
+    .header h1 { font-size: 1.5rem; font-weight: 700; }
+    .header p { font-size: 0.85rem; opacity: 0.85; margin-top: 2px; }
+    .back-btn {
+      background: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.4);
+      padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all .2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.32); }
+
+    /* Tabs */
+    .tabs { background: var(--white); border-bottom: 2px solid var(--green-bg); display: flex; padding: 0 24px; }
+    .tab {
+      padding: 14px 22px; cursor: pointer; font-size: 0.95rem; color: var(--text-mid);
+      border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; display: flex; align-items: center; gap: 6px;
+    }
+    .tab:hover { color: var(--green-dark); }
+    .tab.active { color: var(--green-dark); border-bottom-color: var(--green-dark); font-weight: 600; }
+
+    /* Content */
+    .content { padding: 24px; max-width: 1400px; margin: 0 auto; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--white); border-radius: 14px; box-shadow: var(--shadow);
+      padding: 20px; margin-bottom: 16px; border: 1px solid #e8f5e9;
+    }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .card-title { font-size: 1.05rem; font-weight: 600; color: var(--green-dark); }
+
+    /* Employee cards */
+    .employees-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .employees-header h2 { font-size: 1.2rem; font-weight: 700; color: var(--green-dark); }
+    .btn-primary {
+      background: var(--green-dark); color: #fff; border: none; padding: 10px 20px;
+      border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background .2s;
+    }
+    .btn-primary:hover { background: var(--green-mid); }
+    .btn-secondary {
+      background: var(--white); color: var(--green-dark); border: 1.5px solid var(--green-dark);
+      padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all .2s;
+    }
+    .btn-secondary:hover { background: var(--green-bg); }
+
+    /* Filters */
+    .filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filters select {
+      padding: 8px 12px; border: 1.5px solid var(--gray-mid); border-radius: 8px;
+      font-size: 0.88rem; background: var(--white); color: var(--text-dark); cursor: pointer;
+    }
+    .filters select:focus { outline: none; border-color: var(--green-light); }
+    .filter-label { font-size: 0.85rem; color: var(--text-mid); font-weight: 500; }
+
+    /* Employee grid */
+    .employee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .emp-card {
+      background: var(--white); border-radius: 12px; box-shadow: var(--shadow);
+      padding: 18px; border-left: 5px solid var(--green-light); transition: transform .2s;
+      border: 1px solid #e8f5e9; border-left: 5px solid var(--green-light);
+    }
+    .emp-card:hover { transform: translateY(-2px); }
+    .emp-card.status-完了 { border-left-color: var(--green-dark); }
+    .emp-card.status-保留 { border-left-color: var(--yellow); }
+
+    .emp-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .emp-name { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); }
+    .emp-dept { font-size: 0.82rem; color: var(--text-mid); margin-top: 2px; }
+    .status-badge {
+      padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+    }
+    .badge-進行中 { background: #e8f4fd; color: var(--blue); }
+    .badge-完了 { background: var(--green-bg); color: var(--green-dark); }
+    .badge-保留 { background: #fff8e1; color: #b57a00; }
+
+    .emp-meta { font-size: 0.83rem; color: var(--text-mid); margin-bottom: 12px; }
+    .emp-meta span { margin-right: 14px; }
+    .emp-meta .icon { margin-right: 3px; }
+
+    .progress-label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-mid); margin-bottom: 5px; }
+    .progress-bar-wrap { background: var(--green-bg); border-radius: 8px; height: 8px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--green-light), var(--green-dark)); transition: width .4s; }
+
+    .emp-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .emp-actions button {
+      flex: 1; padding: 7px; border-radius: 7px; font-size: 0.82rem; cursor: pointer;
+      border: 1.5px solid var(--green-light); background: var(--white); color: var(--green-dark); font-weight: 500;
+      transition: all .2s;
+    }
+    .emp-actions button:hover { background: var(--green-bg); }
+    .emp-actions .btn-check { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+    .emp-actions .btn-check:hover { background: var(--green-mid); }
+
+    /* Checklist tab */
+    .checklist-selector { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+    .checklist-selector select {
+      padding: 10px 16px; border: 2px solid var(--green-light); border-radius: 10px;
+      font-size: 1rem; background: var(--white); color: var(--text-dark); min-width: 240px;
+    }
+    .checklist-overall { background: var(--white); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
+    .checklist-overall-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .checklist-overall-label span { font-size: 1rem; font-weight: 600; color: var(--green-dark); }
+    .checklist-overall-label .pct { font-size: 1.3rem; font-weight: 700; color: var(--green-dark); }
+    .progress-bar-wrap.big { height: 14px; border-radius: 10px; }
+
+    .checklist-category { margin-bottom: 16px; }
+    .cat-title {
+      display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+      background: linear-gradient(90deg, var(--green-bg), #f0f7f2); border-radius: 10px 10px 0 0;
+      font-weight: 600; font-size: 0.95rem; color: var(--green-dark); cursor: pointer;
+    }
+    .cat-title .cat-badge { margin-left: auto; font-size: 0.8rem; color: var(--text-mid); }
+    .cat-tasks { border: 1px solid var(--green-bg); border-top: none; border-radius: 0 0 10px 10px; overflow: hidden; }
+    .task-row {
+      display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid #f0f7f2;
+      background: var(--white); gap: 10px; transition: background .15s;
+    }
+    .task-row:last-child { border-bottom: none; }
+    .task-row:hover { background: #f9fdf9; }
+    .task-row.overdue { background: var(--red-light); }
+    .task-row.overdue:hover { background: #ffd5d5; }
+    .task-check { width: 18px; height: 18px; cursor: pointer; accent-color: var(--green-dark); flex-shrink: 0; }
+    .task-name { flex: 1; font-size: 0.9rem; color: var(--text-dark); }
+    .task-name.done { text-decoration: line-through; color: #999; }
+    .task-assignee {
+      font-size: 0.78rem; color: var(--text-mid); background: var(--green-bg);
+      padding: 2px 8px; border-radius: 12px; white-space: nowrap;
+    }
+    .task-due { font-size: 0.78rem; color: var(--text-mid); white-space: nowrap; }
+    .task-due.late { color: var(--red); font-weight: 600; }
+
+    /* Handover tab */
+    .handover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px; }
+    .handover-card {
+      background: var(--white); border-radius: 12px; box-shadow: var(--shadow);
+      padding: 18px; border: 1px solid #e8f5e9; border-top: 4px solid var(--green-light);
+    }
+    .handover-card.status-完了 { border-top-color: var(--green-dark); }
+    .handover-card.status-確認待ち { border-top-color: var(--orange); }
+    .handover-card.status-未開始 { border-top-color: var(--gray-mid); }
+
+    .handover-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-dark); }
+    .handover-meta { font-size: 0.83rem; color: var(--text-mid); margin-bottom: 12px; line-height: 1.7; }
+    .handover-status-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; margin-bottom: 10px;
+    }
+    .hbadge-完了 { background: var(--green-bg); color: var(--green-dark); }
+    .hbadge-進行中 { background: #e8f4fd; color: var(--blue); }
+    .hbadge-確認待ち { background: #fff3e0; color: #b55a00; }
+    .hbadge-未開始 { background: var(--gray-light); color: #777; }
+
+    .handover-notes { border-top: 1px solid var(--green-bg); padding-top: 10px; margin-top: 10px; }
+    .note-item { font-size: 0.83rem; color: var(--text-mid); padding: 5px 0; border-bottom: 1px dashed #eee; }
+    .note-item:last-child { border-bottom: none; }
+    .note-time { font-size: 0.75rem; color: #bbb; margin-left: 6px; }
+    .note-input-area { display: flex; gap: 8px; margin-top: 10px; }
+    .note-input {
+      flex: 1; padding: 7px 10px; border: 1.5px solid var(--gray-mid); border-radius: 7px;
+      font-size: 0.85rem; resize: none;
+    }
+    .note-input:focus { outline: none; border-color: var(--green-light); }
+    .note-btn {
+      background: var(--green-dark); color: #fff; border: none; padding: 7px 14px;
+      border-radius: 7px; cursor: pointer; font-size: 0.83rem; align-self: flex-end;
+    }
+
+    /* Analytics tab */
+    .analytics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi-card {
+      background: var(--white); border-radius: 12px; box-shadow: var(--shadow);
+      padding: 16px 20px; text-align: center; border: 1px solid #e8f5e9;
+    }
+    .kpi-value { font-size: 2rem; font-weight: 700; color: var(--green-dark); }
+    .kpi-label { font-size: 0.82rem; color: var(--text-mid); margin-top: 4px; }
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .chart-card { background: var(--white); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; }
+    .chart-card h3 { font-size: 1rem; font-weight: 600; color: var(--green-dark); margin-bottom: 16px; }
+    .dept-ranking { }
+    .dept-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f7f2; }
+    .dept-row:last-child { border-bottom: none; }
+    .dept-rank { font-size: 0.9rem; font-weight: 700; color: var(--green-dark); width: 24px; }
+    .dept-name { flex: 1; font-size: 0.9rem; }
+    .dept-rate { font-size: 0.85rem; font-weight: 600; color: var(--green-dark); }
+    .dept-bar { height: 6px; border-radius: 4px; background: var(--green-light); margin-top: 4px; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.16);
+      padding: 28px; max-width: 500px; width: 94%; max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { font-size: 1.2rem; font-weight: 700; color: var(--green-dark); margin-bottom: 20px; }
+    .form-row { margin-bottom: 15px; }
+    .form-row label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-mid); margin-bottom: 5px; }
+    .form-row input, .form-row select, .form-row textarea {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-mid); border-radius: 8px;
+      font-size: 0.9rem; background: var(--white);
+    }
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+      outline: none; border-color: var(--green-light);
+    }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    @media (max-width: 768px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; }
+      .tab { white-space: nowrap; }
+      .content { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <span class="header-icon">🚪</span>
+    <div>
+      <h1>オフボーディング管理</h1>
+      <p>退職手続きチェックリスト・引き継ぎ管理・分析</p>
+    </div>
+  </div>
+  <button class="back-btn" onclick="location.href='../index.html'">← ホームへ戻る</button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('employees')">👤 退職者一覧</div>
+  <div class="tab" onclick="switchTab('checklist')">✅ チェックリスト管理</div>
+  <div class="tab" onclick="switchTab('handover')">📋 引き継ぎ管理</div>
+  <div class="tab" onclick="switchTab('analytics')">📊 分析・サマリー</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- ① 退職者一覧 -->
+  <div class="tab-panel active" id="tab-employees">
+    <div class="employees-header">
+      <h2>退職予定者一覧</h2>
+      <button class="btn-primary" onclick="openAddModal()">＋ 新規退職者登録</button>
+    </div>
+
+    <div class="filters">
+      <span class="filter-label">絞り込み：</span>
+      <select onchange="filterEmployees()">
+        <option value="">全部門</option>
+        <option value="エンジニアリング">エンジニアリング</option>
+        <option value="マーケティング">マーケティング</option>
+        <option value="営業">営業</option>
+        <option value="コーポレート">コーポレート</option>
+        <option value="カーボンクレジット">カーボンクレジット</option>
+      </select>
+      <select onchange="filterEmployees()">
+        <option value="">全ステータス</option>
+        <option value="進行中">進行中</option>
+        <option value="完了">完了</option>
+        <option value="保留">保留</option>
+      </select>
+      <select onchange="filterEmployees()">
+        <option value="">全退職月</option>
+        <option value="2026-05">2026年5月</option>
+        <option value="2026-06">2026年6月</option>
+        <option value="2026-07">2026年7月</option>
+      </select>
+    </div>
+
+    <div class="employee-grid" id="employee-grid"></div>
+  </div>
+
+  <!-- ② チェックリスト管理 -->
+  <div class="tab-panel" id="tab-checklist">
+    <div class="checklist-selector">
+      <label style="font-weight:600;color:var(--green-dark)">退職者を選択：</label>
+      <select id="checklist-employee-select" onchange="loadChecklist()">
+        <option value="">-- 退職者を選択してください --</option>
+      </select>
+    </div>
+
+    <div id="checklist-container">
+      <div style="text-align:center;padding:60px;color:var(--text-mid);">
+        <div style="font-size:3rem;margin-bottom:12px;">📋</div>
+        <p>退職者を選択するとチェックリストが表示されます</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 引き継ぎ管理 -->
+  <div class="tab-panel" id="tab-handover">
+    <div class="employees-header">
+      <h2>引き継ぎ管理</h2>
+      <button class="btn-primary" onclick="openHandoverModal()">＋ 引き継ぎ追加</button>
+    </div>
+    <div class="handover-grid" id="handover-grid"></div>
+  </div>
+
+  <!-- ④ 分析・サマリー -->
+  <div class="tab-panel" id="tab-analytics">
+    <div class="analytics-grid">
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpi-total">5</div>
+        <div class="kpi-label">退職者総数（直近12ヶ月）</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpi-inprogress">3</div>
+        <div class="kpi-label">処理中</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpi-completed">1</div>
+        <div class="kpi-label">完了</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpi-avgdays">12.4</div>
+        <div class="kpi-label">平均処理完了日数</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpi-checklist-avg">72%</div>
+        <div class="kpi-label">チェックリスト完了率平均</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>📅 月別退職者数（過去12ヶ月）</h3>
+        <canvas id="monthlyChart" height="90"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>🎯 退職理由</h3>
+        <canvas id="reasonChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">🏢 部門別退職率ランキング</div>
+      <div id="dept-ranking"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 新規退職者登録モーダル -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h2>🚪 新規退職者登録</h2>
+    <div class="form-row">
+      <label>氏名 *</label>
+      <input type="text" id="new-name" placeholder="例：田中 太郎">
+    </div>
+    <div class="form-row">
+      <label>部門 *</label>
+      <select id="new-dept">
+        <option>エンジニアリング</option>
+        <option>マーケティング</option>
+        <option>営業</option>
+        <option>コーポレート</option>
+        <option>カーボンクレジット</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>退職日 *</label>
+      <input type="date" id="new-date">
+    </div>
+    <div class="form-row">
+      <label>退職理由</label>
+      <select id="new-reason">
+        <option>自己都合</option>
+        <option>家族都合</option>
+        <option>キャリアアップ</option>
+        <option>会社都合</option>
+        <option>定年</option>
+        <option>その他</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>担当HR</label>
+      <input type="text" id="new-hr" placeholder="例：鈴木 花子">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('add-modal')">キャンセル</button>
+      <button class="btn-primary" onclick="addEmployee()">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 引き継ぎ追加モーダル -->
+<div class="modal-overlay" id="handover-modal">
+  <div class="modal">
+    <h2>📋 引き継ぎ追加</h2>
+    <div class="form-row">
+      <label>業務名 *</label>
+      <input type="text" id="ho-task" placeholder="例：月次レポート作成">
+    </div>
+    <div class="form-row">
+      <label>退職者（引き継ぎ元）</label>
+      <select id="ho-from"></select>
+    </div>
+    <div class="form-row">
+      <label>引き継ぎ先</label>
+      <input type="text" id="ho-to" placeholder="例：佐藤 次郎">
+    </div>
+    <div class="form-row">
+      <label>ステータス</label>
+      <select id="ho-status">
+        <option>未開始</option>
+        <option>進行中</option>
+        <option>確認待ち</option>
+        <option>完了</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>期限</label>
+      <input type="date" id="ho-deadline">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('handover-modal')">キャンセル</button>
+      <button class="btn-primary" onclick="addHandover()">登録する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =========== サンプルデータ ===========
+let employees = [
+  {
+    id: 1, name: "山田 健一", dept: "エンジニアリング",
+    date: "2026-05-31", reason: "自己都合", hr: "鈴木 花子",
+    status: "進行中", progress: 65
+  },
+  {
+    id: 2, name: "田中 美咲", dept: "マーケティング",
+    date: "2026-05-20", reason: "家族都合", hr: "鈴木 花子",
+    status: "保留", progress: 30
+  },
+  {
+    id: 3, name: "佐藤 大介", dept: "カーボンクレジット",
+    date: "2026-06-15", reason: "キャリアアップ", hr: "伊藤 一郎",
+    status: "進行中", progress: 45
+  },
+  {
+    id: 4, name: "中村 由美", dept: "コーポレート",
+    date: "2026-04-30", reason: "自己都合", hr: "伊藤 一郎",
+    status: "完了", progress: 100
+  },
+  {
+    id: 5, name: "加藤 拓也", dept: "営業",
+    date: "2026-06-30", reason: "自己都合", hr: "鈴木 花子",
+    status: "進行中", progress: 20
+  }
+];
+
+let checklistTemplate = {
+  "【IT/システム】": [
+    { name: "Googleアカウント無効化", assignee: "IT担当", days: -5 },
+    { name: "Slackアカウント無効化", assignee: "IT担当", days: -5 },
+    { name: "各種SaaSアカウント停止", assignee: "IT担当", days: -3 },
+    { name: "PCの回収・初期化", assignee: "IT担当", days: 3 },
+    { name: "データバックアップ・移行", assignee: "IT担当", days: -7 }
+  ],
+  "【総務】": [
+    { name: "PC・周辺機器返却", assignee: "総務担当", days: 0 },
+    { name: "社員証返却", assignee: "総務担当", days: 0 },
+    { name: "交通カード返却", assignee: "総務担当", days: 0 },
+    { name: "健康保険喪失手続き", assignee: "総務担当", days: 5 },
+    { name: "雇用保険手続き", assignee: "総務担当", days: 5 }
+  ],
+  "【人事】": [
+    { name: "退職届受理・保管", assignee: "HR担当", days: -30 },
+    { name: "源泉徴収票発行", assignee: "HR担当", days: 10 },
+    { name: "離職票発行", assignee: "HR担当", days: 10 },
+    { name: "社会保険喪失届提出", assignee: "HR担当", days: 5 }
+  ],
+  "【引き継ぎ】": [
+    { name: "業務引き継ぎ書作成", assignee: "本人・後任", days: -14 },
+    { name: "後任者OJT実施", assignee: "本人", days: -7 },
+    { name: "顧客・取引先への連絡", assignee: "本人・上長", days: -5 }
+  ],
+  "【最終日】": [
+    { name: "オフィスキー・セキュリティカード返却", assignee: "総務担当", days: 0 },
+    { name: "送別品・謝礼手配", assignee: "HR担当", days: 0 },
+    { name: "退職挨拶メール送信", assignee: "本人", days: 0 }
+  ]
+};
+
+// 各従業員のチェックリスト状態を生成
+let checklistData = {};
+employees.forEach(emp => {
+  checklistData[emp.id] = {};
+  Object.keys(checklistTemplate).forEach(cat => {
+    checklistData[emp.id][cat] = checklistTemplate[cat].map((t, i) => {
+      const retDate = new Date(emp.date);
+      const dueDate = new Date(retDate);
+      dueDate.setDate(retDate.getDate() + t.days);
+      const done = emp.progress > (i * 15 + 10);
+      return {
+        name: t.name, assignee: t.assignee,
+        due: dueDate.toISOString().split('T')[0],
+        done: done
+      };
+    });
+  });
+});
+
+let handovers = [
+  {
+    id: 1, task: "月次カーボンレポート作成", fromId: 3, to: "松本 翼",
+    status: "進行中", deadline: "2026-06-01",
+    notes: [{text: "テンプレートはSharePoint参照", time: "2026-04-28 10:30"}]
+  },
+  {
+    id: 2, task: "Googleアナリティクス管理", fromId: 2, to: "木村 彩",
+    status: "完了", deadline: "2026-05-15",
+    notes: [{text: "アクセス権限を移行済み", time: "2026-05-01 14:00"}, {text: "マニュアル共有済み", time: "2026-05-10 09:15"}]
+  },
+  {
+    id: 3, task: "主要取引先対応（ABC商事）", fromId: 5, to: "渡辺 誠",
+    status: "未開始", deadline: "2026-06-20",
+    notes: []
+  },
+  {
+    id: 4, task: "経理精算システム管理", fromId: 4, to: "高橋 凛",
+    status: "確認待ち", deadline: "2026-04-25",
+    notes: [{text: "手順書を作成して共有", time: "2026-04-22 11:00"}]
+  },
+  {
+    id: 5, task: "採用管理ツール（Herp）設定", fromId: 1, to: "未定",
+    status: "未開始", deadline: "2026-05-25",
+    notes: []
+  }
+];
+
+// =========== タブ切り替え ===========
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['employees','checklist','handover','analytics'][i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'analytics') renderAnalytics();
+  if (name === 'handover') renderHandovers();
+  if (name === 'checklist') populateChecklistSelect();
+}
+
+// =========== 退職者一覧 ===========
+function renderEmployees(list) {
+  list = list || employees;
+  const grid = document.getElementById('employee-grid');
+  grid.innerHTML = list.map(emp => `
+    <div class="emp-card status-${emp.status}">
+      <div class="emp-top">
+        <div>
+          <div class="emp-name">${emp.name}</div>
+          <div class="emp-dept">${emp.dept}</div>
+        </div>
+        <span class="status-badge badge-${emp.status}">${emp.status}</span>
+      </div>
+      <div class="emp-meta">
+        <span><span class="icon">📅</span>退職日: ${emp.date}</span>
+        <span><span class="icon">💼</span>${emp.reason}</span>
+        <br><span><span class="icon">👤</span>担当HR: ${emp.hr}</span>
+      </div>
+      <div class="progress-label">
+        <span>チェックリスト進捗</span>
+        <span><strong>${emp.progress}%</strong></span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" style="width:${emp.progress}%"></div>
+      </div>
+      <div class="emp-actions">
+        <button class="btn-check" onclick="goToChecklist(${emp.id})">✅ チェックリスト</button>
+        <button onclick="goToHandover(${emp.id})">📋 引き継ぎ</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterEmployees() {
+  const selects = document.querySelectorAll('.filters select');
+  const dept = selects[0].value;
+  const status = selects[1].value;
+  const month = selects[2].value;
+  let filtered = employees.filter(e =>
+    (!dept || e.dept === dept) &&
+    (!status || e.status === status) &&
+    (!month || e.date.startsWith(month))
+  );
+  renderEmployees(filtered);
+}
+
+function goToChecklist(id) {
+  switchTab('checklist');
+  setTimeout(() => {
+    document.getElementById('checklist-employee-select').value = id;
+    loadChecklist();
+  }, 50);
+}
+
+function goToHandover(id) {
+  switchTab('handover');
+}
+
+// =========== チェックリスト ===========
+function populateChecklistSelect() {
+  const sel = document.getElementById('checklist-employee-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- 退職者を選択してください --</option>' +
+    employees.map(e => `<option value="${e.id}">${e.name}（${e.dept}・${e.date}）</option>`).join('');
+  if (current) sel.value = current;
+}
+
+function loadChecklist() {
+  const empId = parseInt(document.getElementById('checklist-employee-select').value);
+  if (!empId) {
+    document.getElementById('checklist-container').innerHTML = `
+      <div style="text-align:center;padding:60px;color:var(--text-mid);">
+        <div style="font-size:3rem;margin-bottom:12px;">📋</div>
+        <p>退職者を選択するとチェックリストが表示されます</p>
+      </div>`;
+    return;
+  }
+  const emp = employees.find(e => e.id === empId);
+  const data = checklistData[empId];
+  const today = new Date().toISOString().split('T')[0];
+
+  // 全タスク数・完了数
+  let total = 0, done = 0;
+  Object.values(data).forEach(tasks => {
+    total += tasks.length;
+    done += tasks.filter(t => t.done).length;
+  });
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  let html = `
+    <div class="checklist-overall">
+      <div class="checklist-overall-label">
+        <span>📊 ${emp.name} さんの完了率</span>
+        <span class="pct">${pct}%</span>
+      </div>
+      <div class="progress-bar-wrap big">
+        <div class="progress-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div style="font-size:0.83rem;color:var(--text-mid);margin-top:6px;">${done}/${total} タスク完了 ・ 退職日：${emp.date}</div>
+    </div>`;
+
+  Object.keys(data).forEach(cat => {
+    const tasks = data[cat];
+    const catDone = tasks.filter(t => t.done).length;
+    html += `
+      <div class="checklist-category">
+        <div class="cat-title">
+          <span>${cat}</span>
+          <span class="cat-badge">${catDone}/${tasks.length} 完了</span>
+        </div>
+        <div class="cat-tasks">
+          ${tasks.map((t, i) => {
+            const isLate = !t.done && t.due < today;
+            return `
+              <div class="task-row ${isLate ? 'overdue' : ''}">
+                <input type="checkbox" class="task-check" ${t.done ? 'checked' : ''}
+                  onchange="toggleTask(${empId},'${cat}',${i},this.checked)">
+                <span class="task-name ${t.done ? 'done' : ''}">${t.name}${isLate ? ' 🔴' : ''}</span>
+                <span class="task-assignee">${t.assignee}</span>
+                <span class="task-due ${isLate ? 'late' : ''}">${t.due}</span>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('checklist-container').innerHTML = html;
+
+  // Update employee progress
+  emp.progress = pct;
+}
+
+function toggleTask(empId, cat, idx, checked) {
+  checklistData[empId][cat][idx].done = checked;
+  const emp = employees.find(e => e.id === empId);
+  let total = 0, done = 0;
+  Object.values(checklistData[empId]).forEach(tasks => {
+    total += tasks.length; done += tasks.filter(t => t.done).length;
+  });
+  emp.progress = total ? Math.round(done / total * 100) : 0;
+  // Refresh checklist display
+  loadChecklist();
+}
+
+// =========== 引き継ぎ管理 ===========
+function renderHandovers() {
+  const grid = document.getElementById('handover-grid');
+  grid.innerHTML = handovers.map(h => {
+    const fromEmp = employees.find(e => e.id === h.fromId);
+    const fromName = fromEmp ? fromEmp.name : '不明';
+    const isLate = h.deadline < new Date().toISOString().split('T')[0] && h.status !== '完了';
+    return `
+      <div class="handover-card status-${h.status}">
+        <div class="handover-title">${h.task}</div>
+        <span class="handover-status-badge hbadge-${h.status}">${h.status}</span>
+        <div class="handover-meta">
+          <span>🔁 引き継ぎ元：${fromName}</span><br>
+          <span>➡️ 引き継ぎ先：${h.to || '未定'}</span><br>
+          <span>📅 期限：<span style="color:${isLate?'var(--red)':'inherit'};font-weight:${isLate?'600':'400'}">${h.deadline}${isLate?' ⚠️遅延':''}</span></span>
+        </div>
+        <div class="handover-notes">
+          <div style="font-size:0.83rem;font-weight:600;color:var(--green-dark);margin-bottom:6px;">📝 メモ</div>
+          ${h.notes.length ? h.notes.map(n => `
+            <div class="note-item">${n.text}<span class="note-time">${n.time}</span></div>
+          `).join('') : '<div style="font-size:0.82rem;color:#bbb;padding:4px 0;">メモなし</div>'}
+          <div class="note-input-area">
+            <textarea class="note-input" id="note-input-${h.id}" rows="2" placeholder="メモを追加..."></textarea>
+            <button class="note-btn" onclick="addNote(${h.id})">追加</button>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <select onchange="updateHandoverStatus(${h.id}, this.value)" style="font-size:0.83rem;padding:5px 10px;border:1.5px solid var(--green-bg);border-radius:7px;background:var(--white);">
+            ${['未開始','進行中','確認待ち','完了'].map(s => `<option ${s===h.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function addNote(hId) {
+  const inp = document.getElementById('note-input-' + hId);
+  if (!inp.value.trim()) return;
+  const h = handovers.find(x => x.id === hId);
+  const now = new Date();
+  const time = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  h.notes.push({ text: inp.value.trim(), time });
+  renderHandovers();
+}
+
+function updateHandoverStatus(hId, status) {
+  const h = handovers.find(x => x.id === hId);
+  h.status = status;
+  renderHandovers();
+}
+
+function openHandoverModal() {
+  const sel = document.getElementById('ho-from');
+  sel.innerHTML = employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+  document.getElementById('handover-modal').classList.add('open');
+}
+
+function addHandover() {
+  const task = document.getElementById('ho-task').value.trim();
+  if (!task) { alert('業務名を入力してください'); return; }
+  const fromId = parseInt(document.getElementById('ho-from').value);
+  handovers.push({
+    id: Date.now(), task,
+    fromId,
+    to: document.getElementById('ho-to').value || '未定',
+    status: document.getElementById('ho-status').value,
+    deadline: document.getElementById('ho-deadline').value || '未設定',
+    notes: []
+  });
+  closeModal('handover-modal');
+  renderHandovers();
+}
+
+// =========== 分析・サマリー ===========
+let monthlyChartInst = null, reasonChartInst = null;
+
+function renderAnalytics() {
+  // KPI
+  const total = employees.length;
+  const inprogress = employees.filter(e => e.status === '進行中').length;
+  const completed = employees.filter(e => e.status === '完了').length;
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-inprogress').textContent = inprogress;
+  document.getElementById('kpi-completed').textContent = completed;
+
+  const avgProgress = Math.round(employees.reduce((s,e) => s + e.progress, 0) / employees.length);
+  document.getElementById('kpi-checklist-avg').textContent = avgProgress + '%';
+
+  // Monthly chart
+  const months = ['5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月','4月'];
+  const monthlyData = [2,1,3,2,1,2,4,3,2,1,2,3];
+
+  const mctx = document.getElementById('monthlyChart').getContext('2d');
+  if (monthlyChartInst) monthlyChartInst.destroy();
+  monthlyChartInst = new Chart(mctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        label: '退職者数',
+        data: monthlyData,
+        backgroundColor: months.map((_,i) => i < 8 ? 'rgba(82,183,136,0.7)' : 'rgba(45,106,79,0.85)'),
+        borderColor: months.map((_,i) => i < 8 ? '#52b788' : '#2d6a4f'),
+        borderWidth: 1.5, borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f7f2' } } }
+    }
+  });
+
+  // Reason donut
+  const rctx = document.getElementById('reasonChart').getContext('2d');
+  if (reasonChartInst) reasonChartInst.destroy();
+  reasonChartInst = new Chart(rctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['自己都合','家族都合','キャリアアップ','その他'],
+      datasets: [{
+        data: [65, 15, 10, 10],
+        backgroundColor: ['#2d6a4f','#52b788','#74c69d','#b7e4c7'],
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } }
+    }
+  });
+
+  // Dept ranking
+  const deptData = [
+    { name: 'カーボンクレジット', rate: 8.2 },
+    { name: '営業', rate: 6.5 },
+    { name: 'マーケティング', rate: 5.1 },
+    { name: 'エンジニアリング', rate: 4.3 },
+    { name: 'コーポレート', rate: 2.8 }
+  ];
+  const maxRate = deptData[0].rate;
+  document.getElementById('dept-ranking').innerHTML = deptData.map((d, i) => `
+    <div class="dept-row">
+      <span class="dept-rank">${i+1}</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between">
+          <span class="dept-name">${d.name}</span>
+          <span class="dept-rate">${d.rate}%</span>
+        </div>
+        <div class="progress-bar-wrap" style="margin-top:4px">
+          <div class="progress-bar-fill" style="width:${(d.rate/maxRate*100).toFixed(0)}%"></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// =========== モーダル ===========
+function openAddModal() {
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function addEmployee() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) { alert('氏名を入力してください'); return; }
+  const emp = {
+    id: Date.now(),
+    name,
+    dept: document.getElementById('new-dept').value,
+    date: document.getElementById('new-date').value,
+    reason: document.getElementById('new-reason').value,
+    hr: document.getElementById('new-hr').value || '未割当',
+    status: '進行中',
+    progress: 0
+  };
+  employees.push(emp);
+  checklistData[emp.id] = {};
+  Object.keys(checklistTemplate).forEach(cat => {
+    checklistData[emp.id][cat] = checklistTemplate[cat].map(t => {
+      const retDate = new Date(emp.date || new Date());
+      const dueDate = new Date(retDate);
+      dueDate.setDate(retDate.getDate() + t.days);
+      return { name: t.name, assignee: t.assignee, due: dueDate.toISOString().split('T')[0], done: false };
+    });
+  });
+  closeModal('add-modal');
+  renderEmployees();
+}
+
+// =========== 初期化 ===========
+renderEmployees();
+populateChecklistSelect();
+</script>
+
+<!--
+=== Google Apps Script (GAS) 連携用コード雛形 ===
+
+function getOffboardingList() {
+  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');
+  const sheet = ss.getSheetByName('退職者');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  return data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+}
+
+function saveOffboarding(empData) {
+  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');
+  const sheet = ss.getSheetByName('退職者');
+  sheet.appendRow([
+    empData.id, empData.name, empData.dept, empData.date,
+    empData.reason, empData.hr, empData.status, empData.progress,
+    new Date()
+  ]);
+}
+
+function getChecklist(empId) {
+  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');
+  const sheet = ss.getSheetByName('チェックリスト');
+  const data = sheet.getDataRange().getValues();
+  return data.slice(1).filter(row => String(row[0]) === String(empId)).map(row => ({
+    empId: row[0], category: row[1], taskName: row[2],
+    assignee: row[3], due: row[4], done: row[5]
+  }));
+}
+
+function updateChecklistItem(empId, category, taskName, done) {
+  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');
+  const sheet = ss.getSheetByName('チェックリスト');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(empId) && data[i][1] === category && data[i][2] === taskName) {
+      sheet.getRange(i+1, 6).setValue(done);
+      break;
+    }
+  }
+}
+
+function getHandovers(empId) {
+  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');
+  const sheet = ss.getSheetByName('引き継ぎ');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  return data.slice(1)
+    .filter(row => !empId || String(row[2]) === String(empId))
+    .map(row => {
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = row[i]);
+      return obj;
+    });
+}
+
+=== GAS WebApp として公開後、以下のように fetch で呼び出し ===
+
+async function fetchGASData(action, params={}) {
+  const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+  const url = GAS_URL + '?action=' + action + '&' + new URLSearchParams(params);
+  const res = await fetch(url);
+  return res.json();
+}
+-->
+
+</body>
+</html>

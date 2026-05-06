@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研修・スキル管理 | Green Carbon HR Tools</title>
+  <script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --gc-dark:   #2d6a4f;
+      --gc-mid:    #40916c;
+      --gc-light:  #52b788;
+      --gc-pale:   #d8f3dc;
+      --gc-bg:     #f0f7f4;
+      --text-dark: #1b4332;
+      --text-mid:  #374151;
+      --text-light:#6b7280;
+      --white:     #ffffff;
+      --danger:    #dc2626;
+      --warning:   #f59e0b;
+      --border:    #d1d5db;
+      --shadow:    0 1px 3px rgba(0,0,0,.10);
+      --radius:    8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+           background: var(--gc-bg); color: var(--text-dark); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: var(--gc-dark);
+      color: var(--white);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+    header .logo { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; }
+    header .logo span { font-size: 1.4rem; }
+    header nav { display: flex; gap: 8px; }
+    header nav a {
+      color: rgba(255,255,255,.80); text-decoration: none;
+      font-size: .85rem; padding: 4px 10px; border-radius: 4px; transition: .2s;
+    }
+    header nav a:hover { background: rgba(255,255,255,.15); color: var(--white); }
+
+    /* ── Layout ── */
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+    /* ── Page title ── */
+    .page-title {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+    }
+    .page-title h1 { font-size: 1.4rem; color: var(--gc-dark); }
+    .page-title .badge {
+      background: var(--gc-pale); color: var(--gc-dark);
+      font-size: .75rem; font-weight: 600;
+      padding: 2px 10px; border-radius: 20px;
+    }
+
+    /* ── Tab navigation ── */
+    .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--gc-light); margin-bottom: 24px; }
+    .tab-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 10px 20px; font-size: .9rem; color: var(--text-light);
+      border-radius: 6px 6px 0 0;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: .2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab-btn:hover { background: var(--gc-pale); color: var(--gc-dark); }
+    .tab-btn.active { color: var(--gc-dark); font-weight: 700; border-bottom-color: var(--gc-dark); background: var(--gc-pale); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--white); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+    }
+    .card-title { font-size: 1rem; font-weight: 700; color: var(--gc-dark); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 6px; font-size: .85rem;
+      font-weight: 600; cursor: pointer; border: none; transition: .18s;
+    }
+    .btn-primary { background: var(--gc-dark); color: var(--white); }
+    .btn-primary:hover { background: var(--gc-mid); }
+    .btn-outline { background: var(--white); color: var(--gc-dark); border: 1.5px solid var(--gc-dark); }
+    .btn-outline:hover { background: var(--gc-pale); }
+    .btn-sm { padding: 4px 10px; font-size: .78rem; }
+    .btn-danger { background: var(--danger); color: var(--white); }
+
+    /* ── Form controls ── */
+    select, input[type=text], input[type=date], input[type=number], textarea {
+      border: 1.5px solid var(--border); border-radius: 6px;
+      padding: 7px 10px; font-size: .85rem; color: var(--text-dark);
+      background: var(--white); transition: border .15s;
+    }
+    select:focus, input:focus, textarea:focus { outline: none; border-color: var(--gc-light); }
+    label { font-size: .82rem; font-weight: 600; color: var(--text-mid); display: block; margin-bottom: 4px; }
+    .form-group { margin-bottom: 14px; }
+
+    /* ═══════════════════════════════════════════
+       TAB 1 – スキルマトリクス
+    ═══════════════════════════════════════════ */
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .toolbar label { margin-bottom: 0; font-size: .82rem; color: var(--text-mid); }
+
+    /* Matrix table */
+    .matrix-wrap { overflow-x: auto; }
+    .matrix-table {
+      border-collapse: collapse; min-width: 760px; width: 100%;
+      font-size: .8rem;
+    }
+    .matrix-table th {
+      background: var(--gc-dark); color: var(--white);
+      padding: 8px 10px; text-align: center; white-space: nowrap;
+      font-weight: 600; position: sticky; top: 0;
+    }
+    .matrix-table th.name-col { text-align: left; min-width: 110px; }
+    .matrix-table th.dept-col { min-width: 80px; }
+    .matrix-table td {
+      padding: 6px 8px; border: 1px solid var(--border);
+      text-align: center; vertical-align: middle;
+    }
+    .matrix-table tr:nth-child(even) td { background: #f9fafb; }
+    .matrix-table td.name-cell { text-align: left; font-weight: 600; white-space: nowrap; }
+    .matrix-table td.dept-cell { color: var(--text-light); font-size: .75rem; }
+
+    /* Skill cell */
+    .skill-cell {
+      width: 46px; height: 36px; border-radius: 4px;
+      cursor: pointer; font-weight: 700; font-size: .85rem;
+      transition: transform .1s, box-shadow .1s;
+      user-select: none;
+    }
+    .skill-cell:hover { transform: scale(1.15); box-shadow: 0 2px 8px rgba(0,0,0,.15); z-index: 2; position: relative; }
+    .level-0 { background: #e5e7eb; color: #9ca3af; }
+    .level-1 { background: #fef08a; color: #854d0e; }
+    .level-2 { background: #bae6fd; color: #075985; }
+    .level-3 { background: #86efac; color: #166534; }
+    .level-4 { background: #15803d; color: #ffffff; }
+
+    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: .75rem; }
+    .legend-dot { width: 20px; height: 20px; border-radius: 4px; }
+
+    /* Category tabs */
+    .cat-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .cat-btn {
+      padding: 4px 14px; border-radius: 20px; font-size: .8rem;
+      border: 1.5px solid var(--gc-light); background: var(--white);
+      color: var(--gc-dark); cursor: pointer; transition: .15s;
+    }
+    .cat-btn.active { background: var(--gc-dark); color: var(--white); border-color: var(--gc-dark); }
+    .cat-btn:hover:not(.active) { background: var(--gc-pale); }
+
+    /* ═══════════════════════════════════════════
+       TAB 2 – 研修管理
+    ═══════════════════════════════════════════ */
+    .training-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:800px){ .training-grid { grid-template-columns: 1fr; } }
+
+    .training-card {
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+      position: relative; overflow: hidden;
+    }
+    .training-card.mandatory::before {
+      content: '必須'; position: absolute; top: 12px; right: 12px;
+      background: var(--danger); color: var(--white);
+      font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    }
+    .training-card h3 { font-size: .95rem; color: var(--gc-dark); margin-bottom: 6px; padding-right: 48px; }
+    .training-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .tag {
+      font-size: .72rem; padding: 2px 8px; border-radius: 12px;
+      font-weight: 600;
+    }
+    .tag-online   { background: #dbeafe; color: #1d4ed8; }
+    .tag-group    { background: #fde68a; color: #92400e; }
+    .tag-ojt      { background: #d1fae5; color: #065f46; }
+    .tag-external { background: #ede9fe; color: #5b21b6; }
+
+    .progress-wrap { margin-top: 10px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text-light); margin-bottom: 4px; }
+    .progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; background: var(--gc-light); transition: width .4s; }
+    .progress-fill.danger { background: var(--danger); }
+    .progress-fill.warning { background: var(--warning); }
+
+    .alert-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #fee2e2; color: var(--danger);
+      font-size: .73rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;
+      margin-top: 8px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white); border-radius: 12px;
+      width: min(560px, 96vw); max-height: 90vh;
+      overflow-y: auto; padding: 28px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.2);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-header h2 { font-size: 1.1rem; color: var(--gc-dark); }
+    .modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-light); line-height: 1; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Enrollment table */
+    .status-badge {
+      display: inline-block; font-size: .72rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 12px;
+    }
+    .status-not-started { background: #f3f4f6; color: #6b7280; }
+    .status-in-progress  { background: #dbeafe; color: #1d4ed8; }
+    .status-completed    { background: #d1fae5; color: #065f46; }
+    .status-expired      { background: #fee2e2; color: #dc2626; }
+
+    /* ═══════════════════════════════════════════
+       TAB 3 – 個人スキルカルテ
+    ═══════════════════════════════════════════ */
+    .skill-card-grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+    @media(max-width:900px){ .skill-card-grid { grid-template-columns: 1fr; } }
+
+    .radar-wrap { position: relative; max-width: 300px; margin: 0 auto; }
+
+    .skill-bars { display: flex; flex-direction: column; gap: 10px; }
+    .skill-bar-item { display: flex; align-items: center; gap: 10px; }
+    .skill-bar-name { font-size: .82rem; min-width: 110px; color: var(--text-mid); }
+    .skill-bar-track { flex: 1; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; }
+    .skill-bar-fill { height: 100%; border-radius: 5px; background: var(--gc-light); }
+    .skill-bar-val { font-size: .78rem; font-weight: 700; color: var(--gc-dark); min-width: 20px; text-align: right; }
+
+    .cert-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .cert-table th { background: var(--gc-pale); color: var(--gc-dark); padding: 8px 10px; text-align: left; }
+    .cert-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .cert-expiry-ok { color: var(--gc-dark); font-weight: 600; }
+    .cert-expiry-warn { color: var(--warning); font-weight: 700; }
+    .cert-expiry-ng  { color: var(--danger);  font-weight: 700; }
+
+    .rec-list { list-style: none; }
+    .rec-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px; border-radius: 6px; margin-bottom: 8px;
+      background: var(--gc-pale);
+    }
+    .rec-list li .rec-icon { font-size: 1.3rem; }
+    .rec-list li .rec-body strong { font-size: .88rem; color: var(--gc-dark); }
+    .rec-list li .rec-body p   { font-size: .78rem; color: var(--text-light); margin-top: 2px; }
+
+    /* ═══════════════════════════════════════════
+       TAB 4 – スキルギャップ分析
+    ═══════════════════════════════════════════ */
+    .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media(max-width:900px){ .gap-grid { grid-template-columns: 1fr; } }
+
+    .heatmap-table { border-collapse: collapse; width: 100%; font-size: .78rem; }
+    .heatmap-table th { background: var(--gc-dark); color: var(--white); padding: 6px 8px; text-align: center; }
+    .heatmap-table th.row-h { text-align: left; }
+    .heatmap-table td { padding: 7px 6px; text-align: center; border: 1px solid var(--border); font-weight: 700; }
+    .heat-0  { background: #fee2e2; color: #991b1b; }
+    .heat-1  { background: #fef9c3; color: #854d0e; }
+    .heat-2  { background: #d1fae5; color: #065f46; }
+    .heat-3  { background: #15803d; color: #ffffff; }
+
+    .gap-list { list-style: none; counter-reset: gap-cnt; }
+    .gap-list li {
+      counter-increment: gap-cnt;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border-radius: 6px; margin-bottom: 6px;
+      background: #fff; border: 1px solid var(--border);
+    }
+    .gap-list li::before {
+      content: counter(gap-cnt);
+      background: var(--gc-dark); color: var(--white);
+      border-radius: 50%; width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; flex-shrink: 0;
+    }
+    .gap-list li .gap-info { flex: 1; }
+    .gap-list li .gap-skill { font-size: .85rem; font-weight: 700; color: var(--text-dark); }
+    .gap-list li .gap-dept  { font-size: .73rem; color: var(--text-light); }
+    .gap-list li .gap-score { font-size: .8rem; font-weight: 700; color: var(--danger); }
+
+    /* Chart containers */
+    .chart-container { position: relative; width: 100%; }
+    .chart-container canvas { max-width: 100%; }
+
+    /* Data source notice */
+    .data-notice {
+      background: #fef9c3; border: 1px solid #f59e0b;
+      border-radius: 6px; padding: 10px 14px;
+      font-size: .78rem; color: #78350f;
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    /* Table general */
+    .data-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .data-table th { background: var(--gc-pale); color: var(--gc-dark); padding: 9px 12px; text-align: left; white-space: nowrap; }
+    .data-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f9fafb; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <span>🌿</span> Green Carbon HR Tools
+  </div>
+  <nav>
+    <a href="../index.html">← ホーム</a>
+    <a href="#" onclick="sessionStorage.clear();location.href='../index.html'">ログアウト</a>
+  </nav>
+</header>
+
+<div class="container">
+  <!-- Page title -->
+  <div class="page-title">
+    <h1>📚 研修・スキル管理</h1>
+    <div class="badge">サンプルデータ表示中</div>
+  </div>
+
+  <div class="data-notice">
+    ⚠️ GAS 未接続のためサンプルデータを表示しています。GAS 連携後は実際のデータが反映されます。
+  </div>
+
+  <!-- ── Tab navigation ── -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('matrix')">📊 スキルマトリクス</button>
+    <button class="tab-btn" onclick="switchTab('training')">🎓 研修管理</button>
+    <button class="tab-btn" onclick="switchTab('profile')">👤 個人スキルカルテ</button>
+    <button class="tab-btn" onclick="switchTab('gap')">🔍 スキルギャップ分析</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TAB 1 – スキルマトリクス
+  ══════════════════════════════════════════════ -->
+  <div id="tab-matrix" class="tab-panel active">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">スキルマトリクス（全社員 186名 / サンプル10名表示）</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="deptFilter" onchange="renderMatrix()">
+            <option value="">全部門</option>
+            <option value="経営企画">経営企画</option>
+            <option value="営業">営業</option>
+            <option value="技術">技術</option>
+            <option value="管理">管理</option>
+            <option value="HR">HR</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ CSV エクスポート</button>
+        </div>
+      </div>
+
+      <!-- Category tabs -->
+      <div class="cat-tabs">
+        <button class="cat-btn active" onclick="switchCat('tech')">💻 技術スキル</button>
+        <button class="cat-btn" onclick="switchCat('biz')">💼 ビジネススキル</button>
+        <button class="cat-btn" onclick="switchCat('lang')">🌐 言語</button>
+        <button class="cat-btn" onclick="switchCat('comp')">⚖️ コンプライアンス</button>
+      </div>
+
+      <div class="matrix-wrap">
+        <table class="matrix-table" id="matrixTable">
+          <!-- JS で生成 -->
+        </table>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot level-0"></div><span>0 未習得</span></div>
+        <div class="legend-item"><div class="legend-dot level-1"></div><span>1 基礎</span></div>
+        <div class="legend-item"><div class="legend-dot level-2"></div><span>2 実践</span></div>
+        <div class="legend-item"><div class="legend-dot level-3"></div><span>3 熟練</span></div>
+        <div class="legend-item"><div class="legend-dot level-4"></div><span>4 エキスパート</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TAB 2 – 研修管理
+  ══════════════════════════════════════════════ -->
+  <div id="tab-training" class="tab-panel">
+    <!-- Alert strip -->
+    <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:1.2rem;">🚨</span>
+      <span style="font-size:.85rem;color:#991b1b;font-weight:600;">必須研修の未完了者が <strong id="mandatoryAlertCount">0</strong> 名います。下のカードで詳細を確認してください。</span>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <span class="card-title">研修プログラム一覧</span>
+        <button class="btn btn-primary btn-sm" onclick="openTrainingModal()">＋ 研修を登録</button>
+      </div>
+      <div class="training-grid" id="trainingGrid"><!-- JS --></div>
+    </div>
+
+    <!-- Enrollment status -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">受講状況一覧</span>
+        <select id="trainingSelect" onchange="renderEnrollment()">
+          <!-- JS で生成 -->
+        </select>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="enrollmentTable"><!-- JS --></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TAB 3 – 個人スキルカルテ
+  ══════════════════════════════════════════════ -->
+  <div id="tab-profile" class="tab-panel">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <span class="card-title">社員選択</span>
+        <select id="empSelect" onchange="renderProfile()" style="min-width:200px;"><!-- JS --></select>
+      </div>
+    </div>
+
+    <div class="skill-card-grid">
+      <!-- Left: radar + bars -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:12px;">スキルレーダーチャート</div>
+          <div class="radar-wrap">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px;">習熟度バー</div>
+          <div class="skill-bars" id="skillBars"><!-- JS --></div>
+        </div>
+      </div>
+
+      <!-- Right: certs + history + recommendations -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:12px;">資格・認定情報</div>
+          <table class="cert-table" id="certTable"><!-- JS --></table>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:12px;">受講済み研修履歴</div>
+          <table class="data-table" id="historyTable"><!-- JS --></table>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px;">🎯 推奨研修（スキルギャップ分析）</div>
+          <ul class="rec-list" id="recList"><!-- JS --></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TAB 4 – スキルギャップ分析
+  ══════════════════════════════════════════════ -->
+  <div id="tab-gap" class="tab-panel">
+    <div class="gap-grid" style="margin-bottom:20px;">
+      <!-- Heatmap -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;">部門別スキル充足率ヒートマップ</div>
+        <div style="overflow-x:auto;">
+          <table class="heatmap-table" id="heatmapTable"><!-- JS --></table>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:4px;font-size:.73rem;"><span style="width:14px;height:14px;background:#fee2e2;border-radius:3px;display:inline-block;"></span>低（〜40%）</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:.73rem;"><span style="width:14px;height:14px;background:#fef9c3;border-radius:3px;display:inline-block;"></span>中（40〜70%）</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:.73rem;"><span style="width:14px;height:14px;background:#d1fae5;border-radius:3px;display:inline-block;"></span>高（70〜90%）</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:.73rem;"><span style="width:14px;height:14px;background:#15803d;border-radius:3px;display:inline-block;"></span>優（90%〜）</div>
+        </div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;">重要スキル充足率ランキング</div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="gapBarChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-grid">
+      <!-- Top 10 missing -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;">不足スキル TOP 10</div>
+        <ul class="gap-list" id="gapList"><!-- JS --></ul>
+      </div>
+
+      <!-- Dept recommendations -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;">部門別推奨研修サマリー</div>
+        <table class="data-table" id="deptRecTable"><!-- JS --></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Training Modal ══ -->
+<div class="modal-overlay" id="trainingModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>研修プログラム登録</h2>
+      <button class="modal-close" onclick="closeTrainingModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label>研修タイトル *</label>
+      <input type="text" id="mTitle" placeholder="例：リーダーシップ基礎研修" style="width:100%;">
+    </div>
+    <div class="form-group">
+      <label>説明</label>
+      <textarea id="mDesc" rows="3" style="width:100%;" placeholder="研修の目的・内容"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>研修種別</label>
+        <select id="mType" style="width:100%;">
+          <option value="online">オンライン</option>
+          <option value="group">集合</option>
+          <option value="ojt">OJT</option>
+          <option value="external">外部</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>対象部門</label>
+        <select id="mDept" style="width:100%;">
+          <option value="全社">全社</option>
+          <option value="経営企画">経営企画</option>
+          <option value="営業">営業</option>
+          <option value="技術">技術</option>
+          <option value="管理">管理</option>
+          <option value="HR">HR</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>講師</label>
+        <input type="text" id="mInstructor" placeholder="氏名または機関名" style="width:100%;">
+      </div>
+      <div class="form-group">
+        <label>日程</label>
+        <input type="date" id="mDate" style="width:100%;">
+      </div>
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="mMandatory" style="width:16px;height:16px;">
+      <label for="mMandatory" style="margin-bottom:0;">必須研修に設定する</label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeTrainingModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveTraining()">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Skill level picker tooltip ══ -->
+<div id="levelPicker" style="display:none;position:fixed;z-index:300;background:#fff;border:1.5px solid var(--border);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);padding:10px 14px;">
+  <div style="font-size:.78rem;color:var(--text-light);margin-bottom:8px;">習熟度を選択</div>
+  <div style="display:flex;gap:6px;" id="pickerBtns"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA – Sample data (fallback when GAS not connected)
+// ═══════════════════════════════════════════════════════
+
+const SKILL_CATEGORIES = {
+  tech:  { label:'技術スキル',      skills:['Python','Excel','データ分析','Salesforce','GCP'] },
+  biz:   { label:'ビジネススキル',  skills:['プレゼン','プロジェクト管理','リーダーシップ'] },
+  lang:  { label:'言語',            skills:['英語','中国語'] },
+  comp:  { label:'コンプライアンス',skills:['法令知識','情報セキュリティ','個人情報保護'] },
+};
+
+const EMPLOYEES = [
+  { id:1, name:'田中 一郎',  dept:'経営企画', title:'部長',   scores:{ Python:3, Excel:4, データ分析:3, Salesforce:2, GCP:1, プレゼン:4, プロジェクト管理:4, リーダーシップ:4, 英語:3, 中国語:0, 法令知識:3, 情報セキュリティ:3, 個人情報保護:3 } },
+  { id:2, name:'佐藤 花子',  dept:'HR',       title:'マネージャー', scores:{ Python:1, Excel:3, データ分析:2, Salesforce:3, GCP:0, プレゼン:3, プロジェクト管理:3, リーダーシップ:3, 英語:2, 中国語:0, 法令知識:4, 情報セキュリティ:2, 個人情報保護:4 } },
+  { id:3, name:'鈴木 太郎',  dept:'技術',     title:'エンジニア', scores:{ Python:4, Excel:2, データ分析:4, Salesforce:1, GCP:3, プレゼン:2, プロジェクト管理:2, リーダーシップ:1, 英語:3, 中国語:0, 法令知識:2, 情報セキュリティ:4, 個人情報保護:2 } },
+  { id:4, name:'高橋 美咲',  dept:'営業',     title:'リーダー', scores:{ Python:0, Excel:3, データ分析:2, Salesforce:4, GCP:0, プレゼン:4, プロジェクト管理:3, リーダーシップ:3, 英語:4, 中国語:2, 法令知識:3, 情報セキュリティ:1, 個人情報保護:2 } },
+  { id:5, name:'伊藤 健司',  dept:'管理',     title:'スタッフ', scores:{ Python:0, Excel:4, データ分析:1, Salesforce:2, GCP:0, プレゼン:2, プロジェクト管理:2, リーダーシップ:1, 英語:1, 中国語:0, 法令知識:3, 情報セキュリティ:2, 個人情報保護:3 } },
+  { id:6, name:'渡辺 さくら', dept:'技術',    title:'シニアエンジニア', scores:{ Python:4, Excel:3, データ分析:4, Salesforce:0, GCP:4, プレゼン:3, プロジェクト管理:3, リーダーシップ:2, 英語:3, 中国語:0, 法令知識:2, 情報セキュリティ:4, 個人情報保護:3 } },
+  { id:7, name:'山本 拓也',  dept:'営業',     title:'マネージャー', scores:{ Python:1, Excel:3, データ分析:2, Salesforce:4, GCP:0, プレゼン:4, プロジェクト管理:4, リーダーシップ:4, 英語:3, 中国語:1, 法令知識:3, 情報セキュリティ:2, 個人情報保護:2 } },
+  { id:8, name:'中村 由美',  dept:'経営企画', title:'アナリスト', scores:{ Python:2, Excel:4, データ分析:3, Salesforce:2, GCP:1, プレゼン:3, プロジェクト管理:3, リーダーシップ:2, 英語:4, 中国語:0, 法令知識:2, 情報セキュリティ:2, 個人情報保護:2 } },
+  { id:9, name:'小林 翔',    dept:'HR',       title:'スペシャリスト', scores:{ Python:1, Excel:3, データ分析:2, Salesforce:2, GCP:0, プレゼン:3, プロジェクト管理:2, リーダーシップ:2, 英語:3, 中国語:0, 法令知識:4, 情報セキュリティ:3, 個人情報保護:4 } },
+  { id:10, name:'加藤 里菜', dept:'管理',     title:'スタッフ', scores:{ Python:0, Excel:4, データ分析:1, Salesforce:1, GCP:0, プレゼン:2, プロジェクト管理:2, リーダーシップ:1, 英語:2, 中国語:3, 法令知識:3, 情報セキュリティ:2, 個人情報保護:3 } },
+];
+
+const TRAININGS = [
+  { id:1,  title:'コンプライアンス基礎研修',    type:'online',   dept:'全社',  instructor:'内部講師',      date:'2026-06-15', mandatory:true,  participants:186, completedRate:72, desc:'法令・倫理・社内規程の基礎' },
+  { id:2,  title:'情報セキュリティ研修',          type:'online',   dept:'全社',  instructor:'外部専門家',    date:'2026-06-30', mandatory:true,  participants:186, completedRate:65, desc:'サイバーセキュリティの基礎と実践' },
+  { id:3,  title:'英語ビジネスコミュニケーション', type:'group',   dept:'全社',  instructor:'外部スクール',  date:'2026-07-10', mandatory:false, participants:45,  completedRate:40, desc:'英語でのビジネスメール・プレゼンテーション' },
+  { id:4,  title:'リーダーシップ基礎',            type:'group',   dept:'経営企画', instructor:'外部コンサル', date:'2026-07-20', mandatory:false, participants:20,  completedRate:55, desc:'チームマネジメントとリーダーシップスキル' },
+  { id:5,  title:'Python データ分析入門',          type:'online',  dept:'技術',  instructor:'内部講師',      date:'2026-08-01', mandatory:false, participants:30,  completedRate:30, desc:'PythonによるデータサイエンスとBI活用' },
+  { id:6,  title:'Salesforce 活用研修',            type:'ojt',     dept:'営業',  instructor:'内部講師',      date:'2026-06-20', mandatory:true,  participants:40,  completedRate:82, desc:'SalesforceのCRM機能活用と営業プロセス最適化' },
+  { id:7,  title:'個人情報保護研修',               type:'online',  dept:'全社',  instructor:'法務部',        date:'2026-07-01', mandatory:true,  participants:186, completedRate:58, desc:'GDPRおよび個人情報保護法への対応' },
+  { id:8,  title:'プロジェクト管理実践',            type:'group',  dept:'全社',  instructor:'外部コンサル',  date:'2026-08-15', mandatory:false, participants:35,  completedRate:20, desc:'アジャイル・PMP手法によるプロジェクト管理' },
+  { id:9,  title:'GCP クラウド基礎',               type:'external', dept:'技術', instructor:'Google',        date:'2026-09-01', mandatory:false, participants:15,  completedRate:0,  desc:'Google Cloud Platform 認定取得向け研修' },
+  { id:10, title:'ハラスメント防止研修',             type:'online', dept:'全社',  instructor:'外部専門家',    date:'2026-06-10', mandatory:true,  participants:186, completedRate:89, desc:'職場でのハラスメント防止・対処法' },
+];
+
+const ENROLLMENTS = {
+  1:  [{ name:'田中 一郎', dept:'経営企画', status:'completed' }, { name:'佐藤 花子', dept:'HR', status:'completed' }, { name:'鈴木 太郎', dept:'技術', status:'in-progress' }, { name:'高橋 美咲', dept:'営業', status:'not-started' }, { name:'伊藤 健司', dept:'管理', status:'completed' }],
+  2:  [{ name:'田中 一郎', dept:'経営企画', status:'completed' }, { name:'佐藤 花子', dept:'HR', status:'in-progress' }, { name:'鈴木 太郎', dept:'技術', status:'not-started' }, { name:'高橋 美咲', dept:'営業', status:'expired' }, { name:'伊藤 健司', dept:'管理', status:'not-started' }],
+  6:  [{ name:'山本 拓也', dept:'営業', status:'completed' }, { name:'高橋 美咲', dept:'営業', status:'completed' }, { name:'田中 一郎', dept:'経営企画', status:'in-progress' }],
+};
+
+const CERTS = {
+  1:  [{ name:'PMP 認定', issuer:'PMI', got:'2023-04-15', exp:'2026-04-15', status:'warn' }, { name:'G検定', issuer:'JDLA', got:'2024-08-20', exp:null, status:'ok' }],
+  3:  [{ name:'AWS Solutions Architect', issuer:'Amazon', got:'2024-05-10', exp:'2027-05-10', status:'ok' }, { name:'Python 3 エンジニア認定', issuer:'PRIME', got:'2023-11-01', exp:null, status:'ok' }, { name:'GCP Associate', issuer:'Google', got:'2025-01-15', exp:'2027-01-15', status:'ok' }],
+  4:  [{ name:'英語ビジネス検定 A 級', issuer:'JABBA', got:'2022-09-01', exp:null, status:'ok' }, { name:'Salesforce Admin', issuer:'Salesforce', got:'2024-03-20', exp:'2026-03-20', status:'ng' }],
+  6:  [{ name:'AWS DevOps Engineer', issuer:'Amazon', got:'2025-02-01', exp:'2028-02-01', status:'ok' }, { name:'GCP Professional', issuer:'Google', got:'2024-09-10', exp:'2026-09-10', status:'ok' }],
+  9:  [{ name:'社会保険労務士', issuer:'厚生労働省', got:'2020-11-05', exp:null, status:'ok' }, { name:'衛生管理者 第一種', issuer:'安全衛生技術試験協会', got:'2021-06-01', exp:null, status:'ok' }],
+};
+
+const HISTORY = {
+  1:  [{ title:'リーダーシップ基礎', date:'2025-10-20', score:92, status:'completed' }, { title:'ハラスメント防止研修', date:'2026-02-10', score:100, status:'completed' }],
+  3:  [{ title:'Python データ分析入門', date:'2025-09-15', score:88, status:'completed' }, { title:'情報セキュリティ研修', date:'2026-01-08', score:95, status:'completed' }],
+  4:  [{ title:'Salesforce 活用研修', date:'2025-11-01', score:97, status:'completed' }, { title:'英語ビジネスコミュニケーション', date:'2026-03-05', score:85, status:'completed' }],
+};
+
+// ═══════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════
+let currentCat = 'tech';
+let currentEmpId = 1;
+let radarChartInstance = null;
+let gapBarChartInstance = null;
+let pickerTarget = null;
+
+// ═══════════════════════════════════════════════════════
+// Tab switching
+// ═══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn')[['matrix','training','profile','gap'].indexOf(name)].classList.add('active');
+  if (name === 'profile') renderProfile();
+  if (name === 'gap')     renderGap();
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 1 – Skill Matrix
+// ═══════════════════════════════════════════════════════
+function switchCat(cat) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderMatrix();
+}
+
+function renderMatrix() {
+  const dept = document.getElementById('deptFilter').value;
+  const skills = SKILL_CATEGORIES[currentCat].skills;
+  const emps = dept ? EMPLOYEES.filter(e => e.dept === dept) : EMPLOYEES;
+  const table = document.getElementById('matrixTable');
+
+  let html = '<thead><tr>';
+  html += '<th class="name-col">氏名</th><th class="dept-col">部門</th>';
+  skills.forEach(s => { html += `<th>${s}</th>`; });
+  html += '<th>平均</th>';
+  html += '</tr></thead><tbody>';
+
+  emps.forEach(emp => {
+    const vals = skills.map(s => emp.scores[s] ?? 0);
+    const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+    html += `<tr>`;
+    html += `<td class="name-cell">${emp.name}<br><small style="color:var(--text-light);font-size:.72rem;">${emp.title}</small></td>`;
+    html += `<td class="dept-cell">${emp.dept}</td>`;
+    vals.forEach((v,i) => {
+      html += `<td><div class="skill-cell level-${v}" onclick="openPicker(${emp.id},'${skills[i]}',${v},this)" title="${skills[i]}: ${['未習得','基礎','実践','熟練','エキスパート'][v]}">${v}</div></td>`;
+    });
+    html += `<td style="font-weight:700;color:var(--gc-dark);">${avg}</td>`;
+    html += `</tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function openPicker(empId, skill, current, el) {
+  closePicker();
+  pickerTarget = { empId, skill };
+  const picker = document.getElementById('levelPicker');
+  const labels = ['0 未習得','1 基礎','2 実践','3 熟練','4 エキスパート'];
+  const colors = ['#e5e7eb','#fef08a','#bae6fd','#86efac','#15803d'];
+  const textColors = ['#9ca3af','#854d0e','#075985','#166534','#ffffff'];
+  let btns = '';
+  for (let i = 0; i <= 4; i++) {
+    btns += `<button onclick="setSkillScore(${empId},'${skill}',${i})" style="background:${colors[i]};color:${textColors[i]};border:${i===current?'2px solid #1f2937':'2px solid transparent'};border-radius:6px;padding:5px 10px;font-size:.78rem;font-weight:700;cursor:pointer;">${labels[i]}</button>`;
+  }
+  document.getElementById('pickerBtns').innerHTML = btns;
+  const rect = el.getBoundingClientRect();
+  picker.style.top = (rect.bottom + 6 + window.scrollY) + 'px';
+  picker.style.left = Math.min(rect.left, window.innerWidth - 340) + 'px';
+  picker.style.display = 'block';
+  setTimeout(() => document.addEventListener('click', closePicker, { once: true }), 50);
+}
+
+function closePicker() {
+  document.getElementById('levelPicker').style.display = 'none';
+}
+
+function setSkillScore(empId, skill, val) {
+  const emp = EMPLOYEES.find(e => e.id === empId);
+  if (emp) {
+    emp.scores[skill] = val;
+    // GAS 連携時: saveSkillScore(empId, skill, val);
+  }
+  closePicker();
+  renderMatrix();
+}
+
+function exportCSV() {
+  const skills = SKILL_CATEGORIES[currentCat].skills;
+  let csv = '氏名,部門,' + skills.join(',') + ',平均\n';
+  EMPLOYEES.forEach(emp => {
+    const vals = skills.map(s => emp.scores[s] ?? 0);
+    const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+    csv += `"${emp.name}","${emp.dept}",${vals.join(',')},${avg}\n`;
+  });
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `skill_matrix_${currentCat}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 2 – Training
+// ═══════════════════════════════════════════════════════
+const typeLabel = { online:'オンライン', group:'集合', ojt:'OJT', external:'外部' };
+const typeCls   = { online:'tag-online', group:'tag-group', ojt:'tag-ojt', external:'tag-external' };
+const statusLabel = { 'not-started':'未受講', 'in-progress':'受講中', completed:'完了', expired:'期限切れ' };
+const statusCls   = { 'not-started':'status-not-started', 'in-progress':'status-in-progress', completed:'status-completed', expired:'status-expired' };
+
+function renderTraining() {
+  const mandatoryIncomplete = TRAININGS.filter(t => t.mandatory && t.completedRate < 100).length;
+  document.getElementById('mandatoryAlertCount').textContent = 186 - Math.floor(TRAININGS.filter(t=>t.mandatory).reduce((s,t)=>s+t.completedRate,0)/TRAININGS.filter(t=>t.mandatory).length/100*186);
+
+  let grid = '';
+  TRAININGS.forEach(t => {
+    const cls = t.completedRate >= 80 ? '' : t.completedRate >= 50 ? 'warning' : 'danger';
+    const incomplete = t.mandatory && t.completedRate < 100;
+    grid += `<div class="training-card ${t.mandatory ? 'mandatory' : ''}">
+      <h3>${t.title}</h3>
+      <div class="training-meta">
+        <span class="tag ${typeCls[t.type]}">${typeLabel[t.type]}</span>
+        <span class="tag" style="background:#f3f4f6;color:#374151;">📅 ${t.date}</span>
+        <span class="tag" style="background:#f3f4f6;color:#374151;">🏢 ${t.dept}</span>
+      </div>
+      <p style="font-size:.78rem;color:var(--text-light);margin-bottom:10px;">${t.desc}</p>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>受講完了率</span><span>${t.completedRate}%（${Math.round(t.participants*t.completedRate/100)}/${t.participants}名）</span></div>
+        <div class="progress-bar"><div class="progress-fill ${cls}" style="width:${t.completedRate}%"></div></div>
+      </div>
+      ${incomplete ? `<div class="alert-badge">⚠️ 未完了者 ${Math.round(t.participants*(100-t.completedRate)/100)} 名</div>` : ''}
+    </div>`;
+  });
+  document.getElementById('trainingGrid').innerHTML = grid;
+
+  // Enrollment select
+  const sel = document.getElementById('trainingSelect');
+  sel.innerHTML = TRAININGS.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
+  renderEnrollment();
+}
+
+function renderEnrollment() {
+  const tid = parseInt(document.getElementById('trainingSelect').value);
+  const data = ENROLLMENTS[tid] || [
+    { name:'田中 一郎', dept:'経営企画', status:'completed' },
+    { name:'佐藤 花子', dept:'HR',       status:'in-progress' },
+    { name:'鈴木 太郎', dept:'技術',     status:'not-started' },
+  ];
+  let html = '<thead><tr><th>氏名</th><th>部門</th><th>ステータス</th></tr></thead><tbody>';
+  data.forEach(r => {
+    html += `<tr><td>${r.name}</td><td>${r.dept}</td><td><span class="status-badge ${statusCls[r.status]}">${statusLabel[r.status]}</span></td></tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('enrollmentTable').innerHTML = html;
+}
+
+function openTrainingModal() {
+  document.getElementById('trainingModal').classList.add('open');
+}
+function closeTrainingModal() {
+  document.getElementById('trainingModal').classList.remove('open');
+}
+function saveTraining() {
+  const title = document.getElementById('mTitle').value.trim();
+  if (!title) { alert('研修タイトルを入力してください。'); return; }
+  const newT = {
+    id: TRAININGS.length + 1, title,
+    desc: document.getElementById('mDesc').value,
+    type: document.getElementById('mType').value,
+    dept: document.getElementById('mDept').value,
+    instructor: document.getElementById('mInstructor').value,
+    date: document.getElementById('mDate').value || '未定',
+    mandatory: document.getElementById('mMandatory').checked,
+    participants: 0, completedRate: 0,
+  };
+  TRAININGS.push(newT);
+  closeTrainingModal();
+  renderTraining();
+  // GAS 連携時: saveTraining(newT);
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 3 – Personal Skill Card
+// ═══════════════════════════════════════════════════════
+function initEmpSelect() {
+  const sel = document.getElementById('empSelect');
+  sel.innerHTML = EMPLOYEES.map(e => `<option value="${e.id}">${e.name}（${e.dept}）</option>`).join('');
+}
+
+function renderProfile() {
+  const id = parseInt(document.getElementById('empSelect').value) || currentEmpId;
+  currentEmpId = id;
+  const emp = EMPLOYEES.find(e => e.id === id);
+  if (!emp) return;
+
+  // Radar
+  const allSkills = Object.keys(emp.scores);
+  const radarSkills = ['Python','Excel','英語','法令知識','プレゼン','プロジェクト管理','データ分析','リーダーシップ','Salesforce','GCP'];
+  const radarVals = radarSkills.map(s => emp.scores[s] ?? 0);
+
+  if (radarChartInstance) radarChartInstance.destroy();
+  radarChartInstance = new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+      labels: radarSkills,
+      datasets: [{
+        label: emp.name,
+        data: radarVals,
+        backgroundColor: 'rgba(82,183,136,.25)',
+        borderColor: '#2d6a4f',
+        borderWidth: 2,
+        pointBackgroundColor: '#2d6a4f',
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { r: { min: 0, max: 4, ticks: { stepSize: 1, font:{size:10} }, pointLabels:{font:{size:10}} } },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Skill bars
+  let bars = '';
+  radarSkills.forEach(s => {
+    const v = emp.scores[s] ?? 0;
+    bars += `<div class="skill-bar-item">
+      <span class="skill-bar-name">${s}</span>
+      <div class="skill-bar-track"><div class="skill-bar-fill" style="width:${v/4*100}%"></div></div>
+      <span class="skill-bar-val">${v}/4</span>
+    </div>`;
+  });
+  document.getElementById('skillBars').innerHTML = bars;
+
+  // Certs
+  const certs = CERTS[id] || [];
+  let certHtml = '<thead><tr><th>資格名</th><th>発行機関</th><th>取得日</th><th>有効期限</th></tr></thead><tbody>';
+  if (certs.length === 0) { certHtml += '<tr><td colspan="4" style="text-align:center;color:var(--text-light);">登録なし</td></tr>'; }
+  certs.forEach(c => {
+    const expClass = c.status === 'ok' ? 'cert-expiry-ok' : c.status === 'warn' ? 'cert-expiry-warn' : 'cert-expiry-ng';
+    const expStr = c.exp ? `<span class="${expClass}">${c.exp}${c.status==='warn'?' ⚠️':c.status==='ng'?' 🚨':''}</span>` : '<span style="color:var(--text-light);">期限なし</span>';
+    certHtml += `<tr><td style="font-weight:600">${c.name}</td><td>${c.issuer}</td><td>${c.got}</td><td>${expStr}</td></tr>`;
+  });
+  certHtml += '</tbody>';
+  document.getElementById('certTable').innerHTML = certHtml;
+
+  // History
+  const hist = HISTORY[id] || [];
+  let histHtml = '<thead><tr><th>研修名</th><th>受講日</th><th>スコア</th><th>ステータス</th></tr></thead><tbody>';
+  if (hist.length === 0) { histHtml += '<tr><td colspan="4" style="text-align:center;color:var(--text-light);">受講履歴なし</td></tr>'; }
+  hist.forEach(h => {
+    histHtml += `<tr><td>${h.title}</td><td>${h.date}</td><td style="font-weight:700;color:var(--gc-dark);">${h.score ?? '-'}</td><td><span class="status-badge status-completed">完了</span></td></tr>`;
+  });
+  histHtml += '</tbody>';
+  document.getElementById('historyTable').innerHTML = histHtml;
+
+  // Recommendations (based on low scores)
+  const lowSkills = radarSkills.filter(s => (emp.scores[s] ?? 0) <= 1).slice(0,3);
+  const recs = [
+    { icon:'💻', skill:'Python', training:'Python データ分析入門', reason:'Python スコアが低い → データ活用力を強化' },
+    { icon:'🌐', skill:'英語', training:'英語ビジネスコミュニケーション', reason:'英語スコア向上で海外業務対応力を獲得' },
+    { icon:'☁️', skill:'GCP', training:'GCP クラウド基礎', reason:'クラウド技術の習得でデジタル業務を効率化' },
+    { icon:'⚖️', skill:'法令知識', training:'コンプライアンス基礎研修', reason:'必須研修 — 全社員対象' },
+    { icon:'🛡️', skill:'情報セキュリティ', training:'情報セキュリティ研修', reason:'必須研修 — 全社員対象' },
+  ];
+  const filtered = recs.filter(r => lowSkills.includes(r.skill) || r.skill === '情報セキュリティ').slice(0,3);
+  const displayed = filtered.length ? filtered : recs.slice(0,2);
+  let recHtml = '';
+  displayed.forEach(r => {
+    recHtml += `<li><div class="rec-icon">${r.icon}</div><div class="rec-body"><strong>${r.training}</strong><p>${r.reason}</p></div></li>`;
+  });
+  document.getElementById('recList').innerHTML = recHtml;
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB 4 – Gap Analysis
+// ═══════════════════════════════════════════════════════
+const DEPTS = ['経営企画','営業','技術','管理','HR'];
+const KEY_SKILLS = ['Python','Excel','英語','法令知識','プレゼン','プロジェクト管理','データ分析','リーダーシップ','Salesforce','GCP'];
+
+function calcDeptSkillRate(dept, skill) {
+  const emps = dept ? EMPLOYEES.filter(e => e.dept === dept) : EMPLOYEES;
+  if (!emps.length) return 0;
+  const sum = emps.reduce((s,e) => s + (e.scores[skill] ?? 0), 0);
+  return Math.round(sum / emps.length / 4 * 100);
+}
+
+function heatClass(rate) {
+  if (rate >= 90) return 'heat-3';
+  if (rate >= 70) return 'heat-2';
+  if (rate >= 40) return 'heat-1';
+  return 'heat-0';
+}
+
+function renderGap() {
+  // Heatmap
+  const hmSkills = ['Python','Excel','英語','法令知識','データ分析','GCP'];
+  let hmHtml = '<thead><tr><th class="row-h">部門</th>';
+  hmSkills.forEach(s => { hmHtml += `<th>${s}</th>`; });
+  hmHtml += '</tr></thead><tbody>';
+  DEPTS.forEach(dept => {
+    hmHtml += `<tr><td style="font-weight:600;white-space:nowrap;">${dept}</td>`;
+    hmSkills.forEach(s => {
+      const r = calcDeptSkillRate(dept, s);
+      hmHtml += `<td class="${heatClass(r)}">${r}%</td>`;
+    });
+    hmHtml += '</tr>';
+  });
+  hmHtml += '</tbody>';
+  document.getElementById('heatmapTable').innerHTML = hmHtml;
+
+  // Bar chart
+  const barRates = KEY_SKILLS.map(s => calcDeptSkillRate(null, s));
+  if (gapBarChartInstance) gapBarChartInstance.destroy();
+  gapBarChartInstance = new Chart(document.getElementById('gapBarChart'), {
+    type: 'bar',
+    data: {
+      labels: KEY_SKILLS,
+      datasets: [{
+        label: '全社充足率（%）',
+        data: barRates,
+        backgroundColor: barRates.map(r => r >= 70 ? '#52b788' : r >= 40 ? '#f59e0b' : '#ef4444'),
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { min: 0, max: 100, ticks: { callback: v => v + '%' } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Top 10 gap list
+  const gapData = [];
+  DEPTS.forEach(dept => {
+    KEY_SKILLS.forEach(skill => {
+      const rate = calcDeptSkillRate(dept, skill);
+      if (rate < 70) gapData.push({ dept, skill, rate });
+    });
+  });
+  gapData.sort((a,b) => a.rate - b.rate);
+  let gapHtml = '';
+  gapData.slice(0,10).forEach(g => {
+    gapHtml += `<li><div class="gap-info"><div class="gap-skill">${g.skill}</div><div class="gap-dept">${g.dept}</div></div><div class="gap-score">${g.rate}%</div></li>`;
+  });
+  document.getElementById('gapList').innerHTML = gapHtml;
+
+  // Dept recommendations table
+  const deptRecs = {
+    経営企画: 'Python データ分析入門、リーダーシップ基礎',
+    営業:     '情報セキュリティ研修、英語ビジネスコミュニケーション',
+    技術:     'GCP クラウド基礎、プロジェクト管理実践',
+    管理:     'コンプライアンス基礎研修、Python データ分析入門',
+    HR:       '個人情報保護研修、プロジェクト管理実践',
+  };
+  let deptRecHtml = '<thead><tr><th>部門</th><th>推奨研修</th></tr></thead><tbody>';
+  DEPTS.forEach(dept => {
+    deptRecHtml += `<tr><td style="font-weight:600;white-space:nowrap;">${dept}</td><td style="font-size:.8rem;">${deptRecs[dept]}</td></tr>`;
+  });
+  deptRecHtml += '</tbody>';
+  document.getElementById('deptRecTable').innerHTML = deptRecHtml;
+}
+
+// ═══════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  renderMatrix();
+  renderTraining();
+  initEmpSelect();
+});
+</script>
+
+<!--
+=================================================================
+GAS (Google Apps Script) 連携関数雛形
+=================================================================
+以下の関数をスプレッドシートの GAS エディタに貼り付け、
+Web アプリとしてデプロイしてください。
+デプロイ後の URL を各 fetch() 呼び出しに設定します。
+
+function doGet(e) {
+  const action = e.parameter.action;
+  if (action === 'getSkillMatrix')     return getSkillMatrix(e);
+  if (action === 'getTrainings')       return getTrainings(e);
+  if (action === 'getEmployeeSkillCard') return getEmployeeSkillCard(e);
+  return ContentService.createTextOutput('{}').setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  if (data.action === 'saveSkillScore') return saveSkillScore(data);
+  if (data.action === 'saveTraining')   return saveTraining(data);
+  return ContentService.createTextOutput('{}').setMimeType(ContentService.MimeType.JSON);
+}
+
+// 全社員のスキルスコアを取得
+function getSkillMatrix(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('SkillMatrix');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const rows = data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+  return ContentService.createTextOutput(JSON.stringify(rows))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// スキルスコアを保存
+function saveSkillScore(data) {
+  // data: { employeeId, skill, score }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('SkillMatrix');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  const empIdx = headers.indexOf('employeeId');
+  const skillIdx = headers.indexOf(data.skill);
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][empIdx]) === String(data.employeeId)) {
+      sheet.getRange(i + 1, skillIdx + 1).setValue(data.score);
+      break;
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ success: true }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// 研修プログラム一覧を取得
+function getTrainings(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Trainings');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const rows = data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+  return ContentService.createTextOutput(JSON.stringify(rows))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// 研修プログラムを保存
+function saveTraining(data) {
+  // data: { title, desc, type, dept, instructor, date, mandatory }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Trainings');
+  const lastRow = sheet.getLastRow();
+  const newId = lastRow; // ヘッダー行を除いた行番号をIDとして使用
+  sheet.appendRow([
+    newId, data.title, data.desc, data.type, data.dept,
+    data.instructor, data.date, data.mandatory ? 1 : 0, 0, 0
+  ]);
+  return ContentService.createTextOutput(JSON.stringify({ success: true, id: newId }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// 個人スキルカルテを取得
+function getEmployeeSkillCard(e) {
+  // e.parameter.employeeId
+  const empId = e.parameter.employeeId;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const skillSheet = ss.getSheetByName('SkillMatrix');
+  const certSheet  = ss.getSheetByName('Certifications');
+  const histSheet  = ss.getSheetByName('TrainingHistory');
+
+  // スキルスコア
+  const skillData = skillSheet.getDataRange().getValues();
+  const skillHeaders = skillData[0];
+  const empRow = skillData.find((r,i) => i > 0 && String(r[0]) === String(empId));
+  const scores = {};
+  if (empRow) skillHeaders.forEach((h, i) => scores[h] = empRow[i]);
+
+  // 資格情報
+  const certData = certSheet.getDataRange().getValues();
+  const certHeaders = certData[0];
+  const certs = certData.slice(1)
+    .filter(r => String(r[0]) === String(empId))
+    .map(r => { const o={}; certHeaders.forEach((h,i)=>o[h]=r[i]); return o; });
+
+  // 受講履歴
+  const histData = histSheet.getDataRange().getValues();
+  const histHeaders = histData[0];
+  const history = histData.slice(1)
+    .filter(r => String(r[0]) === String(empId))
+    .map(r => { const o={}; histHeaders.forEach((h,i)=>o[h]=r[i]); return o; });
+
+  return ContentService.createTextOutput(JSON.stringify({ scores, certs, history }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+=================================================================
+-->
+
+</body>
+</html>

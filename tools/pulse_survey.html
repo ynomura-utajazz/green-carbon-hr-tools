@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パルスサーベイ | Green Carbon HR Tools</title>
+  <script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --green-dark: #2d6a4f;
+      --green-mid: #40916c;
+      --green-light: #52b788;
+      --green-pale: #d8f3dc;
+      --green-bg: #f0faf4;
+      --accent: #1b4332;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --border: #d1e7dd;
+      --white: #ffffff;
+      --danger: #dc3545;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --info: #3b82f6;
+      --card-shadow: 0 2px 12px rgba(45,106,79,0.10);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+      background: var(--green-bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ─── ヘッダー ─── */
+    .header {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+      color: var(--white);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo { font-size: 22px; }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: 0.03em; }
+    .header-subtitle { font-size: 12px; opacity: 0.8; }
+
+    .header-back {
+      display: flex; align-items: center; gap: 6px;
+      color: rgba(255,255,255,0.85);
+      text-decoration: none; font-size: 13px;
+      padding: 6px 12px; border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .header-back:hover { background: rgba(255,255,255,0.15); color: var(--white); }
+
+    /* ─── メインレイアウト ─── */
+    .main { max-width: 1300px; margin: 0 auto; padding: 24px 20px; }
+
+    /* ─── サマリーバー ─── */
+    .summary-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: var(--card-shadow);
+      border-left: 4px solid var(--green-light);
+    }
+    .summary-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .summary-card .value { font-size: 28px; font-weight: 800; color: var(--green-dark); line-height: 1; }
+    .summary-card .delta { font-size: 12px; margin-top: 4px; }
+    .delta.positive { color: var(--success); }
+    .delta.negative { color: var(--danger); }
+    .delta.neutral  { color: var(--text-muted); }
+
+    /* ─── タブ ─── */
+    .tabs {
+      display: flex; gap: 4px;
+      background: var(--white);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      flex: 1; min-width: 130px;
+      padding: 10px 16px;
+      border: none; background: transparent;
+      border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .tab-btn:hover { background: var(--green-pale); color: var(--green-dark); }
+    .tab-btn.active {
+      background: var(--green-dark);
+      color: var(--white);
+      box-shadow: 0 2px 8px rgba(45,106,79,0.35);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── カード ─── */
+    .card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 22px 24px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 15px; font-weight: 700; color: var(--green-dark);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title::before {
+      content: ''; display: block;
+      width: 4px; height: 18px;
+      background: var(--green-light);
+      border-radius: 2px;
+    }
+
+    /* ─── グリッド ─── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ─── ボタン ─── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--green-dark); color: var(--white); }
+    .btn-primary:hover { background: var(--accent); }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--green-light);
+      color: var(--green-dark);
+    }
+    .btn-outline:hover { background: var(--green-pale); }
+    .btn-danger { background: var(--danger); color: var(--white); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* ─── バッジ ─── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-draft    { background: #f3f4f6; color: #6b7280; }
+    .badge-active   { background: #d1fae5; color: #065f46; }
+    .badge-complete { background: #dbeafe; color: #1e40af; }
+    .badge-alert    { background: #fee2e2; color: #991b1b; }
+    .badge-info     { background: #e0f2fe; color: #075985; }
+
+    /* ─── テーブル ─── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: var(--green-pale);
+      color: var(--green-dark);
+      font-weight: 700;
+      padding: 10px 14px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.15s; }
+    tbody tr:hover { background: var(--green-bg); }
+    tbody td { padding: 10px 14px; }
+
+    /* ─── フォーム ─── */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .form-control {
+      width: 100%; padding: 9px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 13px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      background: var(--white);
+      color: var(--text);
+    }
+    .form-control:focus { outline: none; border-color: var(--green-light); box-shadow: 0 0 0 3px rgba(82,183,136,0.15); }
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 80px; }
+
+    /* ─── モーダル ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 28px;
+      width: 90%; max-width: 620px;
+      max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 22px;
+    }
+    .modal-title { font-size: 17px; font-weight: 800; color: var(--green-dark); }
+    .modal-close {
+      background: none; border: none; font-size: 22px;
+      color: var(--text-muted); cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: var(--danger); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+    /* ─── 大きなスコア表示 ─── */
+    .score-hero {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px;
+    }
+    .score-number {
+      font-size: 80px; font-weight: 900;
+      color: var(--green-dark); line-height: 1;
+    }
+    .score-label { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+    .score-delta {
+      font-size: 20px; font-weight: 700; margin-top: 10px;
+    }
+    .score-bar-bg {
+      width: 100%; height: 14px;
+      background: var(--green-pale);
+      border-radius: 7px; margin-top: 18px; overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green-mid), var(--green-light));
+      border-radius: 7px;
+      transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ─── eNPS ゲージ ─── */
+    .enps-gauge { position: relative; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+    .enps-value { font-size: 52px; font-weight: 900; color: var(--green-dark); }
+    .enps-label { font-size: 12px; color: var(--text-muted); }
+    .enps-breakdown {
+      display: flex; gap: 16px; margin-top: 16px; font-size: 12px; width: 100%;
+      justify-content: center;
+    }
+    .enps-seg { display: flex; align-items: center; gap: 6px; }
+    .enps-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ─── ヒートマップ ─── */
+    .heatmap { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .heatmap th, .heatmap td {
+      padding: 8px 10px; border: 1px solid #e5e7eb; text-align: center; white-space: nowrap;
+    }
+    .heatmap th { background: var(--green-pale); color: var(--green-dark); font-weight: 700; font-size: 11px; }
+    .heatmap td:first-child { text-align: left; font-weight: 600; background: #f9fafb; }
+
+    /* ─── タグクラウド ─── */
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+    .tag-item {
+      padding: 4px 12px; border-radius: 20px;
+      background: var(--green-pale); color: var(--green-dark);
+      font-weight: 700; cursor: default;
+      transition: background 0.15s;
+    }
+    .tag-item:hover { background: var(--green-light); color: var(--white); }
+
+    /* ─── コメントカード ─── */
+    .comment-card {
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 10px;
+      transition: box-shadow 0.15s;
+    }
+    .comment-card:hover { box-shadow: 0 2px 8px rgba(45,106,79,0.12); }
+    .comment-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .comment-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+
+    /* ─── アラートバー ─── */
+    .alert-bar {
+      background: #fef3c7; border: 1px solid #fbbf24;
+      border-radius: 10px; padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px; font-size: 13px;
+    }
+    .alert-bar.red { background: #fee2e2; border-color: #f87171; }
+
+    /* ─── アクションカード ─── */
+    .action-card {
+      border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+      margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start;
+    }
+    .action-status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+
+    /* ─── プログレスバー ─── */
+    .progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; }
+
+    /* ─── 質問タイプ ─── */
+    .q-type-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+
+    /* ─── 検索バー ─── */
+    .search-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .search-row .form-control { flex: 1; min-width: 160px; }
+
+    /* ─── チャートコンテナ ─── */
+    .chart-container { position: relative; }
+
+    /* ─── レスポンシブ ─── */
+    @media (max-width: 640px) {
+      .main { padding: 14px 12px; }
+      .score-number { font-size: 56px; }
+      .tabs { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─────────────── ヘッダー ─────────────── -->
+<header class="header">
+  <div class="header-left">
+    <span class="header-logo">📊</span>
+    <div>
+      <div class="header-title">パルスサーベイ</div>
+      <div class="header-subtitle">エンゲージメント調査・スコア管理</div>
+    </div>
+  </div>
+  <a class="header-back" href="../index.html">← ホームへ</a>
+</header>
+
+<!-- ─────────────── メイン ─────────────── -->
+<div class="main">
+
+  <!-- サマリーバー -->
+  <div class="summary-bar">
+    <div class="summary-card">
+      <div class="label">エンゲージメントスコア</div>
+      <div class="value" id="sum-score">72</div>
+      <div class="delta positive" id="sum-delta">▲ 4pt（前回比）</div>
+    </div>
+    <div class="summary-card" style="border-left-color:#3b82f6">
+      <div class="label">eNPS</div>
+      <div class="value" id="sum-enps" style="color:#1e40af">+18</div>
+      <div class="delta neutral">（推薦者44% - 批判者26%）</div>
+    </div>
+    <div class="summary-card" style="border-left-color:#f59e0b">
+      <div class="label">最新回答率</div>
+      <div class="value" id="sum-rate" style="color:#92400e">84%</div>
+      <div class="delta neutral">156 / 186 名</div>
+    </div>
+    <div class="summary-card" style="border-left-color:#10b981">
+      <div class="label">実施済みサーベイ</div>
+      <div class="value" id="sum-count">6</div>
+      <div class="delta neutral">直近6ヶ月</div>
+    </div>
+    <div class="summary-card" style="border-left-color:#8b5cf6">
+      <div class="label">アクション進捗</div>
+      <div class="value" id="sum-actions" style="color:#5b21b6">67%</div>
+      <div class="delta positive">4 / 6 件対応済</div>
+    </div>
+  </div>
+
+  <!-- タブ -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('survey')">📋 サーベイ管理</button>
+    <button class="tab-btn" onclick="switchTab('dashboard')">📈 結果ダッシュボード</button>
+    <button class="tab-btn" onclick="switchTab('feedback')">💬 回答・フィードバック</button>
+    <button class="tab-btn" onclick="switchTab('action')">🎯 アクションプラン</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       タブ①: サーベイ管理
+       ══════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-survey">
+
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <span>サーベイ一覧</span>
+        <button class="btn btn-primary" onclick="openNewSurveyModal()">＋ 新規作成</button>
+      </div>
+      <div class="table-wrap">
+        <table id="survey-table">
+          <thead>
+            <tr>
+              <th>タイトル</th>
+              <th>配信日</th>
+              <th>締切</th>
+              <th>質問数</th>
+              <th>回答率</th>
+              <th>回答数</th>
+              <th>ステータス</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="survey-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       タブ②: 結果ダッシュボード
+       ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-dashboard">
+
+    <div class="grid-2">
+      <!-- エンゲージメントスコア大表示 -->
+      <div class="card">
+        <div class="card-title">総合エンゲージメントスコア</div>
+        <div class="score-hero">
+          <div class="score-number" id="big-score">72</div>
+          <div class="score-label">/ 100点</div>
+          <div class="score-delta positive">▲ +4pt（前回 68点）</div>
+          <div class="score-bar-bg" style="width:200px">
+            <div class="score-bar-fill" id="score-bar" style="width:72%"></div>
+          </div>
+          <div style="margin-top:14px;font-size:12px;color:var(--text-muted)">
+            <span style="color:#dc3545">■</span> ~59: 要改善 &nbsp;
+            <span style="color:#f59e0b">■</span> 60~74: 普通 &nbsp;
+            <span style="color:#10b981">■</span> 75~: 良好
+          </div>
+        </div>
+      </div>
+
+      <!-- eNPSゲージ -->
+      <div class="card">
+        <div class="card-title">eNPS（従業員エンゲージメント指標）</div>
+        <div class="enps-gauge">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">「この会社を友人・知人に勧めたいですか？」</div>
+          <div class="enps-value">+18</div>
+          <div class="enps-label">eNPS スコア</div>
+          <canvas id="enps-chart" height="160" style="max-width:280px;margin-top:12px"></canvas>
+          <div class="enps-breakdown">
+            <div class="enps-seg"><div class="enps-dot" style="background:#10b981"></div>推薦者 44%（82名）</div>
+            <div class="enps-seg"><div class="enps-dot" style="background:#e5e7eb"></div>中立 30%（56名）</div>
+            <div class="enps-seg"><div class="enps-dot" style="background:#ef4444"></div>批判者 26%（48名）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- カテゴリ別スコア棒グラフ -->
+    <div class="card">
+      <div class="card-title">カテゴリ別スコア</div>
+      <div class="chart-container" style="height:280px">
+        <canvas id="category-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- 推移折れ線グラフ -->
+    <div class="card">
+      <div class="card-title">月次推移（直近6ヶ月）</div>
+      <div class="chart-container" style="height:260px">
+        <canvas id="trend-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- 部門別ヒートマップ -->
+    <div class="card">
+      <div class="card-title">部門別カテゴリスコア ヒートマップ</div>
+      <div class="table-wrap">
+        <table class="heatmap" id="heatmap-table"></table>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap;">
+        <span style="background:#fee2e2;padding:2px 8px;border-radius:4px;font-weight:600">赤: ~60</span>
+        <span style="background:#fef3c7;padding:2px 8px;border-radius:4px;font-weight:600">黄: 60~74</span>
+        <span style="background:#d1fae5;padding:2px 8px;border-radius:4px;font-weight:600">緑: 75~</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       タブ③: 回答・フィードバック
+       ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-feedback">
+
+    <!-- 集計サマリー -->
+    <div class="grid-3" style="margin-bottom:20px">
+      <div class="card" style="text-align:center;padding:18px">
+        <div style="font-size:36px;font-weight:800;color:var(--green-dark)">98</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">総コメント数</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px">
+        <div style="font-size:36px;font-weight:800;color:var(--success)">61</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">😊 ポジティブ</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px">
+        <div style="font-size:36px;font-weight:800;color:var(--danger)">37</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">😟 ネガティブ</div>
+      </div>
+    </div>
+
+    <!-- キーワードタグクラウド -->
+    <div class="card">
+      <div class="card-title">頻出キーワード</div>
+      <div class="tag-cloud" id="tag-cloud"></div>
+    </div>
+
+    <!-- フィルター＆コメント一覧 -->
+    <div class="card">
+      <div class="card-title">自由記述コメント</div>
+      <div class="search-row">
+        <input class="form-control" type="text" id="comment-search" placeholder="🔍 キーワード検索..." oninput="filterComments()">
+        <select class="form-control" id="comment-dept" onchange="filterComments()" style="max-width:150px">
+          <option value="">全部門</option>
+          <option>経営企画</option>
+          <option>営業</option>
+          <option>技術</option>
+          <option>管理</option>
+          <option>HR</option>
+        </select>
+        <select class="form-control" id="comment-sentiment" onchange="filterComments()" style="max-width:140px">
+          <option value="">全感情</option>
+          <option value="positive">😊 ポジティブ</option>
+          <option value="negative">😟 ネガティブ</option>
+        </select>
+        <select class="form-control" id="comment-cat" onchange="filterComments()" style="max-width:180px">
+          <option value="">全カテゴリ</option>
+          <option>仕事のやりがい</option>
+          <option>チームワーク</option>
+          <option>上司との関係</option>
+          <option>成長機会</option>
+          <option>待遇満足度</option>
+          <option>会社への信頼</option>
+        </select>
+      </div>
+      <div id="comment-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       タブ④: アクションプラン
+       ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-action">
+
+    <!-- スコア低下アラート -->
+    <div id="alert-section" style="margin-bottom:20px"></div>
+
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <span>改善アクション一覧</span>
+        <button class="btn btn-primary" onclick="openNewActionModal()">＋ アクション登録</button>
+      </div>
+      <div id="action-list"></div>
+    </div>
+
+    <!-- 進捗サマリー -->
+    <div class="card">
+      <div class="card-title">進捗サマリー</div>
+      <div class="chart-container" style="height:220px">
+        <canvas id="action-chart"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /main -->
+
+<!-- ─────────────────────────────────────────────
+     モーダル: 新規サーベイ作成
+     ───────────────────────────────────────────── -->
+<div class="modal-overlay" id="survey-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">新規サーベイ作成</div>
+      <button class="modal-close" onclick="closeSurveyModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">サーベイタイトル <span style="color:red">*</span></label>
+      <input class="form-control" id="s-title" placeholder="例: 2026年5月 月次パルスサーベイ">
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">配信日</label>
+        <input class="form-control" type="date" id="s-send">
+      </div>
+      <div class="form-group">
+        <label class="form-label">締切日</label>
+        <input class="form-control" type="date" id="s-deadline">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">対象者</label>
+      <select class="form-control" id="s-target">
+        <option>全社員</option>
+        <option>経営企画</option>
+        <option>営業</option>
+        <option>技術</option>
+        <option>管理</option>
+        <option>HR</option>
+      </select>
+    </div>
+    <hr style="margin:16px 0; border-color:var(--border)">
+    <div class="card-title">質問追加</div>
+    <div id="question-list"></div>
+    <button class="btn btn-outline btn-sm" onclick="addQuestion()" style="margin-top:8px">＋ 質問を追加</button>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSurveyModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveSurvey()">下書き保存</button>
+      <button class="btn btn-primary" style="background:var(--success)" onclick="saveSurvey(true)">今すぐ配信</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────
+     モーダル: アクション登録
+     ───────────────────────────────────────────── -->
+<div class="modal-overlay" id="action-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">改善アクション登録</div>
+      <button class="modal-close" onclick="closeActionModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">課題カテゴリ <span style="color:red">*</span></label>
+      <select class="form-control" id="a-category">
+        <option>仕事のやりがい</option>
+        <option>チームワーク</option>
+        <option>上司との関係</option>
+        <option>成長機会</option>
+        <option>待遇満足度</option>
+        <option>会社への信頼</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">課題・問題点 <span style="color:red">*</span></label>
+      <textarea class="form-control" id="a-issue" placeholder="どのような課題がありますか？"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">対策・アクション <span style="color:red">*</span></label>
+      <textarea class="form-control" id="a-action" placeholder="具体的な対策を記載してください"></textarea>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">担当者</label>
+        <input class="form-control" id="a-owner" placeholder="例: 山田 太郎">
+      </div>
+      <div class="form-group">
+        <label class="form-label">期限</label>
+        <input class="form-control" type="date" id="a-due">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ステータス</label>
+      <select class="form-control" id="a-status">
+        <option value="pending">未着手</option>
+        <option value="progress">進行中</option>
+        <option value="done">完了</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeActionModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveAction()">登録</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// サンプルデータ（GAS 未接続時のフォールバック）
+// ══════════════════════════════════════════════════════
+const GAS_URL = ''; // 本番時: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'
+
+const SAMPLE = {
+  surveys: [
+    { id:1, title:'2026年4月 月次パルスサーベイ', sendDate:'2026-04-01', deadline:'2026-04-07', questions:12, answered:156, total:186, status:'complete' },
+    { id:2, title:'2026年3月 月次パルスサーベイ', sendDate:'2026-03-01', deadline:'2026-03-07', questions:10, answered:141, total:186, status:'complete' },
+    { id:3, title:'Q1 深掘りサーベイ',            sendDate:'2026-02-15', deadline:'2026-02-22', questions:20, answered:178, total:186, status:'complete' },
+    { id:4, title:'2026年2月 月次パルスサーベイ', sendDate:'2026-02-01', deadline:'2026-02-07', questions:10, answered:133, total:186, status:'complete' },
+    { id:5, title:'2026年5月 月次パルスサーベイ', sendDate:'2026-05-10', deadline:'2026-05-17', questions:10, answered:0,   total:186, status:'draft' },
+    { id:6, title:'リモートワーク実態調査',       sendDate:null,         deadline:null,         questions:15, answered:0,   total:186, status:'draft' },
+  ],
+  categories: ['仕事のやりがい','チームワーク','上司との関係','成長機会','待遇満足度','会社への信頼'],
+  catScores:  [76, 81, 73, 68, 64, 70],
+  trend: {
+    months: ['11月','12月','1月','2月','3月','4月'],
+    scores: [65, 67, 68, 70, 68, 72]
+  },
+  depts: ['経営企画','営業','技術','管理','HR'],
+  heatmap: [
+    [78, 85, 80, 75, 70, 78],
+    [74, 79, 70, 66, 62, 68],
+    [80, 83, 77, 72, 67, 73],
+    [72, 77, 68, 64, 60, 66],
+    [82, 88, 82, 76, 74, 80],
+  ],
+  comments: [
+    { date:'2026-04-05', dept:'技術',   category:'成長機会',    sentiment:'negative', text:'技術研修の機会が少なく、最新技術のキャッチアップが難しい状況です。個人の努力に依存している感があります。' },
+    { date:'2026-04-04', dept:'営業',   category:'チームワーク',sentiment:'positive', text:'チームの雰囲気はとても良く、困ったときに助け合える文化があります。毎朝のミーティングが特に好きです。' },
+    { date:'2026-04-04', dept:'管理',   category:'待遇満足度',  sentiment:'negative', text:'同業他社と比較すると給与水準が低めだと感じています。業績に応じた評価・反映を期待したいです。' },
+    { date:'2026-04-03', dept:'HR',     category:'会社への信頼',sentiment:'positive', text:'経営層が直接対話の機会を設けてくれているのは良いと思います。方向性が見えて安心感があります。' },
+    { date:'2026-04-03', dept:'技術',   category:'仕事のやりがい',sentiment:'positive', text:'担当プロジェクトに裁量が与えられており、やりがいを感じています。もう少し顧客接点があるとさらに良い。' },
+    { date:'2026-04-02', dept:'営業',   category:'上司との関係',sentiment:'negative', text:'フィードバックの頻度と具体性をもう少し高めてほしいと感じています。月1の1on1だけでは不十分です。' },
+    { date:'2026-04-02', dept:'経営企画',category:'成長機会',   sentiment:'positive', text:'社内公募制度が整備されて選択肢が広がりました。キャリアパスについて相談しやすい環境になってきています。' },
+    { date:'2026-04-01', dept:'管理',   category:'チームワーク',sentiment:'negative', text:'部門間の連携が弱く、情報が分断されていると感じます。横断的なプロジェクトを増やしてほしい。' },
+    { date:'2026-04-01', dept:'HR',     category:'待遇満足度',  sentiment:'positive', text:'福利厚生（特にフレックス制度）は非常に助かっています。育児との両立がしやすくなりました。' },
+    { date:'2026-03-31', dept:'技術',   category:'上司との関係',sentiment:'positive', text:'技術的な判断を尊重してもらえる環境で、マネージャーへの信頼感が高いです。' },
+  ],
+  keywords: [
+    {word:'成長',count:18},{word:'チームワーク',count:15},{word:'給与',count:14},
+    {word:'研修',count:13},{word:'1on1',count:12},{word:'フレックス',count:11},
+    {word:'キャリア',count:10},{word:'フィードバック',count:10},{word:'情報共有',count:9},
+    {word:'裁量',count:8},{word:'評価',count:8},{word:'リモート',count:7},
+    {word:'コミュニケーション',count:7},{word:'ビジョン',count:6},{word:'研究開発',count:5},
+  ],
+  actions: [
+    { id:1, category:'成長機会',    issue:'技術研修が年1回のみで不十分', action:'四半期ごとの外部研修枠（社員1人年4万円）を設定', owner:'田中部長', due:'2026-06-30', status:'progress' },
+    { id:2, category:'待遇満足度',  issue:'市場水準との乖離（特に技術職）', action:'給与ベンチマーク調査を実施し、改定案を役員会に提出', owner:'HR 山本', due:'2026-07-31', status:'progress' },
+    { id:3, category:'上司との関係',issue:'1on1 の頻度・質にばらつき', action:'全マネージャー向け1on1ガイドラインを整備・研修実施', owner:'HR 鈴木', due:'2026-05-31', status:'done' },
+    { id:4, category:'チームワーク',issue:'部門間の情報分断', action:'月次クロスファンクション MTG を新設（20名参加）', owner:'経営企画 佐藤', due:'2026-05-15', status:'done' },
+    { id:5, category:'会社への信頼',issue:'経営方針の透明性への懸念', action:'四半期タウンホール（全社員参加、Q&A あり）を開始', owner:'CEO', due:'2026-06-01', status:'done' },
+    { id:6, category:'仕事のやりがい',issue:'顧客接点が少なく達成感が得にくい', action:'顧客訪問同行プログラムを試験導入（技術部門対象）', owner:'営業 木村', due:'2026-07-15', status:'pending' },
+  ]
+};
+
+// ══════════════════════════════════════════════════════
+// GAS 取得（フォールバック付き）
+// ══════════════════════════════════════════════════════
+async function fetchGAS(action, params={}) {
+  if (!GAS_URL) return null;
+  try {
+    const url = new URL(GAS_URL);
+    url.searchParams.set('action', action);
+    Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
+    const res = await fetch(url);
+    return await res.json();
+  } catch(e) {
+    console.warn('GAS unavailable, using sample data:', e);
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// タブ切り替え
+// ══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+// ① サーベイ管理
+// ══════════════════════════════════════════════════════
+function renderSurveys(list) {
+  const tbody = document.getElementById('survey-tbody');
+  const statusMap = { draft:'下書き', active:'配信中', complete:'完了' };
+  const badgeMap  = { draft:'badge-draft', active:'badge-active', complete:'badge-complete' };
+  tbody.innerHTML = list.map(s => {
+    const rate = s.total > 0 && s.answered > 0 ? Math.round(s.answered/s.total*100) : 0;
+    return `<tr>
+      <td><strong>${s.title}</strong></td>
+      <td>${s.sendDate ?? '未設定'}</td>
+      <td>${s.deadline ?? '未設定'}</td>
+      <td style="text-align:center">${s.questions}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar" style="width:80px">
+            <div class="progress-fill" style="width:${rate}%;background:var(--green-light)"></div>
+          </div>
+          <span>${rate}%</span>
+        </div>
+      </td>
+      <td>${s.answered} / ${s.total}</td>
+      <td><span class="badge ${badgeMap[s.status]}">${statusMap[s.status]}</span></td>
+      <td>
+        ${s.status==='draft' ? `<button class="btn btn-primary btn-sm" onclick="sendSurvey(${s.id})">配信</button> ` : ''}
+        <button class="btn btn-outline btn-sm" onclick="viewSurvey(${s.id})">詳細</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function sendSurvey(id) {
+  if(!confirm('このサーベイを配信しますか？')) return;
+  const s = SAMPLE.surveys.find(x=>x.id===id);
+  if(s){ s.status='active'; renderSurveys(SAMPLE.surveys); }
+  showToast('サーベイを配信しました ✉️');
+}
+function viewSurvey(id) { showToast('詳細表示は準備中です（GAS連携後に有効化）'); }
+
+// 新規サーベイモーダル
+let questionCount = 0;
+function openNewSurveyModal() {
+  questionCount = 0;
+  document.getElementById('question-list').innerHTML = '';
+  document.getElementById('s-title').value = '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('s-send').value = today;
+  document.getElementById('survey-modal').classList.add('open');
+  addQuestion(); addQuestion(); addQuestion();
+}
+function closeSurveyModal() { document.getElementById('survey-modal').classList.remove('open'); }
+
+function addQuestion() {
+  const i = ++questionCount;
+  const div = document.createElement('div');
+  div.id = `q-row-${i}`;
+  div.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--green-bg)';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong style="font-size:13px;color:var(--green-dark)">質問 ${i}</strong>
+      <button onclick="removeQuestion(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px" title="削除">×</button>
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <input class="form-control" placeholder="質問文を入力..." id="q-text-${i}">
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">回答タイプ</label>
+      <select class="form-control" id="q-type-${i}" onchange="previewQuestionType(${i})">
+        <option value="star5">⭐ 5段階評価（★）</option>
+        <option value="scale10">📊 10段階スケール</option>
+        <option value="text">📝 自由記述</option>
+        <option value="yesno">✅ はい / いいえ</option>
+      </select>
+    </div>
+    <div id="q-preview-${i}" style="margin-top:10px;font-size:13px;color:var(--text-muted)">
+      ★ ★ ★ ★ ★ &nbsp;（1〜5）
+    </div>
+  `;
+  document.getElementById('question-list').appendChild(div);
+}
+
+function removeQuestion(i) {
+  const el = document.getElementById(`q-row-${i}`);
+  if(el) el.remove();
+}
+
+function previewQuestionType(i) {
+  const type = document.getElementById(`q-type-${i}`).value;
+  const preview = document.getElementById(`q-preview-${i}`);
+  const map = {
+    star5:   '★ ★ ★ ★ ★ &nbsp;（1〜5）',
+    scale10: '1 ── 2 ── 3 ── 4 ── 5 ── 6 ── 7 ── 8 ── 9 ── 10',
+    text:    '[ 自由入力テキストエリア ]',
+    yesno:   '[ はい ]　[ いいえ ]',
+  };
+  preview.innerHTML = map[type] || '';
+}
+
+function saveSurvey(distribute=false) {
+  const title = document.getElementById('s-title').value.trim();
+  if(!title){ alert('タイトルを入力してください'); return; }
+  const newSurvey = {
+    id: Date.now(),
+    title,
+    sendDate: document.getElementById('s-send').value || null,
+    deadline: document.getElementById('s-deadline').value || null,
+    questions: document.getElementById('question-list').children.length,
+    answered: 0, total: 186,
+    status: distribute ? 'active' : 'draft'
+  };
+  SAMPLE.surveys.unshift(newSurvey);
+  renderSurveys(SAMPLE.surveys);
+  closeSurveyModal();
+  showToast(distribute ? 'サーベイを配信しました ✉️' : '下書きとして保存しました 📝');
+}
+
+// ══════════════════════════════════════════════════════
+// ② ダッシュボード
+// ══════════════════════════════════════════════════════
+function renderDashboard(data) {
+  // カテゴリ棒グラフ
+  const catCtx = document.getElementById('category-chart').getContext('2d');
+  new Chart(catCtx, {
+    type: 'bar',
+    data: {
+      labels: data.categories,
+      datasets: [{
+        label: 'スコア',
+        data: data.catScores,
+        backgroundColor: data.catScores.map(s =>
+          s >= 75 ? 'rgba(82,183,136,0.85)' :
+          s >= 60 ? 'rgba(245,158,11,0.85)' :
+                    'rgba(220,53,69,0.85)'
+        ),
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { min:0, max:100, grid: { color:'#f3f4f6' } },
+        x: { grid: { display:false } }
+      },
+      plugins: { legend: { display:false } }
+    }
+  });
+
+  // 推移折れ線グラフ
+  const trendCtx = document.getElementById('trend-chart').getContext('2d');
+  new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: data.trend.months,
+      datasets: [{
+        label: 'エンゲージメントスコア',
+        data: data.trend.scores,
+        borderColor: '#2d6a4f',
+        backgroundColor: 'rgba(82,183,136,0.12)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#52b788',
+        pointRadius: 5,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { min:50, max:90, grid:{ color:'#f3f4f6' } },
+        x: { grid:{ display:false } }
+      },
+      plugins: { legend:{ display:false } }
+    }
+  });
+
+  // eNPS ドーナツ
+  const enpsCtx = document.getElementById('enps-chart').getContext('2d');
+  new Chart(enpsCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['推薦者','中立','批判者'],
+      datasets:[{
+        data: [44, 30, 26],
+        backgroundColor: ['#10b981','#e5e7eb','#ef4444'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: { legend:{ display:false } }
+    }
+  });
+
+  // ヒートマップ
+  renderHeatmap(data);
+}
+
+function renderHeatmap(data) {
+  const table = document.getElementById('heatmap-table');
+  const cats = data.categories;
+  let html = '<thead><tr><th>部門</th>';
+  cats.forEach(c => html += `<th>${c}</th>`);
+  html += '</tr></thead><tbody>';
+  data.depts.forEach((dept, di) => {
+    html += `<tr><td>${dept}</td>`;
+    data.heatmap[di].forEach(score => {
+      const bg = score >= 75 ? '#d1fae5' : score >= 60 ? '#fef3c7' : '#fee2e2';
+      const col = score >= 75 ? '#065f46' : score >= 60 ? '#92400e' : '#991b1b';
+      html += `<td style="background:${bg};color:${col};font-weight:700">${score}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════
+// ③ フィードバック
+// ══════════════════════════════════════════════════════
+function renderTagCloud(keywords) {
+  const max = keywords[0].count;
+  const cloud = document.getElementById('tag-cloud');
+  cloud.innerHTML = keywords.map(kw => {
+    const size = 11 + Math.round((kw.count / max) * 14);
+    return `<span class="tag-item" style="font-size:${size}px">${kw.word} <small>${kw.count}</small></span>`;
+  }).join('');
+}
+
+let allComments = [];
+function renderComments(list) {
+  allComments = list;
+  filterComments();
+}
+function filterComments() {
+  const q    = document.getElementById('comment-search').value.toLowerCase();
+  const dept = document.getElementById('comment-dept').value;
+  const sent = document.getElementById('comment-sentiment').value;
+  const cat  = document.getElementById('comment-cat').value;
+  const filtered = allComments.filter(c =>
+    (!q    || c.text.toLowerCase().includes(q) || c.category.includes(q)) &&
+    (!dept || c.dept === dept) &&
+    (!sent || c.sentiment === sent) &&
+    (!cat  || c.category === cat)
+  );
+  const sentIcon = { positive:'😊', negative:'😟' };
+  const sentColor = { positive:'#d1fae5', negative:'#fee2e2' };
+  const sentTextColor = { positive:'#065f46', negative:'#991b1b' };
+  document.getElementById('comment-list').innerHTML = filtered.length === 0
+    ? '<div style="text-align:center;padding:24px;color:var(--text-muted)">該当するコメントがありません</div>'
+    : filtered.map(c => `
+        <div class="comment-card">
+          <div class="comment-meta">
+            <span class="badge badge-info">${c.category}</span>
+            <span class="badge" style="background:${sentColor[c.sentiment]};color:${sentTextColor[c.sentiment]}">${sentIcon[c.sentiment]} ${c.sentiment==='positive'?'ポジティブ':'ネガティブ'}</span>
+            <span class="badge badge-draft">${c.dept}</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:auto">${c.date}</span>
+          </div>
+          <div class="comment-text">${c.text}</div>
+        </div>
+      `).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// ④ アクションプラン
+// ══════════════════════════════════════════════════════
+function renderAlerts(data) {
+  const LOW_THRESHOLD = 65;
+  const lowCats = data.categories
+    .map((c,i) => ({ cat:c, score:data.catScores[i] }))
+    .filter(x => x.score < LOW_THRESHOLD)
+    .sort((a,b) => a.score - b.score);
+
+  const sec = document.getElementById('alert-section');
+  if(lowCats.length === 0) {
+    sec.innerHTML = '';
+    return;
+  }
+  sec.innerHTML = `
+    <div class="alert-bar red">
+      <span style="font-size:20px">🚨</span>
+      <div>
+        <strong>スコア低下アラート</strong><br>
+        <span style="font-size:12px">以下のカテゴリがしきい値（${LOW_THRESHOLD}点）を下回っています：
+        ${lowCats.map(x=>`<strong>${x.cat}（${x.score}点）</strong>`).join(' / ')}
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+let actions = [];
+function renderActions(list) {
+  actions = [...list];
+  const statusConf = {
+    pending:  { label:'未着手', color:'#9ca3af', bg:'#f3f4f6' },
+    progress: { label:'進行中', color:'#f59e0b', bg:'#fef3c7' },
+    done:     { label:'完了',   color:'#10b981', bg:'#d1fae5' },
+  };
+  const container = document.getElementById('action-list');
+  container.innerHTML = list.map(a => {
+    const sc = statusConf[a.status];
+    return `
+      <div class="action-card">
+        <div class="action-status-dot" style="background:${sc.color}"></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+            <span class="badge badge-info">${a.category}</span>
+            <span class="badge" style="background:${sc.bg};color:${sc.color}">${sc.label}</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:auto">期限: ${a.due} ／ 担当: ${a.owner}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px">【課題】${a.issue}</div>
+          <div style="font-size:13px;font-weight:600">→ ${a.action}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          ${a.status!=='done' ? `<button class="btn btn-primary btn-sm" onclick="markDone(${a.id})">完了</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="removeAction(${a.id})">削除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 進捗チャート
+  const pending  = list.filter(a=>a.status==='pending').length;
+  const progress = list.filter(a=>a.status==='progress').length;
+  const done     = list.filter(a=>a.status==='done').length;
+  const actCtx = document.getElementById('action-chart').getContext('2d');
+  if(window._actionChart) window._actionChart.destroy();
+  window._actionChart = new Chart(actCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['未着手','進行中','完了'],
+      datasets:[{
+        data:[pending,progress,done],
+        backgroundColor:['#f3f4f6','#fbbf24','#10b981'],
+        borderWidth:0,
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      cutout:'60%',
+      plugins:{ legend:{ position:'bottom' } }
+    }
+  });
+}
+
+function markDone(id) {
+  const a = SAMPLE.actions.find(x=>x.id===id);
+  if(a){ a.status='done'; renderActions(SAMPLE.actions); }
+  showToast('アクションを完了にしました ✅');
+}
+function removeAction(id) {
+  if(!confirm('このアクションを削除しますか？')) return;
+  const idx = SAMPLE.actions.findIndex(x=>x.id===id);
+  if(idx>=0) SAMPLE.actions.splice(idx,1);
+  renderActions(SAMPLE.actions);
+  showToast('削除しました');
+}
+
+// アクションモーダル
+function openNewActionModal() {
+  document.getElementById('a-issue').value = '';
+  document.getElementById('a-action').value = '';
+  document.getElementById('a-owner').value = '';
+  document.getElementById('a-due').value = '';
+  document.getElementById('action-modal').classList.add('open');
+}
+function closeActionModal() { document.getElementById('action-modal').classList.remove('open'); }
+function saveAction() {
+  const issue  = document.getElementById('a-issue').value.trim();
+  const action = document.getElementById('a-action').value.trim();
+  if(!issue || !action){ alert('課題と対策は必須です'); return; }
+  SAMPLE.actions.push({
+    id: Date.now(),
+    category: document.getElementById('a-category').value,
+    issue, action,
+    owner:  document.getElementById('a-owner').value || '未設定',
+    due:    document.getElementById('a-due').value   || '未設定',
+    status: document.getElementById('a-status').value,
+  });
+  renderActions(SAMPLE.actions);
+  closeActionModal();
+  showToast('アクションを登録しました 🎯');
+}
+
+// ══════════════════════════════════════════════════════
+// トースト通知
+// ══════════════════════════════════════════════════════
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = `
+      position:fixed;bottom:28px;right:28px;
+      background:var(--green-dark);color:#fff;
+      padding:12px 20px;border-radius:10px;
+      font-size:13px;font-weight:600;
+      box-shadow:0 4px 16px rgba(0,0,0,0.2);
+      z-index:9999;transition:opacity 0.4s;
+    `;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity='0'; }, 2800);
+}
+
+// モーダル外クリックで閉じる
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.classList.remove('open'); });
+});
+
+// ══════════════════════════════════════════════════════
+// 初期化
+// ══════════════════════════════════════════════════════
+async function init() {
+  // GAS からデータ取得、失敗したらサンプルデータ使用
+  const surveysData = await fetchGAS('getSurveys') ?? SAMPLE;
+  renderSurveys(SAMPLE.surveys);
+  renderDashboard(SAMPLE);
+  renderTagCloud(SAMPLE.keywords);
+  renderComments(SAMPLE.comments);
+  renderAlerts(SAMPLE);
+  renderActions(SAMPLE.actions);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<!--
+=======================================================================
+GAS (Google Apps Script) 関数の雛形
+=======================================================================
+
+function doGet(e) {
+  const action = e.parameter.action;
+  let result;
+
+  switch(action) {
+    case 'getSurveys':        result = getSurveys();        break;
+    case 'getSurveyResults':  result = getSurveyResults(e.parameter.surveyId); break;
+    case 'saveSurveyResponse':result = saveSurveyResponse(e); break;
+    case 'getActionPlans':    result = getActionPlans();    break;
+    case 'saveActionPlan':    result = saveActionPlan(e);   break;
+    default: result = { error: 'Unknown action' };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getSurveys() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Surveys');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  return rows.slice(1).map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
+}
+
+function getSurveyResults(surveyId) {
+  // シートから集計してカテゴリ別スコア・推移・ヒートマップを返す
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Responses');
+  // ... 集計ロジック ...
+  return { categories:[], catScores:[], trend:{}, heatmap:[] };
+}
+
+function saveSurveyResponse(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Responses');
+  sheet.appendRow([new Date(), e.parameter.surveyId, e.parameter.answers]);
+  return { success: true };
+}
+
+function getActionPlans() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ActionPlans');
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows[0];
+  return rows.slice(1).map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
+}
+
+function saveActionPlan(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ActionPlans');
+  sheet.appendRow([
+    new Date(), e.parameter.category, e.parameter.issue,
+    e.parameter.action, e.parameter.owner, e.parameter.due, e.parameter.status
+  ]);
+  return { success: true };
+}
+
+=======================================================================
+-->
+</body>
+</html>

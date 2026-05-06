@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アルムナイ管理 | Green Carbon HR</title>
+<script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* ── Design Tokens ─────────────────────────────────── */
+:root{
+  --c-primary:#1a5c3a;--c-primary-dark:#0f3d26;--c-primary-mid:#2d7a52;
+  --c-primary-light:#52b788;--c-primary-pale:#b7e4c7;--c-primary-bg:#eaf7f0;
+  --c-accent:#f0a500;--c-danger:#c0392b;--c-danger-bg:#fdf0ef;
+  --c-warn:#e67e22;--c-warn-bg:#fef6ed;
+  --c-info:#2980b9;--c-info-bg:#eaf4fb;
+  --c-success:#27ae60;--c-success-bg:#eafaf1;
+  --c-purple:#7b5ea7;--c-purple-bg:#f3f0ff;
+  --c-gray-50:#f8fafb;--c-gray-100:#f1f4f6;--c-gray-200:#e4e9ed;
+  --c-gray-300:#cdd5db;--c-gray-400:#9eabb5;--c-gray-500:#6b7d88;
+  --c-gray-700:#374959;--c-gray-900:#1c2b35;--c-white:#ffffff;
+  --r-sm:6px;--r-md:10px;--r-lg:16px;--r-xl:22px;--r-full:9999px;
+  --shadow-xs:0 1px 3px rgba(0,0,0,.07);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.09);
+  --shadow-md:0 4px 16px rgba(0,0,0,.11);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.13);
+  --shadow-focus:0 0 0 3px rgba(82,183,136,.35);
+  --transition:all .18s ease;
+  --font-sans:'Hiragino Sans','Meiryo',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:var(--font-sans);background:#f0f6f3;color:var(--c-gray-900);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* ── Toast ─────────────────────────────────────────── */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:var(--r-md);box-shadow:var(--shadow-lg);font-size:.88rem;font-weight:500;pointer-events:auto;animation:toastIn .25s cubic-bezier(.34,1.56,.64,1) both;max-width:360px;border-left:4px solid transparent}
+.toast.success{background:var(--c-success-bg);color:#1a6e3c;border-left-color:var(--c-success)}
+.toast.error{background:var(--c-danger-bg);color:#8b1a14;border-left-color:var(--c-danger)}
+.toast.info{background:var(--c-info-bg);color:#1a5278;border-left-color:var(--c-info)}
+.toast.warn{background:var(--c-warn-bg);color:#7e4a0e;border-left-color:var(--c-warn)}
+.toast.hide{animation:toastOut .2s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(30px)}}
+
+/* ── Layout ─────────────────────────────────────────── */
+.app-header{background:linear-gradient(135deg,#0f3d26 0%,var(--c-primary) 55%,var(--c-primary-mid) 100%);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+.header-brand{display:flex;align-items:center;gap:12px;color:#fff}
+.header-logo{width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:1px solid rgba(255,255,255,.2)}
+.header-title{font-size:1.05rem;font-weight:700;letter-spacing:-.01em}
+.header-sub{font-size:.76rem;opacity:.75;margin-top:1px}
+.header-actions{display:flex;gap:10px;align-items:center}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);padding:7px 16px;border-radius:var(--r-sm);cursor:pointer;font-size:.85rem;font-weight:500;transition:var(--transition)}
+.btn-ghost:hover{background:rgba(255,255,255,.22)}
+.header-stat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-full);padding:4px 14px;font-size:.8rem;color:rgba(255,255,255,.9)}
+.header-stat strong{color:#fff;margin-left:4px}
+
+/* ── Tabs ────────────────────────────────────────────── */
+.tab-bar{background:var(--c-white);border-bottom:1px solid var(--c-gray-200);display:flex;padding:0 28px;position:sticky;top:64px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow-x:auto}
+.tab-item{padding:0 6px;margin-right:4px;cursor:pointer;font-size:.9rem;color:var(--c-gray-500);border-bottom:3px solid transparent;margin-bottom:-1px;transition:var(--transition);display:flex;align-items:center;gap:6px;white-space:nowrap;height:52px;font-weight:500}
+.tab-item:hover{color:var(--c-primary)}
+.tab-item.active{color:var(--c-primary);border-bottom-color:var(--c-primary);font-weight:700}
+.tab-badge{background:var(--c-primary-bg);color:var(--c-primary);border-radius:var(--r-full);padding:1px 7px;font-size:.74rem;font-weight:700}
+.tab-item.active .tab-badge{background:var(--c-primary);color:#fff}
+
+/* ── Page ────────────────────────────────────────────── */
+.page{padding:24px 28px;max-width:1440px;margin:0 auto;display:none}
+.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-header-left h2{font-size:1.2rem;font-weight:700}
+.page-header-left p{font-size:.83rem;color:var(--c-gray-500);margin-top:2px}
+.page-header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r-md);font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:var(--transition);font-family:var(--font-sans);white-space:nowrap}
+.btn:focus-visible{outline:none;box-shadow:var(--shadow-focus)}
+.btn-primary{background:var(--c-primary);color:#fff}
+.btn-primary:hover{background:var(--c-primary-mid);box-shadow:var(--shadow-sm)}
+.btn-secondary{background:var(--c-white);color:var(--c-primary);border:1.5px solid var(--c-primary)}
+.btn-secondary:hover{background:var(--c-primary-bg)}
+.btn-sm{padding:6px 12px;font-size:.8rem;border-radius:var(--r-sm)}
+.btn-xs{padding:4px 9px;font-size:.75rem;border-radius:var(--r-sm)}
+.export-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--c-gray-100);color:var(--c-gray-700);border:1px solid var(--c-gray-200);border-radius:var(--r-md);font-size:.82rem;font-weight:600;cursor:pointer;transition:var(--transition)}
+.export-btn:hover{background:var(--c-gray-200)}
+
+/* ── Forms ───────────────────────────────────────────── */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 18px;background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-xs);border:1px solid var(--c-gray-200);margin-bottom:20px}
+.filter-label{font-size:.82rem;font-weight:600;color:var(--c-gray-500)}
+select,input[type=text],input[type=date],input[type=email],input[type=url],input[type=number],textarea{font-family:var(--font-sans);font-size:.88rem;color:var(--c-gray-900);background:var(--c-white);border:1.5px solid var(--c-gray-200);border-radius:var(--r-md);padding:8px 12px;transition:var(--transition);outline:none;width:100%}
+select:focus,input:focus,textarea:focus{border-color:var(--c-primary-light);box-shadow:var(--shadow-focus)}
+.filter-bar select{padding:7px 28px 7px 10px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%239eabb5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;min-width:150px}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-icon{position:absolute;left:10px;color:var(--c-gray-400);font-size:.9rem;pointer-events:none}
+.search-input{padding-left:32px!important;min-width:240px}
+
+/* ── Tags ────────────────────────────────────────────── */
+.tag-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:var(--r-full);font-size:.74rem;font-weight:700;white-space:nowrap}
+.tp-再雇用候補{background:#fff3e0;color:#b55a00}
+.tp-VIP{background:var(--c-purple-bg);color:var(--c-purple)}
+.tp-推薦者{background:var(--c-info-bg);color:var(--c-info)}
+.tp-イベント常連{background:var(--c-primary-bg);color:var(--c-primary)}
+.tp-要フォロー{background:var(--c-danger-bg);color:var(--c-danger)}
+
+/* ── Alumni Grid ─────────────────────────────────────── */
+.alumni-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ac{background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);border:1px solid var(--c-gray-200);padding:20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;cursor:default}
+.ac:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.ac::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--c-primary),var(--c-primary-light))}
+.ac.vip::before{background:linear-gradient(90deg,var(--c-purple),#a78bca)}
+.ac.rehire::before{background:linear-gradient(90deg,var(--c-warn),var(--c-accent))}
+
+.ac-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.ac-avatar{width:48px;height:48px;border-radius:var(--r-full);background:var(--c-primary-bg);color:var(--c-primary);display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:800;flex-shrink:0;border:2px solid var(--c-primary-pale)}
+.ac-avatar.vip{background:var(--c-purple-bg);color:var(--c-purple);border-color:#d8d0f0}
+.ac-info{}
+.ac-name{font-size:1rem;font-weight:700;color:var(--c-gray-900)}
+.ac-sub{font-size:.79rem;color:var(--c-gray-500);margin-top:2px;line-height:1.4}
+.ac-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.ac-meta{font-size:.79rem;color:var(--c-gray-500);line-height:2;margin-bottom:12px}
+.ac-meta-row{display:flex;align-items:center;gap:5px}
+.ac-actions{display:flex;gap:6px;padding-top:12px;border-top:1px solid var(--c-gray-100)}
+.ac-actions .btn{flex:1;justify-content:center;font-size:.78rem;padding:6px 8px}
+
+/* ── Contact (2-pane) ────────────────────────────────── */
+.contact-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+.contact-sidebar{background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);border:1px solid var(--c-gray-200);overflow:hidden;position:sticky;top:128px}
+.sidebar-header{padding:12px 16px;background:var(--c-primary-bg);border-bottom:1px solid var(--c-primary-pale);font-size:.82rem;font-weight:700;color:var(--c-primary-mid);display:flex;align-items:center;justify-content:space-between}
+.sidebar-search{padding:10px 12px;border-bottom:1px solid var(--c-gray-200)}
+.sidebar-search input{font-size:.83rem;padding:6px 10px}
+.sidebar-list{max-height:calc(100vh - 300px);overflow-y:auto}
+.si{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--c-gray-100);cursor:pointer;transition:background .12s}
+.si:hover{background:var(--c-gray-50)}
+.si.active{background:var(--c-primary-bg);border-left:3px solid var(--c-primary)}
+.si.active .si-name{color:var(--c-primary);font-weight:700}
+.si-av{width:34px;height:34px;border-radius:var(--r-full);background:var(--c-primary-bg);color:var(--c-primary);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;flex-shrink:0}
+.si-av.vip{background:var(--c-purple-bg);color:var(--c-purple)}
+.si-name{font-size:.87rem;font-weight:500;color:var(--c-gray-900)}
+.si-sub{font-size:.74rem;color:var(--c-gray-500)}
+
+.contact-detail{background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);border:1px solid var(--c-gray-200)}
+
+/* Profile section */
+.profile-header{padding:24px;border-bottom:1px solid var(--c-gray-200);display:flex;align-items:flex-start;gap:18px}
+.profile-av{width:68px;height:68px;border-radius:var(--r-full);background:var(--c-primary-bg);color:var(--c-primary);display:flex;align-items:center;justify-content:center;font-size:1.7rem;font-weight:800;flex-shrink:0;border:3px solid var(--c-primary-pale)}
+.profile-av.vip{background:var(--c-purple-bg);color:var(--c-purple);border-color:#d8d0f0}
+.profile-info{}
+.profile-name{font-size:1.2rem;font-weight:800;color:var(--c-gray-900)}
+.profile-role{font-size:.86rem;color:var(--c-gray-500);margin-top:3px;margin-bottom:8px}
+.profile-links{display:flex;gap:7px;flex-wrap:wrap}
+.profile-link{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:var(--r-full);font-size:.78rem;font-weight:600;background:var(--c-gray-100);color:var(--c-gray-700);border:1px solid var(--c-gray-200);cursor:pointer;transition:var(--transition);text-decoration:none}
+.profile-link:hover{background:var(--c-primary-bg);color:var(--c-primary);border-color:var(--c-primary-pale)}
+
+.profile-body{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--c-gray-200)}
+.profile-col{padding:18px 22px}
+.profile-col:first-child{border-right:1px solid var(--c-gray-200)}
+.profile-section-title{font-size:.76rem;font-weight:800;color:var(--c-gray-400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.profile-field{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--c-gray-100);font-size:.83rem}
+.profile-field:last-child{border-bottom:none}
+.pf-label{color:var(--c-gray-500)}
+.pf-val{font-weight:600;color:var(--c-gray-900);text-align:right}
+.profile-memo{margin:0 22px 16px;padding:10px 14px;background:var(--c-gray-50);border-radius:var(--r-md);font-size:.83rem;color:var(--c-gray-600);border-left:3px solid var(--c-primary-pale);line-height:1.6}
+
+/* History */
+.history-panel{padding:18px 22px}
+.history-title{font-size:.82rem;font-weight:800;color:var(--c-gray-400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.hist-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--c-gray-100)}
+.hist-item:last-child{border-bottom:none}
+.hist-icon-wrap{width:34px;height:34px;border-radius:var(--r-full);background:var(--c-primary-bg);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;margin-top:1px}
+.hist-body{}
+.hist-text{font-size:.86rem;color:var(--c-gray-900);line-height:1.45}
+.hist-time{font-size:.75rem;color:var(--c-gray-400);margin-top:3px}
+.hist-add{display:flex;gap:8px;margin-top:14px;align-items:center}
+.hist-add select{max-width:130px;font-size:.83rem}
+.hist-add input{flex:1;font-size:.84rem}
+
+/* Tag editor */
+.tag-editor{padding:16px 22px;border-top:1px solid var(--c-gray-200)}
+.tag-options{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.tag-opt{padding:4px 13px;border-radius:var(--r-full);font-size:.8rem;cursor:pointer;border:1.5px solid var(--c-gray-200);background:var(--c-white);color:var(--c-gray-700);transition:var(--transition);font-weight:500}
+.tag-opt:hover{border-color:var(--c-primary-pale);background:var(--c-primary-bg)}
+.tag-opt.sel{background:var(--c-primary);color:#fff;border-color:var(--c-primary)}
+.tag-opt.sel[data-tag="VIP"]{background:var(--c-purple);border-color:var(--c-purple)}
+.tag-opt.sel[data-tag="再雇用候補"]{background:var(--c-warn);border-color:var(--c-warn)}
+
+/* ── Events ──────────────────────────────────────────── */
+.events-layout{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+.ev-card{background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);border:1px solid var(--c-gray-200);padding:20px;margin-bottom:14px;position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s}
+.ev-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.ev-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px}
+.ev-card.ec-受付中::before{background:var(--c-success)}
+.ev-card.ec-予定::before{background:var(--c-info)}
+.ev-card.ec-終了::before{background:var(--c-gray-300)}
+
+.ev-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ev-title{font-size:1rem;font-weight:700;color:var(--c-gray-900)}
+.ev-status-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-full);font-size:.76rem;font-weight:700;flex-shrink:0}
+.ep-受付中{background:var(--c-success-bg);color:var(--c-success)}
+.ep-予定{background:var(--c-info-bg);color:var(--c-info)}
+.ep-終了{background:var(--c-gray-100);color:var(--c-gray-500)}
+
+.ev-meta{font-size:.8rem;color:var(--c-gray-500);line-height:2;margin-bottom:12px}
+.ev-attendees{display:flex;align-items:center;gap:4px;margin-bottom:12px}
+.av-chip{width:26px;height:26px;border-radius:var(--r-full);background:var(--c-primary-bg);color:var(--c-primary);display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;border:2px solid #fff;margin-right:-6px;cursor:default}
+.av-chip.more{background:var(--c-primary);color:#fff}
+.ev-actions{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--c-gray-100)}
+
+/* Invite panel */
+.invite-panel{background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);border:1px solid var(--c-gray-200);padding:22px;position:sticky;top:128px}
+.invite-panel-title{font-size:.95rem;font-weight:700;color:var(--c-gray-900);margin-bottom:16px;display:flex;align-items:center;gap:7px}
+.invite-field{margin-bottom:13px}
+.invite-field label{display:block;font-size:.8rem;font-weight:700;color:var(--c-gray-600);margin-bottom:4px}
+.invite-actions{display:flex;gap:7px;margin-top:12px}
+
+/* ── Analytics ───────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);border:1px solid var(--c-gray-200);padding:18px 20px}
+.kpi-icon{font-size:1.3rem;margin-bottom:8px}
+.kpi-val{font-size:2.1rem;font-weight:800;color:var(--c-primary);line-height:1;letter-spacing:-.03em}
+.kpi-label{font-size:.78rem;color:var(--c-gray-500);margin-top:4px;font-weight:500}
+.kpi-trend{font-size:.74rem;margin-top:4px;font-weight:600;color:var(--c-success)}
+
+.charts-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-card{background:var(--c-white);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);border:1px solid var(--c-gray-200);padding:20px}
+.chart-card h3{font-size:.9rem;font-weight:700;color:var(--c-gray-700);margin-bottom:16px}
+
+.rehire-tbl{width:100%;border-collapse:collapse;font-size:.84rem}
+.rehire-tbl th{background:var(--c-primary-bg);color:var(--c-primary-mid);padding:9px 12px;font-weight:700;text-align:left;white-space:nowrap}
+.rehire-tbl th:first-child{border-radius:var(--r-sm) 0 0 0}
+.rehire-tbl th:last-child{border-radius:0 var(--r-sm) 0 0}
+.rehire-tbl td{padding:10px 12px;border-bottom:1px solid var(--c-gray-100);vertical-align:middle}
+.rehire-tbl tr:hover td{background:var(--c-gray-50)}
+.rehire-tbl tr:last-child td{border-bottom:none}
+
+/* ── Modal ───────────────────────────────────────────── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,30,22,.5);z-index:500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.overlay.open{display:flex;animation:overlayIn .15s ease}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--c-white);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;animation:modalIn .2s cubic-bezier(.34,1.56,.64,1)}
+@keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{padding:22px 24px 18px;border-bottom:1px solid var(--c-gray-200);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:1.05rem;font-weight:700}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--c-gray-400);font-size:1.3rem;line-height:1;padding:4px;border-radius:var(--r-sm);transition:var(--transition)}
+.modal-close:hover{background:var(--c-gray-100);color:var(--c-gray-700)}
+.modal-body{padding:22px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--c-gray-200);display:flex;justify-content:flex-end;gap:10px}
+
+.form-row{margin-bottom:15px}
+.form-label{display:block;font-size:.82rem;font-weight:700;color:var(--c-gray-700);margin-bottom:5px}
+.form-label .req{color:var(--c-danger);margin-left:2px}
+.form-error{font-size:.75rem;color:var(--c-danger);margin-top:4px;display:none}
+.form-error.show{display:block}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input.error,select.error{border-color:var(--c-danger)!important}
+
+/* ── Empty ───────────────────────────────────────────── */
+.empty-state{text-align:center;padding:60px 24px;color:var(--c-gray-500)}
+.empty-state-icon{font-size:3.5rem;margin-bottom:14px;opacity:.5}
+.empty-state-title{font-size:1.05rem;font-weight:700;color:var(--c-gray-700);margin-bottom:6px}
+.empty-state-desc{font-size:.87rem;max-width:300px;margin:0 auto}
+
+/* ── Scroll ──────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--c-gray-300);border-radius:var(--r-full)}
+::-webkit-scrollbar-thumb:hover{background:var(--c-gray-400)}
+
+@media(max-width:1024px){.contact-layout,.events-layout{grid-template-columns:1fr}.contact-sidebar{position:static}.invite-panel{position:static}}
+@media(max-width:900px){.charts-2col{grid-template-columns:1fr}.app-header{padding:0 16px}.page{padding:16px}.tab-bar{padding:0 16px}.header-stat{display:none}}
+@media(max-width:600px){.alumni-grid{grid-template-columns:1fr}.profile-body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- ── Header ─────────────────────────────────── -->
+<header class="app-header">
+  <div class="header-brand">
+    <div class="header-logo">🎓</div>
+    <div>
+      <div class="header-title">アルムナイ管理</div>
+      <div class="header-sub">退職者ネットワーク・再雇用・イベント</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="header-stat">アルムナイ <strong id="hdr-count">8</strong>名</span>
+    <button class="btn-ghost" onclick="exportCSV()">⬇ CSV出力</button>
+    <button class="btn-ghost" onclick="location.href='../index.html'">← ホーム</button>
+  </div>
+</header>
+
+<!-- ── Tab Bar ────────────────────────────────── -->
+<nav class="tab-bar">
+  <div class="tab-item active" onclick="switchTab(0)">🎓 アルムナイ一覧 <span class="tab-badge" id="badge-0">8</span></div>
+  <div class="tab-item" onclick="switchTab(1)">📇 コンタクト管理</div>
+  <div class="tab-item" onclick="switchTab(2)">🎉 イベント管理 <span class="tab-badge" id="badge-2">4</span></div>
+  <div class="tab-item" onclick="switchTab(3)">📊 分析</div>
+</nav>
+
+<!-- ══ TAB 0: 一覧 ═══════════════════════════════ -->
+<div class="page active" id="page-0">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h2>アルムナイ一覧</h2>
+      <p>退職者のネットワークを管理・追跡します</p>
+    </div>
+    <div class="page-header-right">
+      <button class="export-btn" onclick="exportCSV()">⬇ CSV出力</button>
+      <button class="btn btn-primary" onclick="openAddModal()">＋ 新規登録</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">絞り込み</span>
+    <div class="input-wrap">
+      <span class="input-icon">🔍</span>
+      <input type="text" class="search-input" id="al-search" placeholder="氏名・会社・役職で検索" oninput="renderAlumni()">
+    </div>
+    <select id="f-dept" onchange="renderAlumni()">
+      <option value="">全部門（元所属）</option>
+      <option>エンジニアリング</option><option>マーケティング</option>
+      <option>営業</option><option>コーポレート</option><option>カーボンクレジット</option>
+    </select>
+    <select id="f-year" onchange="renderAlumni()">
+      <option value="">全退職年</option>
+      <option>2026</option><option>2025</option><option>2024</option><option>2023</option>
+    </select>
+    <select id="f-tag" onchange="renderAlumni()">
+      <option value="">全タグ</option>
+      <option>再雇用候補</option><option>VIP</option>
+      <option>推薦者</option><option>イベント常連</option><option>要フォロー</option>
+    </select>
+    <select id="f-industry" onchange="renderAlumni()">
+      <option value="">全業界</option>
+      <option>IT/テック</option><option>コンサルティング</option>
+      <option>環境/再エネ</option><option>金融</option><option>スタートアップ</option>
+    </select>
+  </div>
+
+  <div class="alumni-grid" id="alumni-grid"></div>
+</div>
+
+<!-- ══ TAB 1: コンタクト管理 ════════════════════ -->
+<div class="page" id="page-1">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h2>コンタクト管理</h2>
+      <p>個人プロフィール・連絡履歴・タグ管理</p>
+    </div>
+  </div>
+  <div class="contact-layout">
+    <div>
+      <div class="contact-sidebar">
+        <div class="sidebar-header">
+          <span>👥 アルムナイ（<span id="si-count">0</span>）</span>
+        </div>
+        <div class="sidebar-search">
+          <input type="text" id="si-search" placeholder="🔍 氏名で検索..." oninput="renderSidebar()">
+        </div>
+        <div class="sidebar-list" id="si-list"></div>
+      </div>
+    </div>
+    <div id="contact-detail">
+      <div class="empty-state" style="background:var(--c-white);border-radius:var(--r-lg);border:1px solid var(--c-gray-200)">
+        <div class="empty-state-icon">👤</div>
+        <div class="empty-state-title">アルムナイを選択</div>
+        <div class="empty-state-desc">左のリストからアルムナイを選択すると詳細が表示されます</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 2: イベント管理 ════════════════════════ -->
+<div class="page" id="page-2">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h2>イベント管理</h2>
+      <p>アルムナイイベントの管理と案内メール作成</p>
+    </div>
+    <div class="page-header-right">
+      <button class="btn btn-primary" onclick="openEvModal()">＋ イベント追加</button>
+    </div>
+  </div>
+  <div class="events-layout">
+    <div id="ev-list"></div>
+    <div class="invite-panel">
+      <div class="invite-panel-title">✉️ 案内メール作成</div>
+      <div class="invite-field">
+        <label>対象イベント</label>
+        <select id="inv-ev" onchange="autoFillInvite()">
+          <option value="">-- 選択 --</option>
+        </select>
+      </div>
+      <div class="invite-field">
+        <label>対象者</label>
+        <select id="inv-target">
+          <option>全アルムナイ</option>
+          <option>エンジニアリング出身者</option>
+          <option>マーケティング出身者</option>
+          <option>再雇用候補タグ保有者</option>
+          <option>VIPタグ保有者</option>
+        </select>
+      </div>
+      <div class="invite-field">
+        <label>件名</label>
+        <input type="text" id="inv-subject" placeholder="件名を入力...">
+      </div>
+      <div class="invite-field">
+        <label>本文</label>
+        <textarea id="inv-body" rows="11" style="resize:vertical;font-size:.81rem;line-height:1.65"></textarea>
+      </div>
+      <div class="invite-actions">
+        <button class="btn btn-secondary btn-sm" onclick="genInvite()">✨ 自動生成</button>
+        <button class="btn btn-primary btn-sm" onclick="copyInvite()">📋 コピー</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 3: 分析 ═══════════════════════════════ -->
+<div class="page" id="page-3">
+  <div class="page-header">
+    <div class="page-header-left"><h2>分析・サマリー</h2><p>アルムナイネットワークの可視化とKPI</p></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-icon">🎓</div><div class="kpi-val" id="kv-total">8</div><div class="kpi-label">アルムナイ総数</div></div>
+    <div class="kpi"><div class="kpi-icon">🔄</div><div class="kpi-val" id="kv-rehire">4</div><div class="kpi-label">再雇用候補</div><div class="kpi-trend">▲1 前月比</div></div>
+    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val">3</div><div class="kpi-label">再雇用実績（累計）</div></div>
+    <div class="kpi"><div class="kpi-icon">🎉</div><div class="kpi-val" id="kv-ev">4</div><div class="kpi-label">開催イベント数</div></div>
+    <div class="kpi"><div class="kpi-icon">📈</div><div class="kpi-val">68%</div><div class="kpi-label">イベント参加率</div></div>
+    <div class="kpi"><div class="kpi-icon">👥</div><div class="kpi-val">37%</div><div class="kpi-label">推薦者比率</div></div>
+  </div>
+
+  <div class="charts-2col">
+    <div class="chart-card"><h3>📅 年別退職者数推移</h3><canvas id="ch-year" height="100"></canvas></div>
+    <div class="chart-card"><h3>🌐 現在の業界分布</h3><canvas id="ch-industry" height="100"></canvas></div>
+  </div>
+  <div class="charts-2col" style="margin-bottom:16px">
+    <div class="chart-card"><h3>🏷️ タグ別人数</h3><canvas id="ch-tags" height="100"></canvas></div>
+    <div class="chart-card"><h3>🔄 再雇用候補ステータス</h3><canvas id="ch-rehire" height="100"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <h3>🌟 再雇用候補リスト</h3>
+    <div style="overflow-x:auto;margin-top:4px">
+      <table class="rehire-tbl">
+        <thead><tr><th>氏名</th><th>元部門</th><th>退職年月</th><th>現職</th><th>タグ</th><th>最終コンタクト</th></tr></thead>
+        <tbody id="rehire-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal: 新規登録 ════════════════════════════ -->
+<div class="overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🎓 アルムナイ登録</span>
+      <button class="modal-close" onclick="closeModal('add-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">氏名<span class="req">*</span></label>
+          <input type="text" id="na-name" placeholder="山田 太郎">
+          <span class="form-error" id="e-na-name">氏名を入力してください</span>
+        </div>
+        <div class="form-row">
+          <label class="form-label">元所属部門<span class="req">*</span></label>
+          <select id="na-dept">
+            <option>エンジニアリング</option><option>マーケティング</option>
+            <option>営業</option><option>コーポレート</option><option>カーボンクレジット</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">入社日</label>
+          <input type="date" id="na-join">
+        </div>
+        <div class="form-row">
+          <label class="form-label">退職日<span class="req">*</span></label>
+          <input type="date" id="na-leave">
+          <span class="form-error" id="e-na-leave">退職日を入力してください</span>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">現在の会社名</label>
+          <input type="text" id="na-company" placeholder="株式会社〇〇">
+        </div>
+        <div class="form-row">
+          <label class="form-label">現在の役職</label>
+          <input type="text" id="na-position" placeholder="シニアエンジニア">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">業界</label>
+          <select id="na-industry">
+            <option>IT/テック</option><option>コンサルティング</option>
+            <option>環境/再エネ</option><option>金融</option>
+            <option>製造</option><option>スタートアップ</option><option>その他</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">メールアドレス</label>
+          <input type="email" id="na-email" placeholder="taro@example.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">LinkedIn URL</label>
+        <input type="url" id="na-linkedin" placeholder="https://linkedin.com/in/...">
+      </div>
+      <div class="form-row">
+        <label class="form-label">タグ</label>
+        <div class="tag-options" id="modal-tags" style="margin-top:6px">
+          <span class="tag-opt" data-tag="再雇用候補" onclick="toggleModalTag(this)">再雇用候補</span>
+          <span class="tag-opt" data-tag="VIP" onclick="toggleModalTag(this)">VIP</span>
+          <span class="tag-opt" data-tag="推薦者" onclick="toggleModalTag(this)">推薦者</span>
+          <span class="tag-opt" data-tag="イベント常連" onclick="toggleModalTag(this)">イベント常連</span>
+          <span class="tag-opt" data-tag="要フォロー" onclick="toggleModalTag(this)">要フォロー</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">メモ</label>
+        <textarea id="na-memo" rows="2" placeholder="特記事項など..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('add-modal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveAlumni()">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal: イベント ════════════════════════════ -->
+<div class="overlay" id="ev-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🎉 イベント追加</span>
+      <button class="modal-close" onclick="closeModal('ev-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">イベント名<span class="req">*</span></label>
+        <input type="text" id="ev-name" placeholder="Green Carbon アルムナイ懇親会">
+        <span class="form-error" id="e-ev-name">イベント名を入力してください</span>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">開催日<span class="req">*</span></label>
+          <input type="date" id="ev-date">
+        </div>
+        <div class="form-row">
+          <label class="form-label">ステータス</label>
+          <select id="ev-status"><option>受付中</option><option>予定</option><option>終了</option></select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">場所</label>
+          <input type="text" id="ev-place" placeholder="渋谷 / オンライン">
+        </div>
+        <div class="form-row">
+          <label class="form-label">定員</label>
+          <input type="number" id="ev-cap" placeholder="30" min="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">内容・備考</label>
+        <textarea id="ev-desc" rows="3" placeholder="イベントの目的・内容など..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('ev-modal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveEvent()">登録する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Data ──────────────────────────────────────────── */
+const TODAY = new Date().toISOString().slice(0,10);
+
+let alumni = [
+  {id:1,name:"山田 健一",dept:"エンジニアリング",join:"2020-04-01",leave:"2026-05-31",leaveYear:"2026",company:"テクノグリーン株式会社",position:"シニアエンジニア",industry:"IT/テック",email:"yamada.k@technogreen.co.jp",linkedin:"https://linkedin.com/in/yamada-k",tags:["再雇用候補","イベント常連"],memo:"Go言語のスペシャリスト。再雇用に前向きな姿勢。",lastContact:"2026-04-15",history:[{icon:"📧",text:"退職後のキャリア近況確認メール送信",time:"2026-04-15"},{icon:"🎉",text:"アルムナイ懇親会2025に参加",time:"2025-11-20"}]},
+  {id:2,name:"田中 美咲",dept:"マーケティング",join:"2021-07-01",leave:"2026-05-20",leaveYear:"2026",company:"Greenwave Marketing",position:"マーケティングマネージャー",industry:"コンサルティング",email:"tanaka.m@greenwave.jp",linkedin:"",tags:["VIP","推薦者"],memo:"業界影響力大。採用候補者を定期的に紹介してくれる。",lastContact:"2026-03-10",history:[{icon:"👥",text:"採用候補者2名を紹介",time:"2026-03-10"},{icon:"📞",text:"近況確認の電話",time:"2025-12-05"}]},
+  {id:3,name:"佐藤 大介",dept:"カーボンクレジット",join:"2019-01-01",leave:"2026-06-15",leaveYear:"2026",company:"ClimateVentures Japan",position:"COO",industry:"環境/再エネ",email:"sato.d@climateventures.jp",linkedin:"https://linkedin.com/in/sato-d",tags:["VIP","再雇用候補"],memo:"カーボンクレジット市場の豊富な知見。ビジネス開発での再雇用を検討中。",lastContact:"2026-05-01",history:[{icon:"☕",text:"ランチMTGで近況交換",time:"2026-05-01"},{icon:"🎉",text:"アルムナイ懇親会2025に参加",time:"2025-11-20"}]},
+  {id:4,name:"中村 由美",dept:"コーポレート",join:"2018-04-01",leave:"2026-04-30",leaveYear:"2026",company:"育休取得中",position:"—",industry:"その他",email:"nakamura.y@personal.com",linkedin:"",tags:["要フォロー"],memo:"育児後の復帰意向あり。定期的に連絡を取る。",lastContact:"2026-04-01",history:[{icon:"📧",text:"復帰意向確認メール",time:"2026-04-01"}]},
+  {id:5,name:"加藤 拓也",dept:"営業",join:"2022-10-01",leave:"2026-06-30",leaveYear:"2026",company:"グローバルセールス株式会社",position:"アカウントエグゼクティブ",industry:"コンサルティング",email:"kato.t@globalsales.co.jp",linkedin:"https://linkedin.com/in/kato-t",tags:["再雇用候補","イベント常連"],memo:"営業トップパフォーマー。キャリアアップ退職だが戻る可能性あり。",lastContact:"2026-02-20",history:[{icon:"📧",text:"近況確認メール",time:"2026-02-20"},{icon:"🎉",text:"アルムナイ勉強会に参加",time:"2025-09-15"}]},
+  {id:6,name:"鈴木 翔太",dept:"エンジニアリング",join:"2020-06-01",leave:"2025-03-31",leaveYear:"2025",company:"AI Startup Inc.",position:"技術責任者（CTO）",industry:"スタートアップ",email:"suzuki.s@aistartup.io",linkedin:"https://linkedin.com/in/suzuki-s",tags:["VIP","推薦者"],memo:"急成長スタートアップのCTO。技術顧問協力を検討中。",lastContact:"2026-01-10",history:[{icon:"☕",text:"技術勉強会の登壇依頼ランチ",time:"2026-01-10"}]},
+  {id:7,name:"伊藤 沙耶",dept:"マーケティング",join:"2021-04-01",leave:"2025-09-30",leaveYear:"2025",company:"Eco Media Japan",position:"コンテンツディレクター",industry:"IT/テック",email:"ito.s@ecomedia.jp",linkedin:"",tags:["イベント常連"],memo:"イベント皆勤賞。ブランドアンバサダー的存在。",lastContact:"2025-11-20",history:[{icon:"🎉",text:"アルムナイ懇親会2025 LT登壇",time:"2025-11-20"}]},
+  {id:8,name:"渡辺 誠",dept:"営業",join:"2019-07-01",leave:"2024-12-31",leaveYear:"2024",company:"Green Partners株式会社",position:"営業部長",industry:"環境/再エネ",email:"watanabe.m@greenpartners.co.jp",linkedin:"https://linkedin.com/in/watanabe-m",tags:["再雇用候補"],memo:"パートナー企業に転職。取引先としての関係も継続中。",lastContact:"2025-08-05",history:[{icon:"📊",text:"取引先MTGで偶然再会、近況共有",time:"2025-08-05"}]}
+];
+
+let events = [
+  {id:1,name:"Green Carbon アルムナイ懇親会 2026",date:"2026-07-12",status:"受付中",place:"渋谷 WeWork",capacity:40,desc:"年次アルムナイ交流会。ネットワーキングと近況報告。",attendees:[1,3,5,6,7]},
+  {id:2,name:"カーボンクレジット勉強会",date:"2026-06-20",status:"予定",place:"オンライン（Zoom）",capacity:30,desc:"カーボンクレジット市場の最新動向を共有。",attendees:[1,3,8]},
+  {id:3,name:"アルムナイ懇親会 2025",date:"2025-11-20",status:"終了",place:"恵比寿ガーデンプレイス",capacity:35,desc:"2025年度年次イベント。25名が参加。",attendees:[1,3,5,7]},
+  {id:4,name:"技術勉強会 Vol.3",date:"2025-09-15",status:"終了",place:"オンライン（Zoom）",capacity:25,desc:"最新技術トレンドLT大会。",attendees:[1,5,6]}
+];
+
+/* ── Toast ─────────────────────────────────────────── */
+function toast(msg,type='success',dur=3000){
+  const c=document.getElementById('toast-container');
+  const el=document.createElement('div');
+  const icons={success:'✅',error:'❌',info:'ℹ️',warn:'⚠️'};
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>{el.classList.add('hide');setTimeout(()=>el.remove(),220);},dur);
+}
+
+/* ── Tab ─────────────────────────────────────────────── */
+function switchTab(i){
+  document.querySelectorAll('.tab-item').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('active',j===i));
+  if(i===1){renderSidebar();}
+  if(i===2){renderEvents();}
+  if(i===3){renderAnalytics();}
+}
+
+/* ── Alumni List ─────────────────────────────────────── */
+function tagsHtml(tags){return tags.map(t=>`<span class="tag-pill tp-${t}">${t}</span>`).join('');}
+function isVip(a){return a.tags.includes('VIP');}
+function isRehire(a){return a.tags.includes('再雇用候補');}
+
+function renderAlumni(){
+  const q=(document.getElementById('al-search').value||'').toLowerCase();
+  const fd=document.getElementById('f-dept').value;
+  const fy=document.getElementById('f-year').value;
+  const ft=document.getElementById('f-tag').value;
+  const fi=document.getElementById('f-industry').value;
+  const list=alumni.filter(a=>
+    (!q||(a.name+a.company+a.position).toLowerCase().includes(q))&&
+    (!fd||a.dept===fd)&&(!fy||a.leaveYear===fy)&&
+    (!ft||a.tags.includes(ft))&&(!fi||a.industry===fi)
+  );
+  document.getElementById('badge-0').textContent=alumni.length;
+  document.getElementById('hdr-count').textContent=alumni.length;
+  document.getElementById('alumni-grid').innerHTML=list.length?list.map(a=>`
+    <div class="ac ${isVip(a)?'vip':isRehire(a)?'rehire':''}">
+      <div class="ac-top">
+        <div class="ac-avatar ${isVip(a)?'vip':''}">${a.name[0]}</div>
+        <div>
+          <div class="ac-name">${a.name}</div>
+          <div class="ac-sub">${a.position||'—'}<br>${a.company||'—'}</div>
+        </div>
+      </div>
+      <div class="ac-tags">${tagsHtml(a.tags)}</div>
+      <div class="ac-meta">
+        <div class="ac-meta-row">🏢 元所属：${a.dept}</div>
+        <div class="ac-meta-row">📅 退職：${a.leave}</div>
+        <div class="ac-meta-row">🌐 業界：${a.industry}</div>
+        <div class="ac-meta-row">📞 最終連絡：${a.lastContact||'—'}</div>
+      </div>
+      <div class="ac-actions">
+        <button class="btn btn-secondary" onclick="openContact(${a.id})">📇 詳細</button>
+        ${a.email?`<button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${a.email}').then(()=>toast('メールアドレスをコピーしました'))">📧 メール</button>`:''}
+        ${a.linkedin?`<button class="btn btn-secondary" onclick="window.open('${a.linkedin}','_blank')">💼 LinkedIn</button>`:''}
+      </div>
+    </div>`).join(''):'<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">🔍</div><div class="empty-state-title">該当なし</div><div class="empty-state-desc">検索・絞り込み条件を変更してください</div></div>';
+}
+
+function openContact(id){switchTab(1);setTimeout(()=>selectContact(id),80);}
+
+/* ── Contact ─────────────────────────────────────────── */
+function renderSidebar(){
+  const q=(document.getElementById('si-search').value||'').toLowerCase();
+  const list=alumni.filter(a=>!q||a.name.toLowerCase().includes(q));
+  document.getElementById('si-count').textContent=alumni.length;
+  document.getElementById('si-list').innerHTML=list.map(a=>`
+    <div class="si ${a._selected?'active':''}" id="si-${a.id}" onclick="selectContact(${a.id})">
+      <div class="si-av ${isVip(a)?'vip':''}">${a.name[0]}</div>
+      <div>
+        <div class="si-name">${a.name}</div>
+        <div class="si-sub">${a.dept} → ${a.company||'—'}</div>
+      </div>
+    </div>`).join('');
+}
+
+let selId=null;
+function selectContact(id){
+  alumni.forEach(a=>a._selected=a.id===id);
+  selId=id;
+  renderSidebar();
+  renderContactDetail(id);
+}
+
+function calcTenure(j,l){
+  if(!j||!l)return '—';
+  const m=(new Date(l)-new Date(j))/(1000*60*60*24*30.4);
+  const y=Math.floor(m/12),mo=Math.round(m%12);
+  return (y?y+'年':'')+(mo?mo+'ヶ月':'');
+}
+
+function renderContactDetail(id){
+  const a=alumni.find(x=>x.id===id);
+  if(!a)return;
+  document.getElementById('contact-detail').innerHTML=`
+  <div class="contact-detail">
+    <div class="profile-header">
+      <div class="profile-av ${isVip(a)?'vip':''}">${a.name[0]}</div>
+      <div>
+        <div class="profile-name">${a.name}</div>
+        <div class="profile-role">${a.position||'—'} ／ ${a.company||'—'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">${tagsHtml(a.tags)}</div>
+        <div class="profile-links">
+          ${a.email?`<a class="profile-link" href="mailto:${a.email}">📧 ${a.email}</a>`:''}
+          ${a.linkedin?`<a class="profile-link" href="${a.linkedin}" target="_blank">💼 LinkedIn</a>`:''}
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-body">
+      <div class="profile-col">
+        <div class="profile-section-title">在籍情報</div>
+        <div class="profile-field"><span class="pf-label">元所属部門</span><span class="pf-val">${a.dept}</span></div>
+        <div class="profile-field"><span class="pf-label">入社日</span><span class="pf-val">${a.join||'—'}</span></div>
+        <div class="profile-field"><span class="pf-label">退職日</span><span class="pf-val">${a.leave}</span></div>
+        <div class="profile-field"><span class="pf-label">在籍期間</span><span class="pf-val">${calcTenure(a.join,a.leave)}</span></div>
+      </div>
+      <div class="profile-col">
+        <div class="profile-section-title">現在の状況</div>
+        <div class="profile-field"><span class="pf-label">会社名</span><span class="pf-val">${a.company||'—'}</span></div>
+        <div class="profile-field"><span class="pf-label">役職</span><span class="pf-val">${a.position||'—'}</span></div>
+        <div class="profile-field"><span class="pf-label">業界</span><span class="pf-val">${a.industry}</span></div>
+        <div class="profile-field"><span class="pf-label">最終コンタクト</span><span class="pf-val">${a.lastContact||'—'}</span></div>
+      </div>
+    </div>
+
+    ${a.memo?`<div class="profile-memo">📝 ${a.memo}</div>`:''}
+
+    <div class="history-panel">
+      <div class="history-title">
+        <span>📋 コンタクト履歴</span>
+        <span style="font-size:.78rem;color:var(--c-gray-500);font-weight:500;text-transform:none;letter-spacing:0">${a.history.length}件</span>
+      </div>
+      ${a.history.length?a.history.map(h=>`
+        <div class="hist-item">
+          <div class="hist-icon-wrap">${h.icon}</div>
+          <div class="hist-body">
+            <div class="hist-text">${h.text}</div>
+            <div class="hist-time">${h.time}</div>
+          </div>
+        </div>`).join(''):'<div style="text-align:center;padding:20px;color:var(--c-gray-400);font-size:.85rem">履歴なし</div>'}
+      <div class="hist-add">
+        <select id="hi-icon-${a.id}" style="max-width:128px;font-size:.83rem;padding:7px 10px">
+          <option value="📧">📧 メール</option>
+          <option value="📞">📞 電話</option>
+          <option value="☕">☕ ミーティング</option>
+          <option value="🎉">🎉 イベント</option>
+          <option value="👥">👥 紹介</option>
+          <option value="📊">📊 商談</option>
+        </select>
+        <input type="text" id="hi-text-${a.id}" placeholder="コンタクト内容を入力..." onkeydown="if(event.key==='Enter')addHistory(${a.id})">
+        <button class="btn btn-primary btn-sm" style="white-space:nowrap" onclick="addHistory(${a.id})">追加</button>
+      </div>
+    </div>
+
+    <div class="tag-editor">
+      <div style="font-size:.82rem;font-weight:700;color:var(--c-gray-600);margin-bottom:8px">🏷️ タグ編集</div>
+      <div class="tag-options">
+        ${['再雇用候補','VIP','推薦者','イベント常連','要フォロー'].map(t=>`
+          <span class="tag-opt ${a.tags.includes(t)?'sel':''}" data-tag="${t}" onclick="toggleTag(${a.id},'${t}',this)">${t}</span>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function addHistory(id){
+  const a=alumni.find(x=>x.id===id);
+  const icon=document.getElementById('hi-icon-'+id).value;
+  const text=document.getElementById('hi-text-'+id).value.trim();
+  if(!text)return;
+  const t=new Date().toLocaleDateString('ja-JP').replace(/\//g,'-');
+  a.history.unshift({icon,text,time:t});
+  a.lastContact=t;
+  renderContactDetail(id);
+  toast('コンタクト履歴を追加しました','success');
+}
+
+function toggleTag(id,tag,el){
+  const a=alumni.find(x=>x.id===id);
+  if(a.tags.includes(tag))a.tags=a.tags.filter(t=>t!==tag);
+  else a.tags.push(tag);
+  el.classList.toggle('sel');
+  toast(`タグ「${tag}」を${a.tags.includes(tag)?'追加':'削除'}しました`,'info');
+}
+
+/* ── Events ─────────────────────────────────────────── */
+function renderEvents(){
+  document.getElementById('badge-2').textContent=events.length;
+  document.getElementById('kv-ev').textContent=events.length;
+  document.getElementById('ev-list').innerHTML=events.map(ev=>{
+    const chips=ev.attendees.slice(0,5).map(id=>{const a=alumni.find(x=>x.id===id);return a?`<div class="av-chip" title="${a.name}">${a.name[0]}</div>`:''}).join('');
+    const extra=ev.attendees.length>5?`<div class="av-chip more">+${ev.attendees.length-5}</div>`:'';
+    return `<div class="ev-card ec-${ev.status}">
+      <div class="ev-top">
+        <div class="ev-title">${ev.name}</div>
+        <span class="ev-status-pill ep-${ev.status}">${ev.status}</span>
+      </div>
+      <div class="ev-meta">
+        <div>📅 ${ev.date} ／ 📍 ${ev.place}</div>
+        <div>👥 定員 ${ev.capacity}名 ／ 参加予定 ${ev.attendees.length}名</div>
+        <div style="margin-top:4px;font-style:italic;color:var(--c-gray-400)">${ev.desc}</div>
+      </div>
+      <div class="ev-attendees">${chips}${extra}</div>
+      ${ev.status!=='終了'?`<div class="ev-actions">
+        <button class="btn btn-secondary btn-sm" onclick="setInviteEvent(${ev.id})">✉️ 案内作成</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+  // Populate invite select
+  const sel=document.getElementById('inv-ev');
+  sel.innerHTML='<option value="">-- 選択 --</option>'+events.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+function setInviteEvent(id){document.getElementById('inv-ev').value=id;genInvite();}
+function autoFillInvite(){if(document.getElementById('inv-ev').value)genInvite();}
+
+function genInvite(){
+  const id=parseInt(document.getElementById('inv-ev').value);
+  const ev=events.find(e=>e.id===id);
+  if(!ev)return;
+  document.getElementById('inv-subject').value=`【ご招待】${ev.name}`;
+  document.getElementById('inv-body').value=`Green Carbon アルムナイの皆様
+
+いつもお世話になっております。
+Green Carbon 人事部（野村）です。
+
+この度、${ev.name}を開催いたします。
+在籍中にご縁のあった皆様をお招きし、近況交換や交流の場を設けたく、ご案内申し上げます。
+
+━━━━━━━━━━━━━━━━━━━━━━━
+【開催概要】
+◆ イベント名 ： ${ev.name}
+◆ 日　　　時 ： ${ev.date}
+◆ 場　　　所 ： ${ev.place}
+◆ 定　　　員 ： ${ev.capacity}名（先着順）
+━━━━━━━━━━━━━━━━━━━━━━━
+
+${ev.desc}
+
+旧知の仲間との再会や近況シェアなど、皆様のご参加を心よりお待ちしております。
+
+ご参加の意向につきましては、○月○日（○）までにご返信をいただけますと幸いです。
+
+──────────────────────────
+Green Carbon 人事部
+y.nomura@green-carbon.inc
+──────────────────────────`;
+}
+
+function copyInvite(){
+  const text=`件名: ${document.getElementById('inv-subject').value}\n\n${document.getElementById('inv-body').value}`;
+  navigator.clipboard.writeText(text).then(()=>toast('クリップボードにコピーしました','success'));
+}
+
+function openEvModal(){document.getElementById('ev-modal').classList.add('open');}
+function saveEvent(){
+  const name=document.getElementById('ev-name').value.trim();
+  if(!name){document.getElementById('ev-name').classList.add('error');document.getElementById('e-ev-name').classList.add('show');return;}
+  events.unshift({id:Date.now(),name,date:document.getElementById('ev-date').value,status:document.getElementById('ev-status').value,place:document.getElementById('ev-place').value||'未定',capacity:parseInt(document.getElementById('ev-cap').value)||0,desc:document.getElementById('ev-desc').value||'',attendees:[]});
+  closeModal('ev-modal');
+  renderEvents();
+  toast(`「${name}」を登録しました`,'success');
+}
+
+/* ── Analytics ─────────────────────────────────────── */
+const PALETTE=['#1a5c3a','#2d7a52','#52b788','#74c69d','#95d5b2','#b7e4c7','#40916c'];
+let charts={};
+function dc(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
+
+function renderAnalytics(){
+  document.getElementById('kv-total').textContent=alumni.length;
+  document.getElementById('kv-rehire').textContent=alumni.filter(a=>a.tags.includes('再雇用候補')).length;
+
+  // Year chart
+  dc('year');
+  const ycnt={};alumni.forEach(a=>{ycnt[a.leaveYear]=(ycnt[a.leaveYear]||0)+1;});
+  const yrs=Object.keys(ycnt).sort();
+  charts.year=new Chart(document.getElementById('ch-year').getContext('2d'),{
+    type:'bar',data:{labels:yrs,datasets:[{label:'退職者数',data:yrs.map(y=>ycnt[y]),backgroundColor:'rgba(45,122,82,.75)',borderColor:'#2d7a52',borderWidth:1.5,borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'rgba(0,0,0,.04)'}},x:{grid:{display:false}}}}
+  });
+
+  // Industry
+  dc('industry');
+  const icnt={};alumni.forEach(a=>{icnt[a.industry]=(icnt[a.industry]||0)+1;});
+  const inds=Object.keys(icnt);
+  charts.industry=new Chart(document.getElementById('ch-industry').getContext('2d'),{
+    type:'doughnut',data:{labels:inds,datasets:[{data:inds.map(i=>icnt[i]),backgroundColor:PALETTE,borderWidth:2,borderColor:'#fff',hoverBorderWidth:3}]},
+    options:{responsive:true,cutout:'62%',plugins:{legend:{position:'right',labels:{font:{size:12},padding:12}}}}
+  });
+
+  // Tags
+  dc('tags');
+  const TAGS=['再雇用候補','VIP','推薦者','イベント常連','要フォロー'];
+  const tcnt=TAGS.map(t=>alumni.filter(a=>a.tags.includes(t)).length);
+  charts.tags=new Chart(document.getElementById('ch-tags').getContext('2d'),{
+    type:'bar',data:{labels:TAGS,datasets:[{label:'人数',data:tcnt,backgroundColor:['rgba(230,126,34,.8)','rgba(123,94,167,.8)','rgba(41,128,185,.8)','rgba(82,183,136,.8)','rgba(192,57,43,.8)'],borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}}
+  });
+
+  // Rehire status
+  dc('rehire');
+  charts.rehire=new Chart(document.getElementById('ch-rehire').getContext('2d'),{
+    type:'doughnut',data:{labels:['未接触','検討中','オファー済','再雇用済'],datasets:[{data:[2,1,1,3],backgroundColor:['#e0e0e0','#f4a261','#52b788','#1a5c3a'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:14}}}}
+  });
+
+  // Rehire table
+  document.getElementById('rehire-tbody').innerHTML=alumni.filter(a=>a.tags.includes('再雇用候補')).map(a=>`
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td>${a.dept}</td>
+      <td>${a.leave}</td>
+      <td>${a.company?`${a.company}<br><span style="font-size:.76rem;color:var(--c-gray-500)">${a.position}</span>`:'—'}</td>
+      <td>${tagsHtml(a.tags)}</td>
+      <td>${a.lastContact||'—'}</td>
+    </tr>`).join('');
+}
+
+/* ── Add Alumni ─────────────────────────────────────── */
+function toggleModalTag(el){el.classList.toggle('sel');}
+
+function openAddModal(){
+  document.querySelectorAll('#modal-tags .tag-opt').forEach(el=>el.classList.remove('sel'));
+  ['na-name','na-join','na-leave','na-company','na-position','na-email','na-linkedin','na-memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function saveAlumni(){
+  const name=document.getElementById('na-name').value.trim();
+  const leave=document.getElementById('na-leave').value;
+  let ok=true;
+  if(!name){document.getElementById('na-name').classList.add('error');document.getElementById('e-na-name').classList.add('show');ok=false;}
+  if(!leave){document.getElementById('na-leave').classList.add('error');document.getElementById('e-na-leave').classList.add('show');ok=false;}
+  if(!ok)return;
+  const tags=[...document.querySelectorAll('#modal-tags .tag-opt.sel')].map(el=>el.dataset.tag);
+  alumni.push({id:Date.now(),name,dept:document.getElementById('na-dept').value,join:document.getElementById('na-join').value,leave,leaveYear:leave.slice(0,4),company:document.getElementById('na-company').value,position:document.getElementById('na-position').value,industry:document.getElementById('na-industry').value,email:document.getElementById('na-email').value,linkedin:document.getElementById('na-linkedin').value,tags,memo:document.getElementById('na-memo').value,lastContact:null,history:[]});
+  closeModal('add-modal');
+  renderAlumni();
+  toast(`${name} を登録しました`,'success');
+}
+
+/* ── Modal utils ─────────────────────────────────────── */
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+/* ── CSV Export ─────────────────────────────────────── */
+function exportCSV(){
+  const h=['ID','氏名','元部門','退職日','現職会社','現職役職','業界','タグ','最終コンタクト'];
+  const rows=alumni.map(a=>[a.id,a.name,a.dept,a.leave,a.company||'',a.position||'',a.industry,a.tags.join('|'),a.lastContact||'']);
+  const csv=[h,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download=`alumni_${TODAY}.csv`;a.click();
+  toast('CSVをダウンロードしました','success');
+}
+
+/* ── Init ───────────────────────────────────────────── */
+renderAlumni();
+</script>
+
+<!--
+=== Google Apps Script (GAS) 連携用コード雛形 ===
+
+function getAlumniList() {
+  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');
+  const d = ss.getSheetByName('アルムナイ').getDataRange().getValues();
+  const h = d[0];
+  return d.slice(1).map(r => { const o={}; h.forEach((k,i)=>o[k]=r[i]); return o; });
+}
+function saveAlumni(a) {
+  SpreadsheetApp.openById('SPREADSHEET_ID').getSheetByName('アルムナイ')
+    .appendRow([a.id,a.name,a.dept,a.join,a.leave,a.company,a.position,a.industry,a.email,a.linkedin,a.tags.join(','),a.memo,new Date()]);
+}
+function getContactHistory(alumniId) {
+  return SpreadsheetApp.openById('SPREADSHEET_ID').getSheetByName('コンタクト履歴')
+    .getDataRange().getValues().slice(1).filter(r=>String(r[0])===String(alumniId))
+    .map(r=>({alumniId:r[0],icon:r[1],text:r[2],time:r[3]}));
+}
+function addContactHistory(alumniId, icon, text) {
+  SpreadsheetApp.openById('SPREADSHEET_ID').getSheetByName('コンタクト履歴')
+    .appendRow([alumniId, icon, text, new Date()]);
+}
+function getEvents() {
+  const d = SpreadsheetApp.openById('SPREADSHEET_ID').getSheetByName('イベント').getDataRange().getValues();
+  const h = d[0];
+  return d.slice(1).map(r => { const o={}; h.forEach((k,i)=>o[k]=r[i]); return o; });
+}
+function updateAlumniTags(alumniId, tags) {
+  const s = SpreadsheetApp.openById('SPREADSHEET_ID').getSheetByName('アルムナイ');
+  const d = s.getDataRange().getValues();
+  for(let i=1;i<d.length;i++) if(String(d[i][0])===String(alumniId)){s.getRange(i+1,11).setValue(tags.join(','));break;}
+}
+-->
+</body>
+</html>

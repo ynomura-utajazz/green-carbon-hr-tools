@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在留資格管理 | Green Carbon HR Tools</title>
+<style>
+:root {
+  --gc-green: #2d6a4f;
+  --gc-dark:  #1b4332;
+  --gc-mid:   #40916c;
+  --gc-light: #74c69d;
+  --gc-pale:  #d8f3dc;
+  --gc-bg:    #f0faf3;
+  --warn:     #e65100;
+  --danger:   #c62828;
+  --ok:       #2e7d32;
+  --radius:   8px;
+  --shadow:   0 2px 8px rgba(0,0,0,.12);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Hiragino Sans", "Yu Gothic", sans-serif; font-size: 14px;
+  background: var(--gc-bg); color: #1a1a1a; }
+
+/* ── LOGIN ── */
+#loginScreen { display:none; position:fixed; inset:0; background:var(--gc-dark);
+  align-items:center; justify-content:center; z-index:9999; }
+#loginScreen.active { display:flex; }
+.login-box { background:#fff; border-radius:12px; padding:40px; width:340px; text-align:center; }
+.login-box h1 { color:var(--gc-dark); font-size:1.3rem; margin-bottom:8px; }
+.login-box .sub { color:#666; font-size:.85rem; margin-bottom:24px; }
+.login-box input { width:100%; padding:10px 14px; border:1.5px solid #ccc;
+  border-radius:var(--radius); font-size:14px; margin-bottom:12px; }
+.login-box button { width:100%; padding:11px; background:var(--gc-green); color:#fff;
+  border:none; border-radius:var(--radius); font-size:15px; cursor:pointer; }
+.login-err { color:var(--danger); font-size:.8rem; margin-top:8px; display:none; }
+
+/* ── HEADER ── */
+header { background:var(--gc-dark); color:#fff; padding:12px 20px;
+  display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+header h1 { font-size:1rem; font-weight:700; flex:1; }
+header .badge { font-size:.7rem; background:var(--gc-mid); border-radius:4px; padding:2px 6px; }
+.hdr-btn { padding:6px 12px; border:1.5px solid rgba(255,255,255,.4); background:transparent;
+  color:#fff; border-radius:var(--radius); cursor:pointer; font-size:.8rem; white-space:nowrap;
+  transition:all .15s; }
+.hdr-btn:hover { background:rgba(255,255,255,.15); border-color:#fff; }
+.hdr-btn.primary { background:var(--gc-green); border-color:var(--gc-green); }
+.hdr-btn.freee { background:#16355d; border-color:#4a9bde; color:#7ec8f5; }
+.hdr-btn.freee.connected { background:#0d3b24; border-color:var(--gc-light); color:var(--gc-light); }
+#syncIndicator { font-size:.72rem; color:rgba(255,255,255,.6); white-space:nowrap; }
+
+/* ── LAYOUT ── */
+.app-body { display:flex; height:calc(100vh - 49px); overflow:hidden; }
+
+/* ── SIDEBAR ── */
+aside { width:260px; background:#fff; border-right:1px solid #e0e0e0;
+  display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
+.sidebar-hdr { padding:12px 14px; background:var(--gc-pale); border-bottom:1px solid #ccd; }
+.sidebar-hdr h2 { font-size:.85rem; color:var(--gc-dark); }
+.stats-row { display:flex; gap:6px; margin-top:8px; }
+.stat-chip { flex:1; text-align:center; padding:4px 2px; border-radius:5px; font-size:.72rem; }
+.stat-chip .n { font-size:1.1rem; font-weight:700; display:block; }
+.stat-ok   { background:#e8f5e9; color:var(--ok); }
+.stat-warn { background:#fff3e0; color:var(--warn); }
+.stat-err  { background:#ffebee; color:var(--danger); }
+.stat-all  { background:var(--gc-pale); color:var(--gc-dark); }
+
+.sidebar-search { padding:8px 10px; border-bottom:1px solid #eee; }
+.sidebar-search input { width:100%; padding:6px 10px; border:1px solid #ddd;
+  border-radius:var(--radius); font-size:.82rem; }
+.filter-row { padding:6px 10px; display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #eee; }
+.filter-chip { padding:3px 8px; border-radius:20px; border:1.5px solid #ccc; background:#fff;
+  font-size:.72rem; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.filter-chip.active { background:var(--gc-dark); color:#fff; border-color:var(--gc-dark); }
+.emp-list { flex:1; overflow-y:auto; padding:6px; }
+.emp-card { padding:10px 12px; border-radius:var(--radius); cursor:pointer;
+  border:1.5px solid transparent; margin-bottom:4px; transition:all .15s; background:#fafafa; }
+.emp-card:hover { background:var(--gc-pale); border-color:var(--gc-light); }
+.emp-card.active { background:var(--gc-pale); border-color:var(--gc-green); }
+.emp-card .name { font-weight:600; font-size:.9rem; }
+.emp-card .sub  { font-size:.75rem; color:#666; margin-top:2px; }
+.emp-card .tag  { display:inline-block; font-size:.65rem; padding:1px 5px; border-radius:10px;
+  margin-top:4px; }
+.tag-ok   { background:#e8f5e9; color:var(--ok); }
+.tag-warn { background:#fff3e0; color:var(--warn); }
+.tag-err  { background:#ffebee; color:var(--danger); }
+.tag-none { background:#eee; color:#666; }
+
+/* ── MAIN ── */
+main { flex:1; overflow-y:auto; padding:20px; }
+.empty-state { text-align:center; padding:60px 20px; color:#999; }
+.empty-state .icon { font-size:3rem; margin-bottom:12px; }
+
+/* ── DETAIL CARD ── */
+.detail-card { background:#fff; border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+.detail-header { background:var(--gc-dark); color:#fff; padding:18px 22px;
+  display:flex; align-items:flex-start; gap:16px; }
+.detail-avatar { width:56px; height:56px; border-radius:50%; background:var(--gc-green);
+  display:flex; align-items:center; justify-content:center; font-size:1.5rem;
+  flex-shrink:0; border:2px solid var(--gc-light); }
+.detail-info .dname { font-size:1.2rem; font-weight:700; }
+.detail-info .dsub  { font-size:.82rem; color:rgba(255,255,255,.75); margin-top:3px; }
+.detail-info .dtags { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.detail-info .dtag  { font-size:.72rem; padding:2px 8px; border-radius:10px; border:1px solid; }
+.dtag-ok   { background:rgba(46,125,50,.25); border-color:#81c784; color:#a5d6a7; }
+.dtag-warn { background:rgba(230,81,0,.25); border-color:#ffb74d; color:#ffcc80; }
+.dtag-err  { background:rgba(198,40,40,.25); border-color:#ef9a9a; color:#ffcdd2; }
+.dtag-none { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.3); color:rgba(255,255,255,.7); }
+.detail-hdr-actions { margin-left:auto; display:flex; gap:8px; flex-shrink:0; }
+.btn { padding:8px 16px; border-radius:var(--radius); border:none; cursor:pointer;
+  font-size:.82rem; transition:all .15s; }
+.btn-primary { background:var(--gc-green); color:#fff; }
+.btn-primary:hover { background:var(--gc-dark); }
+.btn-outline { background:#fff; border:1.5px solid var(--gc-green); color:var(--gc-green); }
+.btn-outline:hover { background:var(--gc-pale); }
+.btn-danger  { background:#fff; border:1.5px solid var(--danger); color:var(--danger); }
+.btn-danger:hover { background:#ffebee; }
+.btn-sm { padding:5px 10px; font-size:.75rem; }
+
+/* ── TABS ── */
+.tabs { display:flex; border-bottom:2px solid #e0e0e0; padding:0 22px; background:#fff; }
+.tab { padding:12px 16px; cursor:pointer; font-size:.85rem; color:#666;
+  border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .15s; }
+.tab.active { color:var(--gc-dark); border-bottom-color:var(--gc-green); font-weight:600; }
+.tab-pane { display:none; padding:20px 22px; }
+.tab-pane.active { display:block; }
+
+/* ── INFO GRID ── */
+.info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+.info-item label { font-size:.72rem; color:#888; text-transform:uppercase; letter-spacing:.05em; }
+.info-item p { font-size:.9rem; font-weight:500; margin-top:3px; }
+.info-section { margin-bottom:20px; }
+.info-section h3 { font-size:.8rem; color:var(--gc-dark); font-weight:700; margin-bottom:12px;
+  padding-bottom:6px; border-bottom:1px solid var(--gc-pale); text-transform:uppercase; }
+
+/* ── EXPIRY BANNER ── */
+.expiry-banner { padding:12px 16px; border-radius:var(--radius); margin-bottom:16px;
+  font-size:.85rem; font-weight:500; }
+.expiry-banner.ok   { background:#e8f5e9; color:var(--ok); border:1px solid #a5d6a7; }
+.expiry-banner.warn { background:#fff3e0; color:var(--warn); border:1px solid #ffcc80; }
+.expiry-banner.err  { background:#ffebee; color:var(--danger); border:1px solid #ef9a9a; }
+
+/* ── DOC STATUS ── */
+.doc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+.doc-item { border:1.5px solid #e0e0e0; border-radius:var(--radius); padding:10px 12px;
+  cursor:pointer; transition:all .15s; }
+.doc-item:hover { border-color:var(--gc-light); background:var(--gc-pale); }
+.doc-item.done   { border-color:#a5d6a7; background:#f1f8f2; }
+.doc-item.miss   { border-color:#ef9a9a; background:#fff8f8; }
+.doc-item.review { border-color:#ffcc80; background:#fffdf0; }
+.doc-item .doc-name { font-size:.82rem; font-weight:500; }
+.doc-item .doc-status { font-size:.72rem; margin-top:4px; }
+.doc-item select { width:100%; margin-top:8px; padding:4px 6px; border:1px solid #ddd;
+  border-radius:5px; font-size:.75rem; background:#fff; }
+
+/* ── TIMELINE ── */
+.timeline { list-style:none; padding-left:16px; border-left:2px solid var(--gc-pale); }
+.timeline li { position:relative; margin-bottom:12px; padding-left:16px; font-size:.82rem; }
+.timeline li::before { content:""; position:absolute; left:-7px; top:4px;
+  width:12px; height:12px; border-radius:50%; background:var(--gc-green); border:2px solid #fff; }
+.timeline .ts { color:#888; font-size:.72rem; }
+
+/* ── MEMO ── */
+.memo-area textarea { width:100%; min-height:100px; padding:10px; border:1.5px solid #ddd;
+  border-radius:var(--radius); font-size:.85rem; font-family:inherit; resize:vertical; }
+.memo-area textarea:focus { outline:none; border-color:var(--gc-green); }
+.memo-saved { font-size:.75rem; color:var(--gc-mid); margin-top:4px; display:none; }
+
+/* ── MODAL ── */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200;
+  display:none; align-items:center; justify-content:center; }
+.overlay.active { display:flex; }
+.modal { background:#fff; border-radius:12px; width:min(700px,95vw);
+  max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.25); }
+.modal-sm { width:min(480px,95vw); }
+.modal-lg { width:min(900px,95vw); }
+.modal-hdr { padding:16px 20px; background:var(--gc-dark); color:#fff;
+  display:flex; align-items:center; justify-content:space-between; }
+.modal-hdr h2 { font-size:1rem; }
+.modal-close { background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; line-height:1; }
+.modal-body { padding:20px; overflow-y:auto; flex:1; }
+.modal-footer { padding:14px 20px; border-top:1px solid #eee;
+  display:flex; justify-content:flex-end; gap:10px; }
+
+/* ── FORM ── */
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.form-row.three { grid-template-columns:1fr 1fr 1fr; }
+.form-row.full  { grid-template-columns:1fr; }
+.form-group label { display:block; font-size:.75rem; color:#555; margin-bottom:5px; font-weight:500; }
+.form-group input, .form-group select, .form-group textarea {
+  width:100%; padding:8px 10px; border:1.5px solid #ddd; border-radius:var(--radius);
+  font-size:.85rem; font-family:inherit; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline:none; border-color:var(--gc-green); }
+
+/* ── freee MODAL ── */
+.freee-status-box { border:1.5px solid #e0e0e0; border-radius:var(--radius); padding:16px; margin-bottom:16px; }
+.freee-status-box.connected { border-color:#a5d6a7; background:#f1f8f2; }
+.freee-status-box.disconnected { border-color:#ef9a9a; background:#fff8f8; }
+.freee-status-icon { font-size:2rem; margin-bottom:8px; }
+.freee-status-title { font-size:1rem; font-weight:700; margin-bottom:4px; }
+.freee-status-sub { font-size:.8rem; color:#666; }
+.freee-info-row { display:flex; justify-content:space-between; padding:8px 0;
+  border-bottom:1px solid #eee; font-size:.85rem; }
+.freee-info-row:last-child { border-bottom:none; }
+.freee-info-label { color:#666; }
+.freee-info-value { font-weight:500; }
+.sync-progress { display:none; text-align:center; padding:20px; }
+.sync-spinner { width:32px; height:32px; border:3px solid var(--gc-pale);
+  border-top-color:var(--gc-green); border-radius:50%; animation:spin .7s linear infinite;
+  margin:0 auto 10px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── CSV DROP ZONE ── */
+.drop-zone { border:2.5px dashed #ccc; border-radius:var(--radius); padding:32px;
+  text-align:center; color:#999; cursor:pointer; transition:all .15s; }
+.drop-zone:hover, .drop-zone.dragover { border-color:var(--gc-green); background:var(--gc-pale); color:var(--gc-dark); }
+.drop-zone input[type=file] { display:none; }
+
+/* ── PREVIEW TABLE ── */
+.preview-wrap { max-height:300px; overflow:auto; margin-top:12px; }
+.preview-table { width:100%; border-collapse:collapse; font-size:.78rem; }
+.preview-table th { background:var(--gc-dark); color:#fff; padding:6px 8px; text-align:left; position:sticky; top:0; }
+.preview-table td { padding:5px 8px; border-bottom:1px solid #eee; }
+.preview-table tr:hover td { background:var(--gc-pale); }
+
+/* ── TOAST ── */
+#toast { position:fixed; bottom:24px; right:24px; background:#333; color:#fff;
+  padding:10px 18px; border-radius:var(--radius); font-size:.85rem;
+  z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+#toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div style="font-size:2.5rem;margin-bottom:8px">🌿</div>
+    <h1>Green Carbon HR Tools</h1>
+    <p class="sub">在留資格管理システム</p>
+    <input type="password" id="loginPw" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">ログイン</button>
+    <p class="login-err" id="loginErr">パスワードが正しくありません</p>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
+<header>
+  <h1>🌿 在留資格管理</h1>
+  <span id="syncIndicator"></span>
+  <button class="hdr-btn" onclick="openImportModal()">📥 CSVインポート</button>
+  <button class="hdr-btn" onclick="exportCsv()">📊 CSV出力</button>
+  <button class="hdr-btn primary" onclick="openEmpModal(null)">＋ 社員追加</button>
+  <button class="hdr-btn freee" id="freeeBtn" onclick="openFreeeModal()">📡 freee同期</button>
+</header>
+
+<!-- ── APP BODY ── -->
+<div class="app-body">
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-hdr">
+      <h2>社員一覧</h2>
+      <div class="stats-row">
+        <div class="stat-chip stat-ok">  <span class="n" id="cntOk">0</span>有効</div>
+        <div class="stat-chip stat-warn"><span class="n" id="cntWarn">0</span>要更新</div>
+        <div class="stat-chip stat-err"> <span class="n" id="cntErr">0</span>期限切</div>
+        <div class="stat-chip stat-all"> <span class="n" id="cntAll">0</span>合計</div>
+      </div>
+    </div>
+    <div class="sidebar-search">
+      <input id="searchBox" placeholder="🔍 名前・国籍・部署で検索" oninput="renderList()">
+    </div>
+    <div class="filter-row" id="filterRow"></div>
+    <div class="emp-list" id="empList"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="mainArea">
+    <div class="empty-state">
+      <div class="icon">📋</div>
+      <p>社員を選択してください</p>
+    </div>
+  </main>
+</div>
+
+<!-- ── EMPLOYEE EDIT MODAL ── -->
+<div class="overlay" id="empOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="empModalTitle">社員を追加</h2>
+      <button class="modal-close" onclick="closeEmpModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>社員番号 *</label><input id="ef_id" placeholder="GC-0001"></div>
+        <div class="form-group"><label>氏名 *</label><input id="ef_name" placeholder="山田 太郎"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>氏名カナ</label><input id="ef_nameKana" placeholder="ヤマダ タロウ"></div>
+        <div class="form-group"><label>国籍</label><input id="ef_nationality" placeholder="ベトナム"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>部署</label><input id="ef_dept" placeholder="建設部"></div>
+        <div class="form-group"><label>役職</label><input id="ef_title" placeholder="技術員"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>生年月日</label><input id="ef_dob" type="date"></div>
+        <div class="form-group"><label>入社日</label><input id="ef_joinDate" type="date"></div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group"><label>メールアドレス</label><input id="ef_email" type="email" placeholder="example@green-carbon.inc"></div>
+      </div>
+      <hr style="margin:16px 0; border-color:#eee">
+      <div class="form-row">
+        <div class="form-group"><label>在留資格</label>
+          <select id="ef_visaType">
+            <option value="">選択してください</option>
+            <option>技術・人文知識・国際業務</option>
+            <option>特定技能</option>
+            <option>特定技能2号</option>
+            <option>技能実習1号</option>
+            <option>技能実習2号</option>
+            <option>技能実習3号</option>
+            <option>技能</option>
+            <option>永住者</option>
+            <option>日本人の配偶者等</option>
+            <option>定住者</option>
+            <option>家族滞在</option>
+            <option>特別永住者</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="form-group"><label>在留カード番号</label><input id="ef_cardNo" placeholder="AA12345678AB"></div>
+      </div>
+      <div class="form-row three">
+        <div class="form-group"><label>在留期限</label><input id="ef_expiry" type="date"></div>
+        <div class="form-group"><label>在留期間</label><input id="ef_period" placeholder="3年"></div>
+        <div class="form-group"><label>就労制限</label><input id="ef_restriction" placeholder="就労制限なし"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>担当者</label><input id="ef_hrPic" placeholder="人事担当者名"></div>
+        <div class="form-group"><label>ステータス</label>
+          <select id="ef_status">
+            <option value="">自動</option>
+            <option>有効</option>
+            <option>要更新</option>
+            <option>期限切れ</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="empDeleteBtn" onclick="deleteEmpConfirm()" style="display:none">削除</button>
+      <button class="btn btn-outline" onclick="closeEmpModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveEmpModal()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CSV IMPORT MODAL ── -->
+<div class="overlay" id="importOverlay">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <h2>📥 CSVインポート</h2>
+      <button class="modal-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+        freee人事労務のCSV、または独自フォーマットのCSVを読み込めます。<br>
+        必須列: <strong>社員番号</strong>または<strong>id</strong>、<strong>氏名</strong>または<strong>name</strong>
+      </p>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleFileDrop(event)">
+        <div style="font-size:2rem;margin-bottom:8px">📂</div>
+        <p>クリックまたはドラッグ＆ドロップでCSVを選択</p>
+        <p style="font-size:.75rem;margin-top:6px">Shift-JIS / UTF-8 対応</p>
+        <input type="file" id="fileInput" accept=".csv" onchange="handleFileSelect(event)">
+      </div>
+      <div id="importPreview" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+          <p id="previewSummary" style="font-size:.85rem;color:#333"></p>
+          <div style="display:flex;gap:8px;align-items:center;font-size:.8rem">
+            <label><input type="radio" name="importMode" value="add" checked> 追加のみ</label>
+            <label><input type="radio" name="importMode" value="replace"> 全件置き換え</label>
+          </div>
+        </div>
+        <div class="preview-wrap">
+          <table class="preview-table" id="previewTable">
+            <thead id="previewHead"></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeImportModal()">キャンセル</button>
+      <button class="btn btn-primary" id="importConfirmBtn" onclick="doImport()" style="display:none">インポート実行</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SALARY MODAL ── -->
+<div class="overlay" id="salaryOverlay">
+  <div class="modal modal-sm">
+    <div class="modal-hdr">
+      <h2>💴 給与情報入力</h2>
+      <button class="modal-close" onclick="document.getElementById('salaryOverlay').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.8rem;color:#666;margin-bottom:14px">給与証明書に記載する金額を入力してください</p>
+      <div class="form-row full">
+        <div class="form-group"><label>基本給（円/月）</label>
+          <input id="sal_base" type="number" placeholder="200000"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>各種手当合計（円/月）</label>
+          <input id="sal_allow" type="number" placeholder="0"></div>
+        <div class="form-group"><label>年収（円）</label>
+          <input id="sal_annual" type="number" placeholder="2800000"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('salaryOverlay').classList.remove('active')">キャンセル</button>
+      <button class="btn btn-primary" onclick="generateDocWithSalary()">証明書を生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── freee SYNC MODAL ── -->
+<div class="overlay" id="freeeOverlay">
+  <div class="modal modal-sm">
+    <div class="modal-hdr" style="background:#16355d">
+      <h2>📡 freee人事労務 連携</h2>
+      <button class="modal-close" onclick="closeFreeeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- ステータス表示 -->
+      <div id="freeeStatusBox" class="freee-status-box">
+        <div class="freee-status-icon" id="freeeStatusIcon">⏳</div>
+        <div class="freee-status-title" id="freeeStatusTitle">確認中...</div>
+        <div class="freee-status-sub" id="freeeStatusSub"></div>
+      </div>
+      <!-- 接続情報 -->
+      <div id="freeeInfoRows">
+        <div class="freee-info-row">
+          <span class="freee-info-label">前回同期</span>
+          <span class="freee-info-value" id="freeeLastSync">—</span>
+        </div>
+        <div class="freee-info-row">
+          <span class="freee-info-label">GAS 接続</span>
+          <span class="freee-info-value" id="freeeGasStatus">—</span>
+        </div>
+      </div>
+      <!-- 同期進捗 -->
+      <div class="sync-progress" id="syncProgress">
+        <div class="sync-spinner"></div>
+        <p style="font-size:.85rem;color:#666" id="syncProgressMsg">freeeから社員データを取得中...</p>
+      </div>
+      <!-- アクション -->
+      <div id="freeeActions" style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" id="freeeConnectBtn" onclick="startFreeeAuth()" style="display:none">
+          🔑 freee に接続する
+        </button>
+        <button class="btn btn-primary" id="freeeSyncBtn" onclick="runFreeeSync()" style="display:none">
+          🔄 今すぐ同期
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="openFreeeSetupGuide()" style="font-size:.78rem">
+          📖 セットアップガイドを開く
+        </button>
+      </div>
+      <p style="font-size:.72rem;color:#999;margin-top:12px">
+        ※ 同期は外国籍社員のみ対象です。freeeの在留情報が登録されていない場合は空欄になります。
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS & CONFIG
+// ═══════════════════════════════════════════════════════════════
+var GAS_URL = "";  // GAS デプロイ URL を設定してください
+
+var REQUIRED_DOCS = {
+  "在留カード":    ["在留カード（表面）","在留カード（裏面）"],
+  "パスポート":    ["パスポート（顔写真ページ）","パスポート（在留スタンプページ）"],
+  "雇用契約":      ["雇用契約書","労働条件通知書"],
+  "社会保険":      ["健康保険証","年金手帳または基礎年金番号通知書"],
+  "入社書類":      ["誓約書","緊急連絡先届","個人情報同意書"],
+  "届出":          ["住民登録証明","在留資格変更許可申請書（必要な場合）"]
+};
+
+var SAMPLE_DATA = [
+  {id:"GC-0001",name:"グエン・バン・アン",nameKana:"グエン バン アン",nationality:"ベトナム",
+   dept:"建設部",title:"技術員",dob:"1995-04-12",joinDate:"2022-06-01",
+   email:"an.nguyen@green-carbon.inc",visaType:"技術・人文知識・国際業務",
+   cardNo:"AA12345678AB",expiry:"2025-06-30",period:"3年",restriction:"就労制限なし",
+   status:"要更新",hrPic:"野村",history:[],updatedAt:"2025-01-10"},
+  {id:"GC-0002",name:"李 偉",nameKana:"リ イ",nationality:"中国",
+   dept:"設計部",title:"設計士",dob:"1990-08-23",joinDate:"2020-04-01",
+   email:"wei.li@green-carbon.inc",visaType:"技術・人文知識・国際業務",
+   cardNo:"BB98765432CD",expiry:"2026-04-30",period:"3年",restriction:"就労制限なし",
+   status:"有効",hrPic:"野村",history:[],updatedAt:"2025-01-10"},
+  {id:"GC-0003",name:"カルロス・ラミレス",nameKana:"カルロス ラミレス",nationality:"フィリピン",
+   dept:"現場部",title:"現場監督補",dob:"1988-12-05",joinDate:"2023-03-15",
+   email:"carlos.ramirez@green-carbon.inc",visaType:"特定技能",
+   cardNo:"CC11223344EF",expiry:"2024-12-31",period:"1年",restriction:"特定産業分野のみ",
+   status:"期限切れ",hrPic:"田中",history:[],updatedAt:"2025-01-10"},
+  {id:"GC-0004",name:"アミン・スタニクザイ",nameKana:"アミン スタニクザイ",nationality:"アフガニスタン",
+   dept:"IT部",title:"システムエンジニア",dob:"1993-02-18",joinDate:"2021-10-01",
+   email:"amin.s@green-carbon.inc",visaType:"技術・人文知識・国際業務",
+   cardNo:"DD44556677GH",expiry:"2027-10-31",period:"5年",restriction:"就労制限なし",
+   status:"有効",hrPic:"野村",history:[],updatedAt:"2025-01-10"},
+  {id:"GC-0005",name:"ファリダ・ユスポワ",nameKana:"ファリダ ユスポワ",nationality:"ウズベキスタン",
+   dept:"総務部",title:"総務担当",dob:"1997-07-30",joinDate:"2024-01-15",
+   email:"farida.y@green-carbon.inc",visaType:"技術・人文知識・国際業務",
+   cardNo:"EE99887766IJ",expiry:"2027-01-31",period:"3年",restriction:"就労制限なし",
+   status:"有効",hrPic:"田中",history:[],updatedAt:"2025-01-10"}
+];
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+function checkAuth() {
+  var ok = localStorage.getItem("gc-auth") === "ok" || sessionStorage.getItem("gc-auth") === "ok";
+  if (!ok) {
+    document.getElementById("loginScreen").classList.add("active");
+  }
+}
+function doLogin() {
+  var pw = document.getElementById("loginPw").value;
+  if (pw === "gchr2024" || pw === "green2024") {
+    localStorage.setItem("gc-auth","ok");
+    document.getElementById("loginScreen").classList.remove("active");
+    init();
+  } else {
+    document.getElementById("loginErr").style.display = "block";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAS SYNC
+// ═══════════════════════════════════════════════════════════════
+var gasConnected = false;
+
+function gasGet(params) {
+  if (!GAS_URL) return Promise.reject(new Error("GAS URL 未設定"));
+  var qs = Object.keys(params).map(function(k){ return k+"="+encodeURIComponent(params[k]); }).join("&");
+  return fetch(GAS_URL + "?" + qs)
+    .then(function(r){ return r.json(); });
+}
+
+function gasPost(body) {
+  if (!GAS_URL) return Promise.reject(new Error("GAS URL 未設定"));
+  return fetch(GAS_URL, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); });
+}
+
+function updateSyncIndicator(msg, ok) {
+  var el = document.getElementById("syncIndicator");
+  el.textContent = msg;
+  el.style.color = ok ? "#74c69d" : "rgba(255,255,255,.5)";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA LAYER
+// ═══════════════════════════════════════════════════════════════
+function getAllEmployees() {
+  var raw = localStorage.getItem("gc_employees");
+  if (!raw) {
+    localStorage.setItem("gc_employees", JSON.stringify(SAMPLE_DATA));
+    return SAMPLE_DATA;
+  }
+  return JSON.parse(raw);
+}
+function saveAllEmployeesLocal(arr) {
+  localStorage.setItem("gc_employees", JSON.stringify(arr));
+}
+function getEmployee(id) {
+  return getAllEmployees().find(function(e){ return e.id === id; });
+}
+
+function getDocStatuses(empId) {
+  return JSON.parse(localStorage.getItem("gc_docs_"+empId)||"{}");
+}
+function saveDocStatus(empId, docKey, status) {
+  var d = getDocStatuses(empId);
+  d[docKey] = status;
+  localStorage.setItem("gc_docs_"+empId, JSON.stringify(d));
+  if (gasConnected) {
+    gasPost({action:"saveDocStatus", empId:empId, docKey:docKey, status:status})
+      .catch(function(e){ console.warn("GAS saveDocStatus:", e); });
+  }
+}
+function getMemo(empId) {
+  return localStorage.getItem("gc_memo_"+empId)||"";
+}
+function saveMemoLocal(empId, memo) {
+  localStorage.setItem("gc_memo_"+empId, memo);
+  if (gasConnected) {
+    gasPost({action:"saveMemo", empId:empId, memo:memo})
+      .catch(function(e){ console.warn("GAS saveMemo:", e); });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+function init() {
+  renderFilters();
+  renderList();
+  updateStats();
+
+  if (!GAS_URL) {
+    updateSyncIndicator("GAS未接続", false);
+    return;
+  }
+
+  updateSyncIndicator("接続確認中...", false);
+  gasGet({action:"getAll"}).then(function(data) {
+    gasConnected = true;
+    if (data.employees && data.employees.length > 0) {
+      saveAllEmployeesLocal(data.employees);
+    }
+    if (data.docStatuses) {
+      Object.keys(data.docStatuses).forEach(function(empId) {
+        localStorage.setItem("gc_docs_"+empId, JSON.stringify(data.docStatuses[empId]));
+      });
+    }
+    if (data.memos) {
+      Object.keys(data.memos).forEach(function(empId) {
+        if (data.memos[empId]) localStorage.setItem("gc_memo_"+empId, data.memos[empId]);
+      });
+    }
+    renderList();
+    updateStats();
+    updateSyncIndicator("✓ GAS同期済", true);
+  }).catch(function(err) {
+    gasConnected = false;
+    updateSyncIndicator("GAS未接続（オフライン）", false);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATUS HELPERS
+// ═══════════════════════════════════════════════════════════════
+function computeStatus(emp) {
+  if (emp.status) return emp.status;
+  if (!emp.expiry) return "";
+  var diff = (new Date(emp.expiry) - new Date()) / 86400000;
+  if (diff < 0)   return "期限切れ";
+  if (diff < 90)  return "要更新";
+  return "有効";
+}
+function statusTag(status) {
+  if (status === "有効")   return '<span class="tag tag-ok">有効</span>';
+  if (status === "要更新") return '<span class="tag tag-warn">要更新</span>';
+  if (status === "期限切れ") return '<span class="tag tag-err">期限切れ</span>';
+  return '<span class="tag tag-none">未設定</span>';
+}
+function statusDtag(status) {
+  if (status === "有効")   return '<span class="dtag dtag-ok">✓ 有効</span>';
+  if (status === "要更新") return '<span class="dtag dtag-warn">⚠ 要更新</span>';
+  if (status === "期限切れ") return '<span class="dtag dtag-err">✗ 期限切れ</span>';
+  return '<span class="dtag dtag-none">—</span>';
+}
+function daysUntilExpiry(expiry) {
+  if (!expiry) return null;
+  return Math.ceil((new Date(expiry) - new Date()) / 86400000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILTERS & LIST
+// ═══════════════════════════════════════════════════════════════
+var activeFilter = "all";
+var activeEmpId  = null;
+
+function renderFilters() {
+  var emps = getAllEmployees();
+  var nats = [...new Set(emps.map(function(e){ return e.nationality; }).filter(Boolean))].sort();
+  var row  = document.getElementById("filterRow");
+  row.innerHTML = '<button class="filter-chip active" data-f="all" onclick="setFilter(\'all\')">全員</button>' +
+    '<button class="filter-chip" data-f="warn" onclick="setFilter(\'warn\')">要更新</button>' +
+    '<button class="filter-chip" data-f="err" onclick="setFilter(\'err\')">期限切れ</button>';
+  nats.forEach(function(n) {
+    row.innerHTML += '<button class="filter-chip" data-f="nat:'+n+'" onclick="setFilter(\'nat:'+n+'\')">'+n+'</button>';
+  });
+}
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll(".filter-chip").forEach(function(el){
+    el.classList.toggle("active", el.getAttribute("data-f") === f);
+  });
+  renderList();
+}
+function renderList() {
+  var q    = (document.getElementById("searchBox").value||"").toLowerCase();
+  var emps = getAllEmployees().filter(function(emp) {
+    var s = computeStatus(emp);
+    if (activeFilter === "warn" && s !== "要更新") return false;
+    if (activeFilter === "err"  && s !== "期限切れ") return false;
+    if (activeFilter.startsWith("nat:") && emp.nationality !== activeFilter.slice(4)) return false;
+    if (q) {
+      var hay = [emp.name,emp.nameKana,emp.nationality,emp.dept,emp.visaType,emp.id].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  var html = "";
+  emps.forEach(function(emp) {
+    var s = computeStatus(emp);
+    html += '<div class="emp-card'+(emp.id===activeEmpId?" active":"")+'" onclick="selectEmp(\''+emp.id+'\')">' +
+      '<div class="name">'+emp.name+'</div>' +
+      '<div class="sub">'+[emp.nationality,emp.dept,emp.visaType].filter(Boolean).join(" · ")+'</div>' +
+      statusTag(s) + '</div>';
+  });
+  document.getElementById("empList").innerHTML = html || '<p style="text-align:center;color:#999;padding:20px;font-size:.8rem">該当なし</p>';
+  updateStats();
+}
+function updateStats() {
+  var emps = getAllEmployees();
+  var ok=0, warn=0, err=0;
+  emps.forEach(function(e) {
+    var s = computeStatus(e);
+    if (s==="有効") ok++; else if(s==="要更新") warn++; else if(s==="期限切れ") err++;
+  });
+  document.getElementById("cntOk").textContent   = ok;
+  document.getElementById("cntWarn").textContent = warn;
+  document.getElementById("cntErr").textContent  = err;
+  document.getElementById("cntAll").textContent  = emps.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SELECT & DETAIL VIEW
+// ═══════════════════════════════════════════════════════════════
+function selectEmp(id) {
+  activeEmpId = id;
+  renderList();
+  var emp = getEmployee(id);
+  if (!emp) return;
+  renderDetail(emp);
+}
+function renderDetail(emp) {
+  var s    = computeStatus(emp);
+  var days = daysUntilExpiry(emp.expiry);
+
+  var banner = "";
+  if (days !== null) {
+    if (days < 0) {
+      banner = '<div class="expiry-banner err">⚠ 在留期限が '+Math.abs(days)+' 日前に切れています</div>';
+    } else if (days < 90) {
+      banner = '<div class="expiry-banner warn">⚠ 在留期限まで残り '+days+' 日です</div>';
+    } else {
+      banner = '<div class="expiry-banner ok">✓ 在留期限まで残り '+days+' 日</div>';
+    }
+  }
+
+  var html = '<div class="detail-card">' +
+    '<div class="detail-header">' +
+    '<div class="detail-avatar">'+getFlag(emp.nationality)+'</div>' +
+    '<div class="detail-info">' +
+    '<div class="dname">'+emp.name+'</div>' +
+    '<div class="dsub">'+(emp.nameKana||'')+(emp.nameKana&&(emp.dept||emp.title)?' · ':'')+(emp.dept||'')+(emp.dept&&emp.title?' / ':' ')+(emp.title||'')+'</div>' +
+    '<div class="dtags">'+statusDtag(s)+'<span class="dtag dtag-none">'+emp.visaType+'</span><span class="dtag dtag-none">'+emp.id+'</span></div>' +
+    '</div>' +
+    '<div class="detail-hdr-actions">' +
+    '<button class="btn btn-outline btn-sm" onclick="openEmpModal(\''+emp.id+'\')">✏ 編集</button>' +
+    '<button class="btn btn-outline btn-sm" onclick="window.print()">🖨 印刷</button>' +
+    '</div></div>' +
+    '<div class="tabs">' +
+    '<div class="tab active" onclick="switchTab(this,\'basic\')">基本情報</div>' +
+    '<div class="tab" onclick="switchTab(this,\'visa\')">在留資格</div>' +
+    '<div class="tab" onclick="switchTab(this,\'docs\')">書類管理</div>' +
+    '<div class="tab" onclick="switchTab(this,\'memo\')">メモ</div>' +
+    '</div>' +
+    renderBasicTab(emp, banner) +
+    renderVisaTab(emp) +
+    renderDocsTab(emp) +
+    renderMemoTab(emp) +
+    '</div>';
+
+  document.getElementById("mainArea").innerHTML = html;
+}
+
+function switchTab(el, name) {
+  document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
+  document.querySelectorAll(".tab-pane").forEach(function(p){ p.classList.remove("active"); });
+  el.classList.add("active");
+  document.getElementById("tab-"+name).classList.add("active");
+}
+
+function getFlag(nat) {
+  var flags = {"ベトナム":"🇻🇳","中国":"🇨🇳","韓国":"🇰🇷","フィリピン":"🇵🇭",
+    "インドネシア":"🇮🇩","タイ":"🇹🇭","ミャンマー":"🇲🇲","インド":"🇮🇳",
+    "ブラジル":"🇧🇷","ネパール":"🇳🇵","バングラデシュ":"🇧🇩","スリランカ":"🇱🇰",
+    "アフガニスタン":"🇦🇫","ウズベキスタン":"🇺🇿","カンボジア":"🇰🇭","ラオス":"🇱🇦",
+    "モンゴル":"🇲🇳","パキスタン":"🇵🇰","マレーシア":"🇲🇾","シンガポール":"🇸🇬"};
+  return flags[nat] || "🌏";
+}
+
+function renderBasicTab(emp, banner) {
+  return '<div class="tab-pane active" id="tab-basic">' + banner +
+    '<div class="info-section"><h3>個人情報</h3><div class="info-grid">' +
+    infoItem("社員番号", emp.id) +
+    infoItem("国籍", emp.nationality) +
+    infoItem("生年月日", emp.dob) +
+    infoItem("入社日", emp.joinDate) +
+    infoItem("メール", emp.email||"—") +
+    infoItem("担当者", emp.hrPic||"—") +
+    '</div></div>' +
+    '<div class="info-section"><h3>所属</h3><div class="info-grid">' +
+    infoItem("部署", emp.dept||"—") +
+    infoItem("役職", emp.title||"—") +
+    '</div></div></div>';
+}
+
+function renderVisaTab(emp) {
+  var hist = Array.isArray(emp.history) ? emp.history : [];
+  var histHtml = '<p style="color:#999;font-size:.8rem">履歴なし</p>';
+  if (hist.length) {
+    histHtml = '<ul class="timeline">' + hist.map(function(h){
+      return '<li><strong>'+h.date+'</strong>: '+h.note+'<br><span class="ts">'+h.who+'</span></li>';
+    }).join("") + '</ul>';
+  }
+  return '<div class="tab-pane" id="tab-visa">' +
+    '<div class="info-section"><h3>在留資格情報</h3><div class="info-grid">' +
+    infoItem("在留資格", emp.visaType||"—") +
+    infoItem("在留カード番号", emp.cardNo||"—") +
+    infoItem("在留期限", emp.expiry||"—") +
+    infoItem("在留期間", emp.period||"—") +
+    infoItem("就労制限", emp.restriction||"—") +
+    '</div></div>' +
+    '<div class="info-section"><h3>更新履歴</h3>' + histHtml + '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:8px">' +
+    '<button class="btn btn-outline btn-sm" onclick="generateDoc(\'在留カード確認票\',\''+emp.id+'\')">📄 在留カード確認票</button>' +
+    '<button class="btn btn-outline btn-sm" onclick="openSalaryModal(\''+emp.id+'\')">📄 給与証明書</button>' +
+    '<button class="btn btn-outline btn-sm" onclick="generateDoc(\'雇用証明書\',\''+emp.id+'\')">📄 雇用証明書</button>' +
+    '</div></div>';
+}
+
+function renderDocsTab(emp) {
+  var docStatuses = getDocStatuses(emp.id);
+  var html = '<div class="tab-pane" id="tab-docs">';
+  Object.keys(REQUIRED_DOCS).forEach(function(cat) {
+    html += '<div class="info-section"><h3>'+cat+'</h3><div class="doc-grid">';
+    REQUIRED_DOCS[cat].forEach(function(doc) {
+      var st = docStatuses[doc] || "未提出";
+      var cls = st==="提出済"?"done":st==="確認済"?"done":st==="要確認"?"review":"miss";
+      html += '<div class="doc-item '+cls+'" onclick="cycleDocStatus(\''+emp.id+'\',\''+doc+'\')">' +
+        '<div class="doc-name">'+doc+'</div>' +
+        '<div class="doc-status">'+getDocStatusEmoji(st)+' '+st+'</div>' +
+        '<select onchange="setDocStatus(\''+emp.id+'\',\''+doc+'\',this.value)" onclick="event.stopPropagation()">' +
+        ['未提出','提出済','確認済','要確認','不要'].map(function(o){
+          return '<option value="'+o+'"'+(o===st?' selected':'')+'>'+o+'</option>';
+        }).join("") + '</select></div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderMemoTab(emp) {
+  var memo = getMemo(emp.id);
+  return '<div class="tab-pane" id="tab-memo">' +
+    '<div class="memo-area">' +
+    '<p style="font-size:.8rem;color:#666;margin-bottom:8px">メモ（自動保存）</p>' +
+    '<textarea id="memoTa" oninput="autoSaveMemo(\''+emp.id+'\')">' + (memo||'') + '</textarea>' +
+    '<p class="memo-saved" id="memoSaved">✓ 保存しました</p>' +
+    '</div></div>';
+}
+
+function infoItem(label, value) {
+  return '<div class="info-item"><label>'+label+'</label><p>'+value+'</p></div>';
+}
+function getDocStatusEmoji(st) {
+  if (st==="提出済"||st==="確認済") return "✅";
+  if (st==="要確認") return "⚠️";
+  if (st==="不要")   return "—";
+  return "❌";
+}
+function cycleDocStatus(empId, doc) {
+  var order = ["未提出","提出済","確認済","要確認","不要"];
+  var d = getDocStatuses(empId);
+  var cur = d[doc] || "未提出";
+  var next = order[(order.indexOf(cur)+1) % order.length];
+  saveDocStatus(empId, doc, next);
+  renderDetail(getEmployee(empId));
+  switchTab(document.querySelector('.tab[onclick*="docs"]'), "docs");
+}
+function setDocStatus(empId, doc, val) {
+  saveDocStatus(empId, doc, val);
+  renderDetail(getEmployee(empId));
+  switchTab(document.querySelector('.tab[onclick*="docs"]'), "docs");
+}
+
+var memoTimer = null;
+function autoSaveMemo(empId) {
+  clearTimeout(memoTimer);
+  memoTimer = setTimeout(function() {
+    var memo = document.getElementById("memoTa").value;
+    saveMemoLocal(empId, memo);
+    var el = document.getElementById("memoSaved");
+    if (el) { el.style.display="block"; setTimeout(function(){ el.style.display="none"; }, 2000); }
+  }, 800);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EMPLOYEE CRUD MODAL
+// ═══════════════════════════════════════════════════════════════
+var editingEmpId = null;
+
+function openEmpModal(id) {
+  editingEmpId = id;
+  var modal = document.getElementById("empOverlay");
+  var del   = document.getElementById("empDeleteBtn");
+  if (id) {
+    var emp = getEmployee(id);
+    document.getElementById("empModalTitle").textContent = "社員を編集: " + (emp ? emp.name : id);
+    del.style.display = "inline-block";
+    if (emp) {
+      var fields = ["id","name","nameKana","nationality","dept","title","dob","joinDate",
+                    "email","visaType","cardNo","expiry","period","restriction","status","hrPic"];
+      fields.forEach(function(f) {
+        var el = document.getElementById("ef_"+f);
+        if (el) el.value = emp[f] || "";
+      });
+    }
+  } else {
+    document.getElementById("empModalTitle").textContent = "社員を追加";
+    del.style.display = "none";
+    ["id","name","nameKana","nationality","dept","title","dob","joinDate",
+     "email","cardNo","expiry","period","restriction","hrPic"].forEach(function(f) {
+      var el = document.getElementById("ef_"+f);
+      if (el) el.value = "";
+    });
+    document.getElementById("ef_visaType").value = "";
+    document.getElementById("ef_status").value = "";
+  }
+  modal.classList.add("active");
+}
+function closeEmpModal() {
+  document.getElementById("empOverlay").classList.remove("active");
+  editingEmpId = null;
+}
+function saveEmpModal() {
+  var emp = {};
+  ["id","name","nameKana","nationality","dept","title","dob","joinDate",
+   "email","visaType","cardNo","expiry","period","restriction","status","hrPic"].forEach(function(f) {
+    var el = document.getElementById("ef_"+f);
+    if (el) emp[f] = el.value.trim();
+  });
+  if (!emp.id || !emp.name) { toast("社員番号と氏名は必須です", true); return; }
+
+  // status の自動計算
+  if (!emp.status && emp.expiry) {
+    var diff = (new Date(emp.expiry) - new Date()) / 86400000;
+    emp.status = diff < 0 ? "期限切れ" : diff < 90 ? "要更新" : "有効";
+  }
+
+  var all = getAllEmployees();
+  var idx = all.findIndex(function(e){ return e.id === emp.id; });
+  if (idx >= 0) {
+    emp.history = all[idx].history || [];
+    all[idx] = Object.assign({}, all[idx], emp);
+  } else {
+    emp.history = [];
+    emp.updatedAt = new Date().toISOString().slice(0,10);
+    all.push(emp);
+  }
+  saveAllEmployeesLocal(all);
+
+  if (gasConnected) {
+    gasPost({action:"saveEmployee", employee:emp}).catch(function(e){ console.warn(e); });
+  }
+
+  closeEmpModal();
+  renderFilters();
+  renderList();
+  if (activeEmpId === emp.id) renderDetail(getEmployee(emp.id));
+  toast("保存しました");
+}
+function deleteEmpConfirm() {
+  if (!confirm("この社員を削除しますか？")) return;
+  var all = getAllEmployees().filter(function(e){ return e.id !== editingEmpId; });
+  saveAllEmployeesLocal(all);
+  if (gasConnected) {
+    gasPost({action:"deleteEmployee", empId:editingEmpId}).catch(function(e){ console.warn(e); });
+  }
+  if (activeEmpId === editingEmpId) {
+    activeEmpId = null;
+    document.getElementById("mainArea").innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>社員を選択してください</p></div>';
+  }
+  closeEmpModal();
+  renderFilters();
+  renderList();
+  toast("削除しました");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════════════════
+function exportCsv() {
+  var cols = ["id","name","nameKana","nationality","dept","title","dob","joinDate",
+              "email","visaType","cardNo","expiry","period","restriction","status","hrPic","updatedAt"];
+  var header = ["社員番号","氏名","氏名カナ","国籍","部署","役職","生年月日","入社日",
+                "メール","在留資格","在留カード番号","在留期限","在留期間","就労制限","ステータス","担当者","更新日"];
+  var emps = getAllEmployees();
+  var rows = [header].concat(emps.map(function(emp) {
+    return cols.map(function(c) {
+      var v = (emp[c]||"").toString().replace(/"/g,'""');
+      return '"'+v+'"';
+    });
+  }));
+  var csv = "﻿" + rows.map(function(r){ return r.join(","); }).join("\n");
+  var blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "visa_manager_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+  toast("CSV出力しました（"+emps.length+"件）");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CSV IMPORT
+// ═══════════════════════════════════════════════════════════════
+var importData = [];
+
+function openImportModal() {
+  importData = [];
+  document.getElementById("importPreview").style.display = "none";
+  document.getElementById("importConfirmBtn").style.display = "none";
+  document.getElementById("dropZone").classList.remove("dragover");
+  document.getElementById("importOverlay").classList.add("active");
+}
+function closeImportModal() {
+  document.getElementById("importOverlay").classList.remove("active");
+}
+function handleFileDrop(e) {
+  e.preventDefault();
+  document.getElementById("dropZone").classList.remove("dragover");
+  var file = e.dataTransfer.files[0];
+  if (file) readCsvFile(file);
+}
+function handleFileSelect(e) {
+  var file = e.target.files[0];
+  if (file) readCsvFile(file);
+}
+function readCsvFile(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    // BOM除去
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    parseCsvContent(text);
+  };
+  reader.onerror = function() {
+    // Shift-JIS フォールバック
+    var r2 = new FileReader();
+    r2.onload = function(e2) {
+      var arr = new Uint8Array(e2.target.result);
+      var text = new TextDecoder("shift_jis").decode(arr);
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      parseCsvContent(text);
+    };
+    r2.readAsArrayBuffer(file);
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+function parseCsvContent(text) {
+  // freee 列名 → 内部フィールド名マッピング
+  var colMap = {
+    "社員番号":"id", "id":"id",
+    "氏名":"name", "name":"name", "display_name":"name",
+    "氏名カナ":"nameKana", "name_kana":"nameKana",
+    "国籍":"nationality", "nationality":"nationality",
+    "部署":"dept", "所属部門名":"dept", "department":"dept",
+    "役職":"title", "job_title":"title",
+    "生年月日":"dob", "birthday":"dob",
+    "入社日":"joinDate", "入社年月日":"joinDate", "entry_date":"joinDate",
+    "メール":"email", "メールアドレス":"email", "email":"email",
+    "在留資格":"visaType", "在留資格（在留カード記載）":"visaType", "residence_status":"visaType",
+    "在留カード番号":"cardNo", "residence_card_number":"cardNo",
+    "在留期限":"expiry", "在留期間の満了日":"expiry", "date_of_expiration":"expiry",
+    "在留期間":"period", "period_of_stay":"period",
+    "就労制限":"restriction", "permission":"restriction",
+    "ステータス":"status", "status":"status",
+    "担当者":"hrPic",
+    // freee 姓名分割対応
+    "姓":"__lastName", "名":"__firstName",
+    "姓（カナ）":"__lastKana", "名（カナ）":"__firstKana",
+    "last_name":"__lastName", "first_name":"__firstName",
+    "last_name_kana":"__lastKana", "first_name_kana":"__firstKana"
+  };
+
+  // CSV パース（クォート対応）
+  var lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) { toast("データが見つかりません", true); return; }
+
+  var headers = parseCsvLine(lines[0]);
+  var rows = lines.slice(1).filter(function(l){ return l.trim(); }).map(parseCsvLine);
+
+  var skipped = 0;
+  var parsed  = [];
+
+  rows.forEach(function(row) {
+    var emp = {};
+    headers.forEach(function(h, i) {
+      var key = colMap[h.trim()];
+      if (key) emp[key] = (row[i]||"").trim();
+    });
+
+    // 姓名結合
+    if (!emp.name) {
+      var last  = emp.__lastName  || ""; var first = emp.__firstName || "";
+      if (last || first) emp.name = (last + (last&&first?"　":"") + first).trim();
+    }
+    if (!emp.nameKana) {
+      var lk = emp.__lastKana || ""; var fk = emp.__firstKana || "";
+      if (lk || fk) emp.nameKana = (lk + (lk&&fk?" ":"") + fk).trim();
+    }
+    delete emp.__lastName; delete emp.__firstName; delete emp.__lastKana; delete emp.__firstKana;
+
+    // 日付正規化
+    ["dob","joinDate","expiry"].forEach(function(f) {
+      if (emp[f]) emp[f] = emp[f].replace(/\/(\d)/g,"-$1").replace(/\//g,"-");
+    });
+
+    // 国籍正規化
+    var natMap = {
+      "ベトナム社会主義共和国":"ベトナム","中華人民共和国":"中国","大韓民国":"韓国",
+      "フィリピン共和国":"フィリピン","インドネシア共和国":"インドネシア","タイ王国":"タイ",
+      "ミャンマー連邦共和国":"ミャンマー","インド":"インド","ブラジル連邦共和国":"ブラジル",
+      "ネパール連邦民主共和国":"ネパール","バングラデシュ人民共和国":"バングラデシュ",
+      "スリランカ民主社会主義共和国":"スリランカ","カンボジア王国":"カンボジア",
+      "モンゴル国":"モンゴル","パキスタン・イスラム共和国":"パキスタン",
+      "マレーシア":"マレーシア","シンガポール共和国":"シンガポール"
+    };
+    if (natMap[emp.nationality]) emp.nationality = natMap[emp.nationality];
+
+    // 在留資格正規化
+    var visaMap = {
+      "技人国":"技術・人文知識・国際業務","技術・人文知識・国際業務":"技術・人文知識・国際業務",
+      "特定技能1号":"特定技能","特定技能（1号）":"特定技能","特定技能（2号）":"特定技能2号",
+      "技能実習（1号ロ）":"技能実習1号","技能実習（2号ロ）":"技能実習2号","技能実習（3号ロ）":"技能実習3号"
+    };
+    if (visaMap[emp.visaType]) emp.visaType = visaMap[emp.visaType];
+
+    if (!emp.id || !emp.name) { skipped++; return; }
+    parsed.push(emp);
+  });
+
+  importData = parsed;
+
+  // プレビュー表示
+  var previewCols = ["id","name","nationality","dept","visaType","expiry","status"];
+  var previewLabels = ["社員番号","氏名","国籍","部署","在留資格","在留期限","ステータス"];
+
+  document.getElementById("previewSummary").textContent =
+    "読み込み: "+parsed.length+"件" + (skipped?"（スキップ: "+skipped+"件）":"");
+
+  var head = "<tr>"+previewLabels.map(function(l){ return "<th>"+l+"</th>"; }).join("")+"</tr>";
+  var body = parsed.slice(0,20).map(function(emp) {
+    return "<tr>"+previewCols.map(function(c){ return "<td>"+(emp[c]||"")+"</td>"; }).join("")+"</tr>";
+  }).join("");
+  if (parsed.length > 20) body += "<tr><td colspan='7' style='text-align:center;color:#999'>... 他 "+(parsed.length-20)+" 件</td></tr>";
+
+  document.getElementById("previewHead").innerHTML = head;
+  document.getElementById("previewBody").innerHTML = body;
+  document.getElementById("importPreview").style.display = "block";
+  document.getElementById("importConfirmBtn").style.display = "inline-block";
+}
+
+function parseCsvLine(line) {
+  var result = [];
+  var cur = ""; var inQuote = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (inQuote) {
+      if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQuote = false; }
+      else cur += ch;
+    } else {
+      if (ch === '"') { inQuote = true; }
+      else if (ch === ',') { result.push(cur); cur = ""; }
+      else cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function doImport() {
+  if (!importData.length) return;
+  var mode = document.querySelector('input[name="importMode"]:checked').value;
+  var all  = mode === "replace" ? [] : getAllEmployees();
+  var added = 0; var updated = 0;
+
+  importData.forEach(function(emp) {
+    var idx = all.findIndex(function(e){ return e.id === emp.id; });
+    if (!emp.status && emp.expiry) {
+      var diff = (new Date(emp.expiry) - new Date()) / 86400000;
+      emp.status = diff < 0 ? "期限切れ" : diff < 90 ? "要更新" : "有効";
+    }
+    emp.updatedAt = emp.updatedAt || new Date().toISOString().slice(0,10);
+    emp.history   = [];
+    if (idx >= 0) { all[idx] = Object.assign({}, all[idx], emp); updated++; }
+    else { all.push(emp); added++; }
+  });
+
+  saveAllEmployeesLocal(all);
+  if (gasConnected) {
+    gasPost({action:"saveAllEmployees", employees:all}).catch(function(e){ console.warn(e); });
+  }
+
+  closeImportModal();
+  renderFilters();
+  renderList();
+  toast("インポート完了: 追加"+added+"件 / 更新"+updated+"件");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DOCUMENT GENERATION
+// ═══════════════════════════════════════════════════════════════
+var salaryTargetId = null;
+
+function openSalaryModal(empId) {
+  salaryTargetId = empId;
+  document.getElementById("sal_base").value = "";
+  document.getElementById("sal_allow").value = "";
+  document.getElementById("sal_annual").value = "";
+  document.getElementById("salaryOverlay").classList.add("active");
+}
+function generateDocWithSalary() {
+  var base   = parseInt(document.getElementById("sal_base").value)||0;
+  var allow  = parseInt(document.getElementById("sal_allow").value)||0;
+  var annual = parseInt(document.getElementById("sal_annual").value)||(base+allow)*12;
+  document.getElementById("salaryOverlay").classList.remove("active");
+  generateDoc("給与証明書", salaryTargetId, {base:base, allow:allow, annual:annual});
+}
+function generateDoc(type, empId, extra) {
+  var emp = getEmployee(empId);
+  if (!emp) return;
+  var today = new Date().toISOString().slice(0,10);
+  var content = "";
+
+  if (type === "在留カード確認票") {
+    content = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'+
+      '<title>在留カード確認票</title>'+
+      '<style>body{font-family:"MS Mincho",serif;max-width:700px;margin:40px auto;padding:20px}'+
+      'h1{text-align:center;font-size:1.3rem;margin-bottom:24px}'+
+      'table{width:100%;border-collapse:collapse;margin-bottom:20px}'+
+      'td,th{border:1px solid #000;padding:8px 12px;font-size:0.9rem}'+
+      'th{background:#f0f0f0;width:35%}</style></head><body>'+
+      '<h1>在留カード確認票</h1>'+
+      '<p style="text-align:right">確認日: '+today+'</p>'+
+      '<table>'+
+      '<tr><th>氏名</th><td>'+emp.name+'</td></tr>'+
+      '<tr><th>国籍</th><td>'+emp.nationality+'</td></tr>'+
+      '<tr><th>在留資格</th><td>'+emp.visaType+'</td></tr>'+
+      '<tr><th>在留カード番号</th><td>'+emp.cardNo+'</td></tr>'+
+      '<tr><th>在留期限</th><td>'+emp.expiry+'</td></tr>'+
+      '<tr><th>就労制限</th><td>'+emp.restriction+'</td></tr>'+
+      '</table>'+
+      '<p>確認者: ___________　　印</p>'+
+      '<script>window.print()<\/script></body></html>';
+  } else if (type === "給与証明書") {
+    var monthly = (extra.base||0) + (extra.allow||0);
+    content = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'+
+      '<title>給与証明書</title>'+
+      '<style>body{font-family:"MS Mincho",serif;max-width:700px;margin:40px auto;padding:20px}'+
+      'h1{text-align:center;font-size:1.3rem;margin-bottom:8px}'+
+      '.sub{text-align:center;margin-bottom:24px;font-size:.9rem}'+
+      'table{width:100%;border-collapse:collapse;margin-bottom:20px}'+
+      'td,th{border:1px solid #000;padding:8px 12px;font-size:0.9rem}'+
+      'th{background:#f0f0f0;width:40%}'+
+      '.seal{text-align:right;margin-top:40px}</style></head><body>'+
+      '<h1>給 与 証 明 書</h1>'+
+      '<p class="sub">発行日: '+today+'</p>'+
+      '<table>'+
+      '<tr><th>氏名</th><td>'+emp.name+'</td></tr>'+
+      '<tr><th>部署・役職</th><td>'+emp.dept+' / '+emp.title+'</td></tr>'+
+      '<tr><th>入社日</th><td>'+emp.joinDate+'</td></tr>'+
+      '<tr><th>基本給（月額）</th><td>'+extra.base.toLocaleString()+'円</td></tr>'+
+      '<tr><th>各種手当（月額合計）</th><td>'+extra.allow.toLocaleString()+'円</td></tr>'+
+      '<tr><th>月額支給合計</th><td>'+monthly.toLocaleString()+'円</td></tr>'+
+      '<tr><th>年収（見込み）</th><td>'+extra.annual.toLocaleString()+'円</td></tr>'+
+      '</table>'+
+      '<p>上記のとおり相違ないことを証明します。</p>'+
+      '<div class="seal"><p>Green Carbon 株式会社</p><p>代表取締役 ___________</p><p style="margin-top:20px">印</p></div>'+
+      '<script>window.print()<\/script></body></html>';
+  } else {
+    content = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">'+
+      '<title>'+type+'</title>'+
+      '<style>body{font-family:"MS Mincho",serif;max-width:700px;margin:40px auto;padding:20px}'+
+      'h1{text-align:center;font-size:1.3rem;margin-bottom:24px}'+
+      'table{width:100%;border-collapse:collapse}'+
+      'td,th{border:1px solid #000;padding:8px 12px}'+
+      'th{background:#f0f0f0;width:35%}</style></head><body>'+
+      '<h1>'+type+'</h1>'+
+      '<p style="text-align:right">発行日: '+today+'</p>'+
+      '<table>'+
+      '<tr><th>氏名</th><td>'+emp.name+'</td></tr>'+
+      '<tr><th>国籍</th><td>'+emp.nationality+'</td></tr>'+
+      '<tr><th>部署</th><td>'+emp.dept+'</td></tr>'+
+      '<tr><th>役職</th><td>'+emp.title+'</td></tr>'+
+      '<tr><th>入社日</th><td>'+emp.joinDate+'</td></tr>'+
+      '</table>'+
+      '<p style="margin-top:30px">上記のとおり相違ないことを証明します。</p>'+
+      '<p style="text-align:right;margin-top:40px">Green Carbon 株式会社　代表取締役　　印</p>'+
+      '<script>window.print()<\/script></body></html>';
+  }
+
+  var win = window.open("","_blank");
+  if (win) win.document.write(content);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// freee SYNC MODAL
+// ═══════════════════════════════════════════════════════════════
+function openFreeeModal() {
+  document.getElementById("freeeOverlay").classList.add("active");
+  loadFreeeStatus();
+}
+function closeFreeeModal() {
+  document.getElementById("freeeOverlay").classList.remove("active");
+}
+
+function loadFreeeStatus() {
+  if (!GAS_URL) {
+    setFreeeStatusUI({configured:false, authenticated:false});
+    return;
+  }
+  gasGet({action:"freeeStatus"}).then(function(data) {
+    setFreeeStatusUI(data);
+  }).catch(function(err) {
+    setFreeeStatusUI({error: err.message});
+  });
+}
+
+function setFreeeStatusUI(data) {
+  var icon  = document.getElementById("freeeStatusIcon");
+  var title = document.getElementById("freeeStatusTitle");
+  var sub   = document.getElementById("freeeStatusSub");
+  var box   = document.getElementById("freeeStatusBox");
+  var connectBtn = document.getElementById("freeeConnectBtn");
+  var syncBtn    = document.getElementById("freeeSyncBtn");
+
+  connectBtn.style.display = "none";
+  syncBtn.style.display = "none";
+
+  if (!GAS_URL) {
+    icon.textContent = "⚙️"; title.textContent = "GAS 未設定";
+    sub.textContent = "GAS_URL を設定してください";
+    box.className = "freee-status-box disconnected";
+    return;
+  }
+  if (data.error) {
+    icon.textContent = "❌"; title.textContent = "接続エラー";
+    sub.textContent = data.error; box.className = "freee-status-box disconnected";
+    return;
+  }
+  if (!data.configured) {
+    icon.textContent = "⚙️"; title.textContent = "freee 認証情報未設定";
+    sub.textContent = "setFreeeCredentials() を GAS エディタで実行してください";
+    box.className = "freee-status-box disconnected";
+    return;
+  }
+  if (!data.authenticated || !data.tokenValid) {
+    icon.textContent = "🔑"; title.textContent = "freee 未接続";
+    sub.textContent = "OAuth 認証を完了してください";
+    box.className = "freee-status-box disconnected";
+    connectBtn.style.display = "block";
+    document.getElementById("freeeBtn").className = "hdr-btn freee";
+  } else {
+    icon.textContent = "✅"; title.textContent = "freee 接続済み";
+    sub.textContent = "社員データを同期できます";
+    box.className = "freee-status-box connected";
+    syncBtn.style.display = "block";
+    document.getElementById("freeeBtn").className = "hdr-btn freee connected";
+  }
+
+  // 最終同期日時
+  var lastSync = document.getElementById("freeeLastSync");
+  if (data.lastSync) {
+    lastSync.textContent = data.lastSync.replace("T"," ").slice(0,16);
+  }
+  var gasStatus = document.getElementById("freeeGasStatus");
+  gasStatus.textContent = gasConnected ? "✓ 接続済み" : "未接続";
+}
+
+function startFreeeAuth() {
+  if (!GAS_URL) { toast("GAS_URL を設定してください", true); return; }
+  var authUrl = GAS_URL + "?action=freeeAuth";
+  window.open(authUrl, "_blank", "width=600,height=700");
+  setTimeout(loadFreeeStatus, 5000);
+}
+
+function runFreeeSync() {
+  if (!GAS_URL) { toast("GAS_URL を設定してください", true); return; }
+  document.getElementById("syncProgress").style.display = "block";
+  document.getElementById("freeeActions").style.display = "none";
+  document.getElementById("syncProgressMsg").textContent = "freeeから社員データを取得中...";
+
+  gasGet({action:"freeeSync"}).then(function(data) {
+    document.getElementById("syncProgress").style.display = "none";
+    document.getElementById("freeeActions").style.display = "flex";
+    if (data.success) {
+      toast("freee同期完了: 外国籍"+data.synced+"名 / 全"+data.total+"名");
+      init();
+      loadFreeeStatus();
+    } else {
+      toast("同期エラー: " + data.error, true);
+    }
+  }).catch(function(err) {
+    document.getElementById("syncProgress").style.display = "none";
+    document.getElementById("freeeActions").style.display = "flex";
+    toast("通信エラー: " + err.message, true);
+  });
+}
+
+function openFreeeSetupGuide() {
+  toast("GASフォルダの FREEE_API_SETUP.md を参照してください");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+var toastTimer;
+function toast(msg, isError) {
+  var el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.background = isError ? "#c62828" : "#1b4332";
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════
+checkAuth();
+if (localStorage.getItem("gc-auth") === "ok") init();
+</script>
+</body>
+</html>

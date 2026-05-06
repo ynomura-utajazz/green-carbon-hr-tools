@@ -1394,22 +1394,50 @@ function parseCsvContent(text) {
   const rows = lines.slice(1).map(l => parseRow(l));
 
   // Map columns — support both template headers and common variations
+  // freee人事労務のエクスポート列名にも対応
   const colMap = {
-    '社員番号': 'id', 'id': 'id',
-    '氏名': 'name', 'name': 'name',
-    'ローマ字氏名': 'nameKana', 'ローマ字': 'nameKana', 'nameKana': 'nameKana',
+    // ── 社員番号 ──
+    '社員番号': 'id', '従業員番号': 'id', 'id': 'id', 'ID': 'id',
+    // ── 氏名（freeeは姓・名が分かれている） ──
+    '氏名': 'name', 'name': 'name', '名前': 'name',
+    '姓': '__lastName', '名': '__firstName',
+    '姓（漢字）': '__lastName', '名（漢字）': '__firstName',
+    '姓_漢字': '__lastName', '名_漢字': '__firstName',
+    // ── ローマ字 / カナ（freeeはカナが姓名分割） ──
+    'ローマ字氏名': 'nameKana', 'nameKana': 'nameKana', 'ローマ字': 'nameKana',
+    '姓（カナ）': '__lastKana', '名（カナ）': '__firstKana',
+    '姓_カナ': '__lastKana', '名_カナ': '__firstKana',
+    '姓（英字）': '__lastRoma', '名（英字）': '__firstRoma',
+    // ── 国籍 ──
     '国籍': 'nationality', 'nationality': 'nationality',
-    '部門': 'dept', 'department': 'dept', 'dept': 'dept',
-    '役職': 'title', 'title': 'title',
-    '生年月日(YYYY-MM-DD)': 'dob', '生年月日': 'dob', 'dob': 'dob',
-    '入社日(YYYY-MM-DD)': 'joinDate', '入社日': 'joinDate', 'joinDate': 'joinDate',
-    'メールアドレス': 'email', 'email': 'email', 'Email': 'email',
-    '在留資格種別': 'visaType', 'visaType': 'visaType', '在留資格': 'visaType',
-    '在留カード番号': 'cardNo', 'cardNo': 'cardNo', '在留カード': 'cardNo',
-    '在留期限(YYYY-MM-DD)': 'expiry', '在留期限': 'expiry', '有効期限': 'expiry', 'expiry': 'expiry',
+    '国籍（外国人）': 'nationality', '出身国': 'nationality',
+    // ── 部門 ──
+    '部門': 'dept', '所属部門': 'dept', '所属部門名': 'dept',
+    'department': 'dept', 'dept': 'dept', '部署': 'dept', '部署名': 'dept',
+    // ── 役職 ──
+    '役職': 'title', '役職名': 'title', 'title': 'title', 'position': 'title',
+    // ── 日付 ──
+    '生年月日': 'dob', '生年月日(YYYY-MM-DD)': 'dob', 'dob': 'dob',
+    '入社日': 'joinDate', '入社年月日': 'joinDate', '入社日(YYYY-MM-DD)': 'joinDate',
+    'joinDate': 'joinDate', '採用日': 'joinDate',
+    // ── メール ──
+    'メールアドレス': 'email', 'メール': 'email', 'email': 'email',
+    'Email': 'email', 'E-mail': 'email', '会社メール': 'email',
+    // ── 在留資格 ──
+    '在留資格': 'visaType', '在留資格種別': 'visaType',
+    '在留資格の種類': 'visaType', 'visaType': 'visaType',
+    // ── 在留カード ──
+    '在留カード番号': 'cardNo', '在留カード': 'cardNo', 'cardNo': 'cardNo',
+    '在留カードNo': 'cardNo', '在留カードNo.': 'cardNo',
+    // ── 在留期限 ──
+    '在留期限': 'expiry', '有効期限': 'expiry', '在留期限(YYYY-MM-DD)': 'expiry',
+    '在留カード有効期限': 'expiry', 'expiry': 'expiry',
+    // ── 在留期間・就労制限 ──
     '在留期間': 'period', 'period': 'period',
-    '就労制限': 'restriction', 'restriction': 'restriction',
-    '担当HR': 'hrPic', 'hrPic': 'hrPic', '担当者': 'hrPic',
+    '就労制限': 'restriction', '就労制限の内容': 'restriction', 'restriction': 'restriction',
+    // ── 担当HR ──
+    '担当HR': 'hrPic', '担当者': 'hrPic', 'hrPic': 'hrPic', '担当': 'hrPic',
+    // ── ステータス ──
     '更新状況': 'status', 'status': 'status',
   };
 
@@ -1425,8 +1453,47 @@ function parseCsvContent(text) {
   let errors = [], parsed = [];
 
   rows.forEach((row, idx) => {
-    const emp = {status:'pending', history:[], history:[]};
+    const emp = {status:'pending', history:[]};
     mapped.forEach((field, i) => { if (field) emp[field] = row[i] || ''; });
+    // freee対応: 姓+名を結合して氏名を作る
+    if (!emp.name) {
+      const last  = emp.__lastName  || emp.__lastKana  || '';
+      const first = emp.__firstName || emp.__firstKana || '';
+      if (last || first) emp.name = (last + (last && first ? '　' : '') + first).trim();
+    }
+    // freee対応: ローマ字姓名を結合
+    if (!emp.nameKana) {
+      const lr = emp.__lastRoma  || emp.__lastKana  || '';
+      const fr = emp.__firstRoma || emp.__firstKana || '';
+      if (lr || fr) emp.nameKana = (lr + (lr && fr ? ' ' : '') + fr).trim();
+    }
+    // freee対応: 国籍の表記ゆれを正規化
+    const natMap = {
+      'インドネシア共和国':'インドネシア','ベトナム社会主義共和国':'ベトナム',
+      'フィリピン共和国':'フィリピン','ネパール連邦民主共和国':'ネパール',
+      'タイ王国':'タイ','ミャンマー連邦共和国':'ミャンマー','インド':'インド',
+      'バングラデシュ人民共和国':'バングラデシュ','中華人民共和国':'中国',
+      '中国':'中国','大韓民国':'韓国','韓国':'韓国',
+      'スリランカ民主社会主義共和国':'スリランカ','カンボジア王国':'カンボジア',
+      'マレーシア':'マレーシア',
+    };
+    if (emp.nationality && natMap[emp.nationality]) emp.nationality = natMap[emp.nationality];
+    // freee対応: 在留資格の表記ゆれを正規化
+    const vtMap = {
+      '技術':'技術・人文知識・国際業務','技人国':'技術・人文知識・国際業務',
+      '技術・人文・国際業務':'技術・人文知識・国際業務',
+      '特定技能1号':'特定技能','特定技能2号':'特定技能',
+      '高度専門職1号イ':'高度専門職','高度専門職1号ロ':'高度専門職','高度専門職1号ハ':'高度専門職','高度専門職2号':'高度専門職',
+      '企業内転勤':'企業内転勤',
+      '日本人の配偶者等':'配偶者等','永住者の配偶者等':'配偶者等',
+    };
+    if (emp.visaType && vtMap[emp.visaType]) emp.visaType = vtMap[emp.visaType];
+    // freee対応: 日付フォーマットをYYYY-MM-DDに統一（YYYY/MM/DD対応）
+    ['dob','joinDate','expiry'].forEach(f => {
+      if (emp[f]) emp[f] = emp[f].replace(/\/(\d)/g, '-$1').replace(/\//g, '-');
+    });
+    // 内部フィールドを削除
+    ['__lastName','__firstName','__lastKana','__firstKana','__lastRoma','__firstRoma'].forEach(k=>delete emp[k]);
     // Validation
     if (!emp.id) { errors.push('行'+(idx+2)+': 社員番号が空です'); return; }
     if (!emp.name) { errors.push('行'+(idx+2)+': 氏名が空です'); return; }

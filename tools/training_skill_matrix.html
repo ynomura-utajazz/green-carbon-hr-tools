@@ -32,7 +32,7 @@
       background: var(--gc-dark);
       color: var(--white);
       padding: 0 24px;
-      height: 56px;
+      height: 60px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -733,6 +733,26 @@ function setSkillScore(empId, skill, val) {
   }
   closePicker();
   renderMatrix();
+  saveSkillStorage();
+}
+
+// ── localStorage ──
+const LS_SKILL = 'gc_skill_matrix';
+function saveSkillStorage() {
+  const scores = {};
+  EMPLOYEES.forEach(e => { scores[e.id] = e.scores; });
+  localStorage.setItem(LS_SKILL, JSON.stringify({ scores, trainings: TRAININGS, enrollments: ENROLLMENTS }));
+}
+function loadSkillStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_SKILL));
+    if (!saved) return;
+    if (saved.scores) {
+      EMPLOYEES.forEach(e => { if (saved.scores[e.id]) e.scores = saved.scores[e.id]; });
+    }
+    if (saved.trainings) TRAININGS.splice(0, TRAININGS.length, ...saved.trainings);
+    if (saved.enrollments) Object.assign(ENROLLMENTS, saved.enrollments);
+  } catch(e) {}
 }
 
 function exportCSV() {
@@ -825,6 +845,7 @@ function saveTraining() {
   TRAININGS.push(newT);
   closeTrainingModal();
   renderTraining();
+  saveSkillStorage();
   // GAS 連携時: saveTraining(newT);
 }
 
@@ -1014,6 +1035,7 @@ function renderGap() {
 // Init
 // ═══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  loadSkillStorage();
   renderMatrix();
   renderTraining();
   initEmpSelect();

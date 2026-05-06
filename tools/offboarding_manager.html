@@ -26,12 +26,13 @@
       --shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0f7f2; color: var(--text-dark); }
+    body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0fdf4; color: var(--text-dark); }
 
     /* Header */
     .header {
       background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
-      color: #fff; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between;
+      color: #fff; padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .header-left { display: flex; align-items: center; gap: 14px; }
     .header-icon { font-size: 2rem; }
@@ -719,6 +720,7 @@ function toggleTask(empId, cat, idx, checked) {
     total += tasks.length; done += tasks.filter(t => t.done).length;
   });
   emp.progress = total ? Math.round(done / total * 100) : 0;
+  saveOffboardStorage();
   // Refresh checklist display
   loadChecklist();
 }
@@ -793,6 +795,7 @@ function addHandover() {
     notes: []
   });
   closeModal('handover-modal');
+  saveOffboardStorage();
   renderHandovers();
 }
 
@@ -915,10 +918,27 @@ function addEmployee() {
     });
   });
   closeModal('add-modal');
+  saveOffboardStorage();
   renderEmployees();
 }
 
+// =========== localStorage 永続化 ===========
+const LS_OFFBOARD = 'gc_offboarding';
+function saveOffboardStorage() {
+  localStorage.setItem(LS_OFFBOARD, JSON.stringify({ employees, checklistData, handovers }));
+}
+function loadOffboardStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_OFFBOARD));
+    if (!saved) return;
+    if (saved.employees) employees.splice(0, employees.length, ...saved.employees);
+    if (saved.checklistData) Object.assign(checklistData, saved.checklistData);
+    if (saved.handovers) handovers.splice(0, handovers.length, ...saved.handovers);
+  } catch(e) {}
+}
+
 // =========== 初期化 ===========
+loadOffboardStorage();
 renderEmployees();
 populateChecklistSelect();
 </script>

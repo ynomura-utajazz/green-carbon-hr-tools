@@ -398,10 +398,10 @@
 
   <!-- タブ -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('survey')">📋 サーベイ管理</button>
-    <button class="tab-btn" onclick="switchTab('dashboard')">📈 結果ダッシュボード</button>
-    <button class="tab-btn" onclick="switchTab('feedback')">💬 回答・フィードバック</button>
-    <button class="tab-btn" onclick="switchTab('action')">🎯 アクションプラン</button>
+    <button class="tab-btn active" onclick="switchTab('survey', this)">📋 サーベイ管理</button>
+    <button class="tab-btn" onclick="switchTab('dashboard', this)">📈 結果ダッシュボード</button>
+    <button class="tab-btn" onclick="switchTab('feedback', this)">💬 回答・フィードバック</button>
+    <button class="tab-btn" onclick="switchTab('action', this)">🎯 アクションプラン</button>
   </div>
 
   <!-- ══════════════════════════════════════════
@@ -752,6 +752,23 @@ const SAMPLE = {
 };
 
 // ══════════════════════════════════════════════════════
+// localStorage 永続化
+// ══════════════════════════════════════════════════════
+const LS_KEY = 'gc_pulse_survey';
+function saveToStorage() {
+  localStorage.setItem(LS_KEY, JSON.stringify({ surveys: SAMPLE.surveys, actions: SAMPLE.actions }));
+}
+function loadFromStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_KEY));
+    if (saved) {
+      if (saved.surveys) SAMPLE.surveys = saved.surveys;
+      if (saved.actions) SAMPLE.actions = saved.actions;
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════
 // GAS 取得（フォールバック付き）
 // ══════════════════════════════════════════════════════
 async function fetchGAS(action, params={}) {
@@ -771,11 +788,11 @@ async function fetchGAS(action, params={}) {
 // ══════════════════════════════════════════════════════
 // タブ切り替え
 // ══════════════════════════════════════════════════════
-function switchTab(name) {
+function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  event.currentTarget.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
 // ══════════════════════════════════════════════════════
@@ -892,6 +909,7 @@ function saveSurvey(distribute=false) {
   SAMPLE.surveys.unshift(newSurvey);
   renderSurveys(SAMPLE.surveys);
   closeSurveyModal();
+  saveToStorage();
   showToast(distribute ? 'サーベイを配信しました ✉️' : '下書きとして保存しました 📝');
 }
 
@@ -1127,7 +1145,7 @@ function renderActions(list) {
 
 function markDone(id) {
   const a = SAMPLE.actions.find(x=>x.id===id);
-  if(a){ a.status='done'; renderActions(SAMPLE.actions); }
+  if(a){ a.status='done'; renderActions(SAMPLE.actions); saveToStorage(); }
   showToast('アクションを完了にしました ✅');
 }
 function removeAction(id) {
@@ -1135,6 +1153,7 @@ function removeAction(id) {
   const idx = SAMPLE.actions.findIndex(x=>x.id===id);
   if(idx>=0) SAMPLE.actions.splice(idx,1);
   renderActions(SAMPLE.actions);
+  saveToStorage();
   showToast('削除しました');
 }
 
@@ -1161,6 +1180,7 @@ function saveAction() {
   });
   renderActions(SAMPLE.actions);
   closeActionModal();
+  saveToStorage();
   showToast('アクションを登録しました 🎯');
 }
 
@@ -1197,6 +1217,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // 初期化
 // ══════════════════════════════════════════════════════
 async function init() {
+  loadFromStorage();
   // GAS からデータ取得、失敗したらサンプルデータ使用
   const surveysData = await fetchGAS('getSurveys') ?? SAMPLE;
   renderSurveys(SAMPLE.surveys);

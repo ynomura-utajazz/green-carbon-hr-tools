@@ -75,6 +75,32 @@
   .form-group input, .form-group select { width: 100%; }
   .form-row { display: flex; gap: 10px; }
   .form-row .form-group { flex: 1; }
+
+.contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.email-btn {
+  background: #e8f4f8;
+  color: #0078d4;
+  border: 1px solid #0078d4;
+}
+.email-btn:hover { background: #0078d4; color: white; }
+.slack-btn {
+  background: #f0e6ff;
+  color: #4a154b;
+  border: 1px solid #4a154b;
+}
+.slack-btn:hover { background: #4a154b; color: white; }
+.slack-fallback { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -125,6 +151,7 @@
       <div class="info-row"><span class="info-icon">👤</span><span class="info-label">上司</span><span class="info-value" id="pmManager"></span></div>
     </div>
     <div class="modal-footer">
+      <div id="pmContactArea" style="display:flex;gap:8px;flex:1;flex-wrap:wrap"></div>
       <button class="btn btn-secondary btn-sm" onclick="closeProfile()">閉じる</button>
       <button class="btn btn-primary btn-sm" id="pmEditBtn">編集</button>
     </div>
@@ -159,6 +186,53 @@
 </div>
 
 <script>
+
+const SLACK_IDS = {
+  "y.nomura@green-carbon.inc": "U09KA9U02DV",
+  "a.kamada@green-carbon.inc": "U09KS5D8Q7L",
+  "k.doi@green-carbon.inc": "U099FND80J2",
+  "r.harada@green-carbon.inc": "U09QSJ4TLDS",
+  "j.saw@green-carbon.inc": "U09R1U34RBK",
+  "t.nguyen@green-carbon.inc": "U09R1U5AS1X",
+  "s.tsukamoto@green-carbon.inc": "U09J5K62136",
+  "k.nakao@green-carbon.inc": "U09R1U61RNV",
+  "k.furuyama@green-carbon.inc": "U0AC902QL0N",
+  "s.galina@green-carbon.inc": "U09QM0UUFQW",
+  "r.felicialee@green-carbon.inc": "U09QKHHM8LD",
+  "a.baltamang@green-carbon.inc": "U09RFVA3NTA",
+  "a.yap@green-carbon.inc": "U09R1U5PGRX",
+  "s.aimen@green-carbon.inc": "U09QM09TMD4",
+  "g.esha@green-carbon.inc": "U09QP219NQJ",
+  "k.fujiwara@green-carbon.inc": "U0AC902QL0N",
+  "w.fujimoto@green-carbon.inc": "U09RFV8EPJL",
+  "a.wibowo@green-carbon.inc": "U09S8HBLLMN",
+  "g.tirza@green-carbon.inc": "U09RAQHQW77",
+  "c.nyakoon@green-carbon.inc": "U09QKHKL2TF",
+  "k.olga@green-carbon.inc": "U09QYR9FYTD",
+  "k.kawasaki@green-carbon.inc": "U09QP1S0PHQ",
+  "s.nambu@green-carbon.inc": "U09QM05EM5L",
+  "t.shimojo@green-carbon.inc": "U09R1U4C7DF",
+  "d.sale@green-carbon.inc": "U0AT27219B6",
+  "t.ishikawa@green-carbon.inc": "U0ACY0FKUDA",
+  "k.kushida@green-carbon.inc": "U09Q7HL9ANT",
+  "l.martinez@green-carbon.inc": "U09RPE18NQK",
+  "m.pal@green-carbon.inc": "U0B0VDH4L02",
+  "roumu@green-carbon.inc": "U09SQQ2D9TJ"
+};
+
+function getContactBtns(email, slackFromData, stopProp) {
+  const sid = (email && SLACK_IDS[email]) || slackFromData || '';
+  const sp = stopProp ? ' onclick="event.stopPropagation()"' : '';
+  let h = '';
+  if (email) h += `<a href="mailto:${email}" class="contact-btn email-btn"${sp}>✉ メール</a>`;
+  if (sid) {
+    h += `<a href="https://greencarbonpro.slack.com/team/${sid}" target="_blank" class="contact-btn slack-btn"${sp}>💬 Slack</a>`;
+  } else {
+    h += `<a href="https://greencarbonpro.slack.com/" target="_blank" class="contact-btn slack-btn slack-fallback"${sp}>💬 Slack</a>`;
+  }
+  return h;
+}
+
 const DATA_VERSION = '20260430-freee';
 let employees = [
     {"name": "大北 潤", "role": "代表取締役", "dept": "取締役会", "email": "j.okita@green-carbon.inc", "slack": "U09J5K73ZRS", "start": "2025-01-01", "location": "東京", "manager": ""},
@@ -610,8 +684,8 @@ function render() {
       <td><div class="name-cell"><div class="mini-avatar" style="background:${color(e)}">${initials(e.name)}</div>${e.name}</div></td>
       <td>${e.role||'-'}</td>
       <td>${e.dept||'-'}</td>
-      <td>${e.email||'-'}</td>
-      <td>${e.slack ? `<a href="https://app.slack.com/team/${e.slack}" target="_blank" style="color:var(--accent);text-decoration:none;font-family:monospace">${e.slack}</a>` : '-'}</td>
+      <td>${e.email ? `<a href="mailto:${e.email}" class="contact-btn email-btn">✉ メール</a>` : '-'}</td>
+      <td>${(()=>{const sid=(SLACK_IDS[e.email]||e.slack);return sid?`<a href="https://greencarbonpro.slack.com/team/${sid}" target="_blank" class="contact-btn slack-btn">💬 Slack</a>`:`<a href="https://greencarbonpro.slack.com/" target="_blank" class="contact-btn slack-btn slack-fallback">💬 Slack</a>`;})()}</td>
       <td>${e.start||'-'}</td>
       <td><button class="btn btn-secondary btn-sm" onclick="showProfile(${idx})">詳細</button></td>
     </tr>`;
@@ -633,6 +707,7 @@ function showProfile(idx) {
   document.getElementById('pmLocation').textContent = e.location||'-';
   document.getElementById('pmManager').textContent = e.manager||'-';
   document.getElementById('pmEditBtn').onclick = () => { closeProfile(); openEditModal(idx); };
+  document.getElementById('pmContactArea').innerHTML = getContactBtns(e.email, e.slack, false);
   document.getElementById('profileModal').classList.add('open');
 }
 

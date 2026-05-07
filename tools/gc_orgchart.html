@@ -86,6 +86,32 @@
   .mp-row:last-child { border:none; }
   .mp-label { color:#888; width:60px; flex-shrink:0; }
   .mp-footer { padding:14px 20px; border-top:1px solid var(--border); text-align:right; }
+
+.contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.email-btn {
+  background: #e8f4f8;
+  color: #0078d4;
+  border: 1px solid #0078d4;
+}
+.email-btn:hover { background: #0078d4; color: white; }
+.slack-btn {
+  background: #f0e6ff;
+  color: #4a154b;
+  border: 1px solid #4a154b;
+}
+.slack-btn:hover { background: #4a154b; color: white; }
+.slack-fallback { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -122,7 +148,7 @@
       <div class="mp-role" id="mpRole"></div>
     </div>
     <div class="mp-body" id="mpBody"></div>
-    <div class="mp-footer"><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>
+    <div class="mp-footer" style="display:flex;align-items:center;gap:8px"><div id="mpFooterBtns" style="flex:1;display:flex;gap:8px;flex-wrap:wrap"></div><button class="btn btn-secondary" onclick="closeModal()">閉じる</button></div>
   </div>
 </div>
 
@@ -131,6 +157,51 @@ const DATA_VERSION = '20260430-freee';
 const COLORS = ['#2d6a4f','#40916c','#1b4332','#52b788','#2563eb','#7c3aed','#b45309','#be185d','#0e7490','#9a3412'];
 
 // Load employees from localStorage (shared with gc_directory)
+const SLACK_IDS = {
+  "y.nomura@green-carbon.inc": "U09KA9U02DV",
+  "a.kamada@green-carbon.inc": "U09KS5D8Q7L",
+  "k.doi@green-carbon.inc": "U099FND80J2",
+  "r.harada@green-carbon.inc": "U09QSJ4TLDS",
+  "j.saw@green-carbon.inc": "U09R1U34RBK",
+  "t.nguyen@green-carbon.inc": "U09R1U5AS1X",
+  "s.tsukamoto@green-carbon.inc": "U09J5K62136",
+  "k.nakao@green-carbon.inc": "U09R1U61RNV",
+  "k.furuyama@green-carbon.inc": "U0AC902QL0N",
+  "s.galina@green-carbon.inc": "U09QM0UUFQW",
+  "r.felicialee@green-carbon.inc": "U09QKHHM8LD",
+  "a.baltamang@green-carbon.inc": "U09RFVA3NTA",
+  "a.yap@green-carbon.inc": "U09R1U5PGRX",
+  "s.aimen@green-carbon.inc": "U09QM09TMD4",
+  "g.esha@green-carbon.inc": "U09QP219NQJ",
+  "k.fujiwara@green-carbon.inc": "U0AC902QL0N",
+  "w.fujimoto@green-carbon.inc": "U09RFV8EPJL",
+  "a.wibowo@green-carbon.inc": "U09S8HBLLMN",
+  "g.tirza@green-carbon.inc": "U09RAQHQW77",
+  "c.nyakoon@green-carbon.inc": "U09QKHKL2TF",
+  "k.olga@green-carbon.inc": "U09QYR9FYTD",
+  "k.kawasaki@green-carbon.inc": "U09QP1S0PHQ",
+  "s.nambu@green-carbon.inc": "U09QM05EM5L",
+  "t.shimojo@green-carbon.inc": "U09R1U4C7DF",
+  "d.sale@green-carbon.inc": "U0AT27219B6",
+  "t.ishikawa@green-carbon.inc": "U0ACY0FKUDA",
+  "k.kushida@green-carbon.inc": "U09Q7HL9ANT",
+  "l.martinez@green-carbon.inc": "U09RPE18NQK",
+  "m.pal@green-carbon.inc": "U0B0VDH4L02",
+  "roumu@green-carbon.inc": "U09SQQ2D9TJ"
+};
+
+function getContactBtns(email, slackFromData) {
+  const sid = (email && SLACK_IDS[email]) || slackFromData || '';
+  let h = '';
+  if (email) h += `<a href="mailto:${email}" class="contact-btn email-btn">✉ メール</a>`;
+  if (sid) {
+    h += `<a href="https://greencarbonpro.slack.com/team/${sid}" target="_blank" class="contact-btn slack-btn">💬 Slack</a>`;
+  } else {
+    h += `<a href="https://greencarbonpro.slack.com/" target="_blank" class="contact-btn slack-btn slack-fallback">💬 Slack</a>`;
+  }
+  return h;
+}
+
 let employees = [
     {"name": "大北 潤", "role": "代表取締役", "dept": "取締役会", "email": "j.okita@green-carbon.inc", "slack": "U09J5K73ZRS", "start": "2025-01-01", "location": "東京", "manager": ""},
     {"name": "土居 海斗", "role": "リーダー", "dept": "国内企画部", "email": "k.doi@green-carbon.inc", "slack": "U099FND80J2", "start": "2023-03-09", "location": "東京", "manager": ""},
@@ -543,6 +614,7 @@ function showProfile(emp) {
     <div class="mp-row"><span class="mp-label">入社日</span><span>${emp.start || '-'}</span></div>
     <div class="mp-row"><span class="mp-label">勤務地</span><span>${emp.location || '-'}</span></div>
   `;
+  document.getElementById('mpFooterBtns').innerHTML = getContactBtns(emp.email, emp.slack);
   document.getElementById('profileModal').classList.add('open');
 }
 

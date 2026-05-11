@@ -102,22 +102,41 @@
   </div>
 </div>
 <script>
+  // ⚠️ 暫定実装: ソース閲覧で平文パスワードが見えないようハッシュ比較に変更。
+  // 本番（Phase 1）では Google Workspace SSO に置き換え予定。
+  const GC_USER = 'greencarbon';
+  const GC_PASS_SHA256 = '0ac6bddad3d16613501152458dfe93e1451980ecf964df368da3fc4a9b292bdc';
+
   (function() {
     if (sessionStorage.getItem('gc-auth') === 'ok') {
       document.getElementById('gc-auth-overlay').style.display = 'none';
     }
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') gcLogin();
+      if (e.key === 'Enter' && document.getElementById('gc-auth-overlay').style.display !== 'none') {
+        gcLogin();
+      }
     });
   })();
-  function gcLogin() {
-    var u = document.getElementById('gc-user').value;
-    var p = document.getElementById('gc-pass').value;
-    if (u === 'greencarbon' && p === 'GC-HR-2024') {
+
+  async function sha256Hex(text) {
+    const buf = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function gcLogin() {
+    const u = document.getElementById('gc-user').value.trim();
+    const p = document.getElementById('gc-pass').value;
+    const errEl = document.getElementById('gc-auth-error');
+    const pHash = await sha256Hex(p);
+    if (u === GC_USER && pHash === GC_PASS_SHA256) {
       sessionStorage.setItem('gc-auth', 'ok');
+      sessionStorage.setItem('gc-auth-at', String(Date.now()));
       document.getElementById('gc-auth-overlay').style.display = 'none';
+      errEl.style.display = 'none';
     } else {
-      document.getElementById('gc-auth-error').style.display = 'block';
+      errEl.style.display = 'block';
       document.getElementById('gc-pass').value = '';
       document.getElementById('gc-pass').focus();
     }
@@ -139,7 +158,7 @@
 <div class="container">
 
   <div class="info-bar">
-    <span>📦 ツール数: <strong>20</strong></span>
+    <span>📦 ツール数: <strong id="toolCountLabel">22</strong></span>
     <span>🗃️ データ: <strong>ブラウザ保存（localStorage）</strong></span>
     <span>🔗 GASバックエンド: <a href="./tools/gc_recruiting_backend.html">設定して共有可能</a></span>
     <span style="margin-left:auto"><a href="./package-info.html">📋 パッケージ情報</a></span>
@@ -242,6 +261,7 @@
       <div class="tool-desc">ツリー表示と部門別表示を切り替えられるインタラクティブな組織図。各メンバーの詳細確認も可能。</div>
       <div class="tool-tags"><span class="tag">組織図</span><span class="tag">構造</span></div>
       <div class="tool-arrow">→</div>
+    </a>
 
     <a class="tool-card" href="./tools/hr_dashboard.html" data-name="HRダッシュボード 人事分析 在籍 多様性 離職 採用コスト">
       <div class="tool-icon">📊</div>
@@ -299,18 +319,29 @@
       <div class="tool-arrow">→</div>
     </a>
 
-        <div class="tool-card" onclick="location.href='tools/value_award.html'">
-          <div class="tool-icon">🏆</div>
-          <h3>バリューアワード</h3>
-          <p>社員同士でバリュー体現を称え合うピアツーピア表彰システム</p>
-          <span class="tool-badge">エンゲージメント</span>
-        </div>
-        <div class="tool-card" onclick="location.href='tools/health_check_manager.html'">
-          <div class="tool-icon">🏥</div>
-          <h3>健康診断管理</h3>
-          <p>定期健診の受診状況・結果管理と法令コンプライアンスチェック</p>
-          <span class="tool-badge">コンプライアンス</span>
-        </div>
+    <a class="tool-card" href="./tools/value_award.html" data-name="バリューアワード ピアツーピア 表彰 エンゲージメント">
+      <div class="tool-icon">🏆</div>
+      <div class="tool-name">バリューアワード</div>
+      <div class="tool-desc">社員同士でバリュー体現を称え合うピアツーピア表彰システム。月次MVP・部門別ランキング表示。</div>
+      <div class="tool-tags"><span class="tag">エンゲージメント</span><span class="tag">表彰</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/health_check_manager.html" data-name="健康診断 定期健診 法令 コンプライアンス 産業医">
+      <div class="tool-icon">🏥</div>
+      <div class="tool-name">健康診断管理</div>
+      <div class="tool-desc">定期健診の受診状況・結果を一元管理。労安法ベースの法令チェック・要再検査者の追跡が可能。</div>
+      <div class="tool-tags"><span class="tag">健康</span><span class="tag">法令</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card" href="./tools/alumni_manager.html" data-name="アルムナイ 退職者 OBOG ネットワーク リファラル">
+      <div class="tool-icon">🌐</div>
+      <div class="tool-name">アルムナイ管理</div>
+      <div class="tool-desc">退職者ネットワーク・リファラル候補・カムバック採用を一元管理。OB/OG関係性の可視化。</div>
+      <div class="tool-tags"><span class="tag">アルムナイ</span><span class="tag">リファラル</span></div>
+      <div class="tool-arrow">→</div>
+    </a>
 
   </div>
 
@@ -357,12 +388,23 @@ const d = new Date();
 document.getElementById('heroMeta').textContent =
   `Green Carbon Inc. | ${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日現在`;
 
+// Total tool count auto-derived from DOM
+const totalTools = document.querySelectorAll('.tool-card').length;
+const countLabel = document.getElementById('toolCountLabel');
+if (countLabel) countLabel.textContent = totalTools;
+
 function filterTools() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  let visible = 0;
   document.querySelectorAll('.tool-card').forEach(card => {
-    const name = card.dataset.name || card.textContent;
-    card.classList.toggle('hidden', q.length > 0 && !name.toLowerCase().includes(q));
+    const name = (card.dataset.name || card.textContent).toLowerCase();
+    const match = q.length === 0 || name.includes(q);
+    card.classList.toggle('hidden', !match);
+    if (match) visible++;
   });
+  if (countLabel) {
+    countLabel.textContent = q.length === 0 ? totalTools : `${visible} / ${totalTools}`;
+  }
 }
 </script>
 </body>

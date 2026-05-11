@@ -1,0 +1,196 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ──────────────────────────────────────────────
+ * Green Carbon Design Tokens
+ * 公式ロゴから抽出した正確なブランドカラー：
+ *   primary  #009038 (kelly green - メインCTA)
+ *   accent   #A0E010 (lime - アクセント・成功)
+ *   dark     #006830 (deep green - ホバー・濃影)
+ * ────────────────────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+
+  /* Brand greens (kelly green family — anchored at #009038 = oklch(0.61 0.18 148)) */
+  --gc-50:  oklch(0.975 0.020 148);
+  --gc-100: oklch(0.945 0.045 148);
+  --gc-200: oklch(0.890 0.085 148);
+  --gc-300: oklch(0.810 0.130 148);
+  --gc-400: oklch(0.720 0.165 148);
+  --gc-500: oklch(0.640 0.180 148);
+  --gc-600: oklch(0.610 0.180 148); /* #009038 — primary */
+  --gc-700: oklch(0.530 0.165 148); /* hover */
+  --gc-800: oklch(0.460 0.155 148); /* #006830 — deep */
+  --gc-900: oklch(0.330 0.120 148);
+
+  /* Lime accent (#A0E010 family) */
+  --lime-100: oklch(0.945 0.085 124);
+  --lime-300: oklch(0.880 0.150 124);
+  --lime-500: oklch(0.860 0.215 124); /* #A0E010 */
+  --lime-700: oklch(0.700 0.190 124);
+
+  /* Semantic — light mode */
+  --background: oklch(0.99 0.005 156);
+  --foreground: oklch(0.18 0.020 270);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.020 270);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.020 270);
+  --primary: var(--gc-600);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: var(--gc-100);
+  --secondary-foreground: var(--gc-800);
+  --muted: oklch(0.96 0.005 156);
+  --muted-foreground: oklch(0.50 0.015 270);
+  --accent: var(--gc-100);
+  --accent-foreground: var(--gc-800);
+  --destructive: oklch(0.60 0.230 27);
+  --border: oklch(0.92 0.020 156);
+  --input: oklch(0.92 0.020 156);
+  --ring: var(--gc-500);
+
+  /* Charts */
+  --chart-1: var(--gc-500);
+  --chart-2: oklch(0.70 0.15 200);
+  --chart-3: oklch(0.75 0.15 60);
+  --chart-4: oklch(0.65 0.18 30);
+  --chart-5: oklch(0.55 0.15 290);
+
+  /* Sidebar */
+  --sidebar: oklch(0.99 0.005 156);
+  --sidebar-foreground: oklch(0.18 0.020 270);
+  --sidebar-primary: var(--gc-600);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: var(--gc-50);
+  --sidebar-accent-foreground: var(--gc-800);
+  --sidebar-border: oklch(0.92 0.020 156);
+  --sidebar-ring: var(--gc-500);
+}
+
+.dark {
+  --background: oklch(0.16 0.018 270);
+  --foreground: oklch(0.96 0.005 156);
+  --card: oklch(0.20 0.020 270);
+  --card-foreground: oklch(0.96 0.005 156);
+  --popover: oklch(0.20 0.020 270);
+  --popover-foreground: oklch(0.96 0.005 156);
+  --primary: var(--gc-400);
+  --primary-foreground: oklch(0.18 0.020 270);
+  --secondary: oklch(0.26 0.030 156);
+  --secondary-foreground: oklch(0.96 0.005 156);
+  --muted: oklch(0.24 0.015 270);
+  --muted-foreground: oklch(0.66 0.015 270);
+  --accent: oklch(0.26 0.030 156);
+  --accent-foreground: oklch(0.96 0.005 156);
+  --destructive: oklch(0.62 0.220 27);
+  --border: oklch(0.30 0.020 270);
+  --input: oklch(0.30 0.020 270);
+  --ring: var(--gc-400);
+
+  --sidebar: oklch(0.18 0.020 270);
+  --sidebar-foreground: oklch(0.96 0.005 156);
+  --sidebar-primary: var(--gc-400);
+  --sidebar-primary-foreground: oklch(0.18 0.020 270);
+  --sidebar-accent: oklch(0.26 0.030 156);
+  --sidebar-accent-foreground: oklch(0.96 0.005 156);
+  --sidebar-border: oklch(0.30 0.020 270);
+  --sidebar-ring: var(--gc-400);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-gc-50: var(--gc-50);
+  --color-gc-100: var(--gc-100);
+  --color-gc-200: var(--gc-200);
+  --color-gc-300: var(--gc-300);
+  --color-gc-400: var(--gc-400);
+  --color-gc-500: var(--gc-500);
+  --color-gc-600: var(--gc-600);
+  --color-gc-700: var(--gc-700);
+  --color-gc-800: var(--gc-800);
+  --color-gc-900: var(--gc-900);
+  --color-lime-100: var(--lime-100);
+  --color-lime-300: var(--lime-300);
+  --color-lime-500: var(--lime-500);
+  --color-lime-700: var(--lime-700);
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-inter), var(--font-noto-jp), -apple-system, BlinkMacSystemFont,
+      "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    font-feature-settings: "palt", "ss01", "cv11";
+    font-variation-settings: "opsz" 16;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 { @apply tracking-tight; letter-spacing: -0.018em; }
+  h1 { letter-spacing: -0.025em; }
+
+  /* スクロールバー */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: oklch(0.85 0.01 156 / 0.6); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(0.7 0.01 156 / 0.8); background-clip: content-box; border: 2px solid transparent; }
+
+  /* Selection */
+  ::selection { background: var(--gc-200); color: var(--gc-900); }
+
+  /* フェードイン用ユーティリティ */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* モーション軽減設定の尊重 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

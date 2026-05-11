@@ -1,0 +1,176 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "noData": "No data",
+    "search": "Search",
+    "open": "Open",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "all": "All",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "csv": "CSV",
+    "create": "Create",
+    "update": "Update",
+    "view": "View",
+    "details": "Details",
+    "loading_": "Loading…"
+  },
+  "nav": {
+    "home": "Home",
+    "directory": "Directory",
+    "recruiting": "Recruiting",
+    "oneonone": "1-on-1",
+    "retention": "Retention Risk",
+    "hrDashboard": "HR Dashboard",
+    "settings": "Settings"
+  },
+  "ai": {
+    "generate": "Generate with AI",
+    "generating": "Generating...",
+    "regenerate": "Regenerate",
+    "copy": "Copy",
+    "copied": "Copied",
+    "demoMode": "Demo"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "error": "Error",
+    "connect": "Connect",
+    "reconnect": "Reconfigure",
+    "disconnect": "Disconnect",
+    "refresh": "Refresh"
+  },
+  "category": {
+    "dashboard": "Dashboard",
+    "talent": "Talent Acquisition",
+    "people": "People & Org",
+    "contract": "Contracts",
+    "performance": "Performance",
+    "engagement": "Engagement",
+    "labor": "Labor & Compliance",
+    "compensation": "Compensation",
+    "support": "Support"
+  },
+  "appShell": {
+    "searchPlaceholder": "Search tools, people, docs...",
+    "skipToContent": "Skip to main content",
+    "menu": "Menu",
+    "v": "v"
+  },
+  "page": {
+    "recruiting": {
+      "title": "Recruiting",
+      "subtitle": "Manage candidate pipeline, interviews and offers in one Kanban"
+    },
+    "oneonone": {
+      "title": "1-on-1 / Mentoring",
+      "subtitle": "Design, record and improve manager-member conversations"
+    },
+    "retention": {
+      "title": "Retention Risk",
+      "subtitle": "Detect signals early and enable manager-led intervention"
+    },
+    "hrDashboard": {
+      "title": "HR Dashboard",
+      "subtitle": "Integrated analytics for executives and HR"
+    },
+    "directory": {
+      "title": "Directory",
+      "subtitle": "Search all employees across the company"
+    },
+    "adminIntegrations": {
+      "title": "Integrations",
+      "subtitle": "OAuth and webhook configuration for Slack / Google / freee"
+    },
+    "adminAiUsage": {
+      "title": "AI Copilot Usage",
+      "subtitle": "Token consumption, cost estimate, breakdown for the last 30 days"
+    },
+    "talentReview": {
+      "title": "Talent Review & Succession",
+      "subtitle": "9-box × key positions × successor pipeline"
+    },
+    "perfCalibration": {
+      "title": "Performance Calibration",
+      "subtitle": "OKR achievement × 360° feedback in 4 quadrants"
+    },
+    "advocacy": {
+      "title": "Employee Advocacy",
+      "subtitle": "Track external publications (articles, talks, podcasts, OSS)"
+    },
+    "coaching": {
+      "title": "AI Coaching",
+      "subtitle": "Monthly GROW-model coaching conversation"
+    },
+    "wellbeing": {
+      "title": "Wellbeing",
+      "subtitle": "Self-reported sleep, stress, exercise and mood"
+    },
+    "threeSixty": {
+      "title": "360° Review",
+      "subtitle": "Self / Manager / Peer / Direct report — four perspectives"
+    },
+    "engagementDeep": {
+      "title": "Engagement Deep-Dive",
+      "subtitle": "Tenure-stage attrition driver analysis"
+    },
+    "compBands": {
+      "title": "Compensation Bands",
+      "subtitle": "Market benchmark vs internal range"
+    },
+    "learning": {
+      "title": "Learning Platform",
+      "subtitle": "Skill matrix × learning paths × study groups"
+    },
+    "diversity": {
+      "title": "D&I Deep-Dive",
+      "subtitle": "Equity gaps across nationality, location, grade and funnel"
+    },
+    "actionExtractor": {
+      "title": "AI Notes → Action Extractor",
+      "subtitle": "Extract who-does-what-by-when from meeting notes"
+    },
+    "teamHealth": {
+      "title": "Team Health Dashboard",
+      "subtitle": "Manager view of all team indicators in one screen"
+    },
+    "careerPath": {
+      "title": "Career Path",
+      "subtitle": "Past roles × current × future options"
+    },
+    "hrisSync": {
+      "title": "HRIS Bidirectional Sync",
+      "subtitle": "Sync employee master, performance and pay with BambooHR / Workday"
+    }
+  },
+  "actions": {
+    "approve": "Approve",
+    "reject": "Reject",
+    "send": "Send",
+    "schedule": "Schedule",
+    "complete": "Complete",
+    "remind": "Remind",
+    "archive": "Archive",
+    "duplicate": "Duplicate"
+  },
+  "wellbeing": {
+    "sleep": "Sleep",
+    "stress": "Stress",
+    "exercise": "Exercise",
+    "mood": "Mood",
+    "alerts": "Alerts"
+  }
+}

@@ -1,0 +1,46 @@
+# Green Carbon HR — dbt project
+# 全 60 ツールのデータを Supabase の生テーブルから集約・正規化し、
+# 経営 KPI を時系列で SQL 化する。
+
+name: 'green_carbon_hr'
+version: '1.0.0'
+config-version: 2
+
+profile: 'green_carbon_hr'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  green_carbon_hr:
+    staging:
+      +materialized: view
+      +schema: stg
+    marts:
+      +materialized: table
+      +schema: marts
+      +tags: ["kpi"]
+
+# Supabase（PostgreSQL）への接続
+# ~/.dbt/profiles.yml の例：
+#   green_carbon_hr:
+#     target: dev
+#     outputs:
+#       dev:
+#         type: postgres
+#         host: db.xxx.supabase.co
+#         user: postgres
+#         password: "{{ env_var('SUPABASE_DB_PASSWORD') }}"
+#         port: 5432
+#         dbname: postgres
+#         schema: dbt_dev
+#         threads: 4

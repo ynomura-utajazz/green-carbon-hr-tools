@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>勤怠・休暇管理 | Green Carbon HR Tools</title>
+  <script>if(sessionStorage.getItem("gc-auth")!=="ok"){location.href="../index.html";}</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --gc-green: #2d6a4f; --gc-light: #52b788; --gc-pale: #d8f3dc;
+      --gc-dark: #1b4332; --bg: #f0fdf4; --border: #b7e4c7;
+      --text: #1a1a2e; --muted: #6b7280; --white: #ffffff;
+      --warn: #f59e0b; --warn-bg: #fffbeb; --warn-border: #fde68a;
+      --danger: #ef4444; --danger-bg: #fef2f2; --danger-border: #fecaca;
+      --info: #3b82f6; --info-bg: #eff6ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ===== HEADER ===== */
+    .site-header {
+      background: linear-gradient(135deg, var(--gc-dark) 0%, #40916c 60%, var(--gc-light) 100%);
+      color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px;
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25);
+      padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; text-decoration: none;
+      transition: background 0.2s; white-space: nowrap;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.28); }
+    .header-info { flex: 1; }
+    .header-info h1 { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .header-info p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+    .header-stats { display: flex; gap: 16px; }
+    .header-stat { text-align: center; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 14px; }
+    .header-stat .val { font-size: 18px; font-weight: 800; }
+    .header-stat .lbl { font-size: 11px; opacity: 0.75; }
+
+    /* ===== TAB NAV ===== */
+    .tab-nav {
+      background: white; border-bottom: 2px solid var(--border);
+      display: flex; overflow-x: auto; padding: 0 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .tab-btn {
+      padding: 14px 22px; border: none; background: none; cursor: pointer;
+      font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap;
+      border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--gc-green); background: var(--gc-pale); }
+    .tab-btn.active { color: var(--gc-green); border-bottom-color: var(--gc-green); }
+
+    /* ===== FILTER BAR ===== */
+    .filter-bar {
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    .filter-group label { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .filter-group select, .filter-group input {
+      padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 13px; outline: none; color: var(--text); background: var(--bg);
+      transition: border-color 0.2s;
+    }
+    .filter-group select:focus, .filter-group input:focus { border-color: var(--gc-light); }
+    .filter-group input { width: 180px; }
+
+    /* ===== TAB CONTENT ===== */
+    .tab-content { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+    .tab-content.active { display: block; }
+
+    /* ===== CARDS ===== */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .summary-card {
+      background: white; border-radius: 14px; border: 1px solid var(--border);
+      padding: 20px; position: relative; overflow: hidden; transition: box-shadow 0.2s;
+    }
+    .summary-card:hover { box-shadow: 0 4px 16px rgba(45,106,79,0.1); }
+    .summary-card .card-icon { font-size: 28px; margin-bottom: 8px; }
+    .summary-card .card-val { font-size: 32px; font-weight: 800; color: var(--gc-dark); line-height: 1; }
+    .summary-card .card-unit { font-size: 14px; color: var(--muted); margin-left: 4px; }
+    .summary-card .card-lbl { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .summary-card .card-bar { height: 4px; border-radius: 2px; background: var(--gc-pale); margin-top: 10px; overflow: hidden; }
+    .summary-card .card-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--gc-light), var(--gc-dark)); transition: width 1s ease; }
+    .summary-card.warn { border-color: var(--warn-border); background: var(--warn-bg); }
+    .summary-card.danger { border-color: var(--danger-border); background: var(--danger-bg); }
+    .card-accent { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--gc-light), var(--gc-dark)); }
+    .card-accent.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .card-accent.danger { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+
+    /* ===== CHART CONTAINERS ===== */
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .chart-card {
+      background: white; border-radius: 14px; border: 1px solid var(--border);
+      padding: 20px; position: relative;
+    }
+    .chart-card h3 { font-size: 15px; font-weight: 700; color: var(--gc-dark); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .chart-wrap { position: relative; }
+
+    /* ===== SECTION TITLES ===== */
+    .section-title {
+      font-size: 16px; font-weight: 700; color: var(--gc-dark);
+      margin: 24px 0 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ===== ALERT BADGES ===== */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .badge.ok { background: var(--gc-pale); color: var(--gc-dark); }
+    .badge.warn { background: var(--warn-bg); color: #92400e; border: 1px solid var(--warn-border); }
+    .badge.danger { background: var(--danger-bg); color: #991b1b; border: 1px solid var(--danger-border); }
+    .badge.info { background: var(--info-bg); color: #1d4ed8; }
+    .badge.pending { background: #eff6ff; color: #1d4ed8; }
+    .badge.approved { background: var(--gc-pale); color: var(--gc-dark); }
+    .badge.rejected { background: var(--danger-bg); color: #991b1b; }
+
+    /* ===== TABLE ===== */
+    .data-table-wrap { background: white; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th {
+      background: #f8fffe; color: var(--muted); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .data-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f9fffe; }
+    .emp-name { font-weight: 600; color: var(--gc-dark); }
+    .emp-id { font-size: 11px; color: var(--muted); }
+    .ot-bar { width: 100px; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
+    .ot-fill { height: 100%; border-radius: 4px; }
+
+    /* ===== PROGRESS BAR ===== */
+    .progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; width: 100%; }
+    .progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+    .progress-fill.low { background: var(--danger); }
+    .progress-fill.mid { background: var(--warn); }
+    .progress-fill.high { background: var(--gc-light); }
+    .progress-fill.full { background: var(--gc-dark); }
+
+    /* ===== ALERT RIBBON ===== */
+    .alert-box {
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;
+      display: flex; align-items: flex-start; gap: 10px; font-size: 13px;
+    }
+    .alert-box.warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: #78350f; }
+    .alert-box.danger { background: var(--danger-bg); border: 1px solid var(--danger-border); color: #7f1d1d; }
+    .alert-box.info { background: var(--info-bg); border: 1px solid #bfdbfe; color: #1e3a5f; }
+    .alert-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* ===== LEAVE TABS ===== */
+    .sub-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .sub-tab {
+      padding: 8px 18px; border-radius: 20px; border: 1px solid var(--border);
+      background: white; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted);
+      transition: all 0.2s;
+    }
+    .sub-tab.active { background: var(--gc-green); color: white; border-color: var(--gc-green); }
+    .sub-tab-content { display: none; }
+    .sub-tab-content.active { display: block; }
+
+    /* ===== CALENDAR ===== */
+    .calendar-wrap { background: white; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
+    .cal-header { background: linear-gradient(135deg, var(--gc-dark), #40916c); color: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .cal-header h3 { font-size: 16px; font-weight: 700; }
+    .cal-nav { display: flex; gap: 8px; align-items: center; }
+    .cal-nav button { background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .cal-dow { text-align: center; padding: 10px 4px; font-size: 11px; font-weight: 700; color: var(--muted); background: #f8fffe; border-bottom: 1px solid var(--border); }
+    .cal-day {
+      border: 1px solid #f0fdf4; padding: 8px 4px; min-height: 52px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: default;
+    }
+    .cal-day .day-num { font-size: 13px; font-weight: 600; color: var(--text); }
+    .cal-day.weekend .day-num { color: #9ca3af; }
+    .cal-day.empty { background: #f9fafb; }
+    .cal-dot { font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 600; }
+    .cal-dot.work { background: var(--gc-pale); color: var(--gc-dark); }
+    .cal-dot.absent { background: var(--danger-bg); color: var(--danger); }
+    .cal-dot.paid-leave { background: #eff6ff; color: var(--info); }
+    .cal-dot.holiday-work { background: #fef3c7; color: #92400e; }
+
+    /* ===== 36 AGREEMENT ===== */
+    .agreement-card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
+    .agreement-row { margin-bottom: 16px; }
+    .agreement-row:last-child { margin-bottom: 0; }
+    .agreement-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .agreement-val { font-size: 13px; color: var(--muted); }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: white; border-radius: 16px; width: 100%; max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+    .modal-overlay.open .modal { transform: scale(1); }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .modal-header h3 { font-size: 17px; font-weight: 800; color: var(--gc-dark); }
+    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); padding: 0 4px; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 20px 24px; }
+    .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .req-item label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 4px; }
+    .req-item span { font-size: 14px; font-weight: 600; color: var(--text); }
+    .modal-textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; resize: vertical; outline: none; font-family: inherit; }
+    .modal-textarea:focus { border-color: var(--gc-light); }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end; }
+    .btn { padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-reject { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+    .btn-reject:hover { background: var(--danger); color: white; }
+    .btn-approve { background: var(--gc-green); color: white; }
+    .btn-approve:hover { background: var(--gc-dark); }
+    .btn-cancel { background: #f3f4f6; color: var(--muted); }
+    .btn-cancel:hover { background: #e5e7eb; }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+      background: var(--gc-dark); color: white; padding: 12px 20px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      transform: translateY(80px); opacity: 0; transition: all 0.3s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.warn { background: #92400e; }
+    .toast.danger { background: #991b1b; }
+
+    /* ===== COMPLIANCE ===== */
+    .compliance-section { margin-bottom: 24px; }
+    .risk-item {
+      background: white; border-radius: 10px; border: 1px solid var(--border);
+      padding: 14px 18px; display: flex; align-items: center; gap: 14px; margin-bottom: 8px;
+      transition: box-shadow 0.2s;
+    }
+    .risk-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .risk-item .ri-name { flex: 1; font-weight: 600; color: var(--gc-dark); }
+    .risk-item .ri-dept { font-size: 12px; color: var(--muted); }
+    .risk-item .ri-val { font-size: 13px; font-weight: 700; }
+    .risk-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0; }
+    .risk-num.danger { background: var(--danger-bg); color: var(--danger); }
+    .risk-num.warn { background: var(--warn-bg); color: #92400e; }
+
+    /* ===== INDIVIDUAL SELECTOR ===== */
+    .individual-header { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .individual-header select { padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; color: var(--text); outline: none; min-width: 220px; }
+    .emp-card-mini { display: flex; align-items: center; gap: 12px; }
+    .emp-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--gc-light), var(--gc-dark)); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0; }
+    .emp-info .name { font-size: 16px; font-weight: 700; color: var(--gc-dark); }
+    .emp-info .sub { font-size: 12px; color: var(--muted); }
+
+    /* ===== PAGINATION ===== */
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f9fafb; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+    .pagination button { padding: 6px 14px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .pagination button:hover { background: var(--gc-pale); border-color: var(--gc-light); }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .header-stats { display: none; }
+      .site-header { padding: 12px 16px; }
+      .tab-content { padding: 16px; }
+      .filter-bar { padding: 10px 16px; }
+      .req-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .summary-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+  <a class="back-btn" href="../index.html">← ツール一覧</a>
+  <div class="header-info">
+    <h1>🕐 勤怠・休暇管理</h1>
+    <p>勤怠サマリー・休暇申請承認・36協定チェック</p>
+  </div>
+  <div class="header-stats">
+    <div class="header-stat"><div class="val">186</div><div class="lbl">名</div></div>
+    <div class="header-stat"><div class="val">7</div><div class="lbl">部門</div></div>
+    <div class="header-stat"><div class="val" id="hdrMonth">-</div><div class="lbl">対象月</div></div>
+  </div>
+</header>
+
+<!-- ===== TAB NAV ===== -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('summary')">📊 勤怠サマリー</button>
+  <button class="tab-btn" onclick="switchTab('leave')">🌴 休暇管理</button>
+  <button class="tab-btn" onclick="switchTab('individual')">👤 個人勤怠カルテ</button>
+  <button class="tab-btn" onclick="switchTab('compliance')">⚖️ 法令チェック</button>
+</div>
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label>📅 月選択</label>
+    <select id="monthFilter" onchange="onFilterChange()"></select>
+  </div>
+  <div class="filter-group">
+    <label>🏢 部門</label>
+    <select id="deptFilter" onchange="onFilterChange()">
+      <option value="">全部門</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>🔍 社員</label>
+    <input type="text" id="empSearch" placeholder="名前で検索..." oninput="onFilterChange()">
+  </div>
+  <div class="filter-group" style="margin-left:auto">
+    <span style="font-size:13px;color:var(--muted)" id="filterCount"></span>
+  </div>
+</div>
+
+<!-- ================================================================
+     TAB 1: 勤怠サマリー
+================================================================ -->
+<div class="tab-content active" id="tab-summary">
+  <!-- Summary Cards -->
+  <div class="summary-grid" id="summaryCards">
+    <div class="summary-card">
+      <div class="card-accent"></div>
+      <div class="card-icon">⏱️</div>
+      <div><span class="card-val" id="scPrescribed">160</span><span class="card-unit">h</span></div>
+      <div class="card-lbl">所定労働時間（月平均）</div>
+      <div class="card-bar"><div class="card-bar-fill" style="width:80%"></div></div>
+    </div>
+    <div class="summary-card">
+      <div class="card-accent"></div>
+      <div class="card-icon">🕐</div>
+      <div><span class="card-val" id="scActual">—</span><span class="card-unit">h</span></div>
+      <div class="card-lbl">平均実労働時間</div>
+      <div class="card-bar"><div class="card-bar-fill" id="scActualBar" style="width:0%"></div></div>
+    </div>
+    <div class="summary-card" id="scOTCard">
+      <div class="card-accent" id="scOTAccent"></div>
+      <div class="card-icon">⚡</div>
+      <div><span class="card-val" id="scOT">—</span><span class="card-unit">h</span></div>
+      <div class="card-lbl">平均時間外労働</div>
+      <div class="card-bar"><div class="card-bar-fill" id="scOTBar" style="width:0%"></div></div>
+    </div>
+    <div class="summary-card">
+      <div class="card-accent warn"></div>
+      <div class="card-icon">📅</div>
+      <div><span class="card-val" id="scAbsent">—</span><span class="card-unit">日</span></div>
+      <div class="card-lbl">平均欠勤日数</div>
+      <div class="card-bar"><div class="card-bar-fill" id="scAbsentBar" style="width:0%;background:var(--warn)"></div></div>
+    </div>
+  </div>
+
+  <!-- Alert Boxes -->
+  <div id="alertBox80" class="alert-box danger" style="display:none">
+    <div class="alert-icon">🚨</div>
+    <div><strong>過重労働アラート</strong>：月80時間超の時間外労働が確認されている社員がいます。速やかに面談・業務調整を行ってください。</div>
+  </div>
+  <div id="alertBox45" class="alert-box warn" style="display:none">
+    <div class="alert-icon">⚠️</div>
+    <div><strong>36協定注意</strong>：月45時間超の時間外労働が確認されている社員がいます。状況を確認してください。</div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>🏢 部門別平均残業時間（当月）</h3>
+      <div class="chart-wrap"><canvas id="deptOTChart" height="280"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>📈 月次出勤率トレンド（直近12ヶ月）</h3>
+      <div class="chart-wrap"><canvas id="attendTrendChart" height="280"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Overtime Alert Table -->
+  <div class="section-title">⚠️ 残業時間アラート一覧</div>
+  <div class="data-table-wrap">
+    <table class="data-table" id="otAlertTable">
+      <thead>
+        <tr>
+          <th>社員</th>
+          <th>部門</th>
+          <th>当月残業</th>
+          <th>状況</th>
+          <th>前月比</th>
+        </tr>
+      </thead>
+      <tbody id="otAlertBody"></tbody>
+    </table>
+    <div class="pagination" id="otPagination">
+      <span id="otPagInfo"></span>
+      <div style="display:flex;gap:8px">
+        <button onclick="otPage(-1)" id="otPrevBtn">前へ</button>
+        <button onclick="otPage(1)" id="otNextBtn">次へ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     TAB 2: 休暇管理
+================================================================ -->
+<div class="tab-content" id="tab-leave">
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="switchSubTab('leave','balance')">📋 休暇残日数</button>
+    <button class="sub-tab" onclick="switchSubTab('leave','requests')">📝 申請一覧</button>
+    <button class="sub-tab" onclick="switchSubTab('leave','alert')">🔔 取得率アラート</button>
+  </div>
+
+  <!-- Sub Tab: 休暇残日数 -->
+  <div class="sub-tab-content active" id="stLeaveBalance">
+    <div class="data-table-wrap">
+      <table class="data-table" id="leaveTable">
+        <thead>
+          <tr>
+            <th>社員</th>
+            <th>部門</th>
+            <th>有休残</th>
+            <th>有休消化率</th>
+            <th>慶弔</th>
+            <th>特別休暇</th>
+            <th>産休</th>
+            <th>育休</th>
+          </tr>
+        </thead>
+        <tbody id="leaveTableBody"></tbody>
+      </table>
+      <div class="pagination" id="leavePagination">
+        <span id="leavePagInfo"></span>
+        <div style="display:flex;gap:8px">
+          <button onclick="leavePage(-1)" id="leavePrevBtn">前へ</button>
+          <button onclick="leavePage(1)" id="leaveNextBtn">次へ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub Tab: 申請一覧 -->
+  <div class="sub-tab-content" id="stLeaveRequests">
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>申請者</th>
+            <th>部門</th>
+            <th>種別</th>
+            <th>期間</th>
+            <th>日数</th>
+            <th>申請日</th>
+            <th>ステータス</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="leaveRequestBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sub Tab: アラート -->
+  <div class="sub-tab-content" id="stLeaveAlert">
+    <div class="alert-box info">
+      <div class="alert-icon">ℹ️</div>
+      <div>年次有給休暇5日取得義務（労働基準法第39条7項）：2026年3月31日までに有休を5日以上取得させる必要があります。</div>
+    </div>
+    <div id="leaveAlertList"></div>
+  </div>
+</div>
+
+<!-- ================================================================
+     TAB 3: 個人勤怠カルテ
+================================================================ -->
+<div class="tab-content" id="tab-individual">
+  <div class="individual-header">
+    <div>
+      <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px">社員選択</label>
+      <select id="indEmpSelect" onchange="renderIndividual()"></select>
+    </div>
+    <div class="emp-card-mini" id="indEmpCard" style="display:none">
+      <div class="emp-avatar" id="indAvatar">?</div>
+      <div class="emp-info">
+        <div class="name" id="indEmpName">-</div>
+        <div class="sub" id="indEmpSub">-</div>
+      </div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+      <div class="filter-group">
+        <label>表示月</label>
+        <select id="indMonthSelect" onchange="renderIndividual()"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="calendar-wrap" id="indCalendar">
+    <div class="cal-header">
+      <h3 id="calTitle">2026年5月 勤怠カレンダー</h3>
+      <div style="display:flex;gap:12px;font-size:12px;opacity:0.85">
+        <span>🟢 出勤</span><span>🔴 欠勤</span><span>🔵 有休</span><span>🟡 休出</span>
+      </div>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-dow">日</div><div class="cal-dow" style="color:#3b82f6">月</div>
+      <div class="cal-dow" style="color:#3b82f6">火</div><div class="cal-dow" style="color:#3b82f6">水</div>
+      <div class="cal-dow" style="color:#3b82f6">木</div><div class="cal-dow" style="color:#3b82f6">金</div>
+      <div class="cal-dow">土</div>
+      <div id="calBody" style="display:contents"></div>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:24px;font-size:12px;color:var(--muted);background:#f9fffe;border-top:1px solid var(--border)">
+      <span>出勤日数: <strong id="calWork">-</strong>日</span>
+      <span>欠勤: <strong id="calAbsent">-</strong>日</span>
+      <span>有休: <strong id="calPaid">-</strong>日</span>
+      <span>休出: <strong id="calHoliday">-</strong>日</span>
+      <span>実労働: <strong id="calActual">-</strong>h</span>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>⚡ 時間外労働推移（直近6ヶ月）</h3>
+      <div class="chart-wrap"><canvas id="indOTChart" height="240"></canvas></div>
+    </div>
+    <div class="agreement-card">
+      <h3 style="font-size:15px;font-weight:700;color:var(--gc-dark);margin-bottom:16px">⚖️ 36協定チェック</h3>
+      <div class="agreement-row">
+        <div class="agreement-label">
+          <span>当月時間外労働</span>
+          <span class="agreement-val"><span id="agMonth">-</span>h / 45h（上限）</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="agMonthBar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
+          <span>0</span><span style="color:#f59e0b">45h（特別条項なし上限）</span><span style="color:#ef4444">80h</span>
+        </div>
+      </div>
+      <div class="agreement-row">
+        <div class="agreement-label">
+          <span>年間時間外労働（累計）</span>
+          <span class="agreement-val"><span id="agYear">-</span>h / 360h（年間上限）</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="agYearBar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px">
+          <span>0</span><span style="color:#f59e0b">360h</span><span style="color:#ef4444">720h</span>
+        </div>
+      </div>
+      <div class="agreement-row" style="margin-top:20px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">ステータス</div>
+        <div id="agStatus" class="alert-box info"><div class="alert-icon">✅</div><div>36協定範囲内です。</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     TAB 4: 法令チェック
+================================================================ -->
+<div class="tab-content" id="tab-compliance">
+  <div class="summary-grid" style="margin-bottom:24px">
+    <div class="summary-card" id="comp36Card">
+      <div class="card-accent danger"></div>
+      <div class="card-icon">⚖️</div>
+      <div><span class="card-val" id="comp36Count">-</span><span class="card-unit">名</span></div>
+      <div class="card-lbl">36協定リスク（45h超）</div>
+    </div>
+    <div class="summary-card" id="compLeaveCard">
+      <div class="card-accent warn"></div>
+      <div class="card-icon">📅</div>
+      <div><span class="card-val" id="compLeaveCount">-</span><span class="card-unit">名</span></div>
+      <div class="card-lbl">有休5日未取得リスク</div>
+    </div>
+    <div class="summary-card" id="compNightCard">
+      <div class="card-accent warn"></div>
+      <div class="card-icon">🌙</div>
+      <div><span class="card-val" id="compNightCount">-</span><span class="card-unit">名</span></div>
+      <div class="card-lbl">管理監督者深夜労働</div>
+    </div>
+    <div class="summary-card" id="compWeekCard">
+      <div class="card-accent"></div>
+      <div class="card-icon">📋</div>
+      <div><span class="card-val" id="compWeekCount">-</span><span class="card-unit">名</span></div>
+      <div class="card-lbl">週40h超（法定労働時間）</div>
+    </div>
+  </div>
+
+  <!-- 36協定 -->
+  <div class="section-title">⚖️ 36協定違反リスク — 月45時間超過</div>
+  <div id="comp36List"></div>
+
+  <!-- 有休5日義務 -->
+  <div class="section-title">📅 年次有給休暇5日取得義務チェック</div>
+  <div class="alert-box info" style="margin-bottom:12px">
+    <div class="alert-icon">ℹ️</div>
+    <div>年10日以上の有給休暇が付与されている全従業員は、毎年5日の有休を確実に取得させる義務があります（労基法39条7項）。</div>
+  </div>
+  <div id="compLeaveList"></div>
+
+  <!-- 深夜労働 -->
+  <div class="section-title">🌙 管理監督者の深夜労働チェック</div>
+  <div class="alert-box warn" style="margin-bottom:12px">
+    <div class="alert-icon">⚠️</div>
+    <div>管理監督者は労働時間・休憩・休日の規定は適用外ですが、深夜労働（22:00〜5:00）の割増賃金（25%以上）は支払義務があります。</div>
+  </div>
+  <div id="compNightList"></div>
+
+  <!-- 週40時間 -->
+  <div class="section-title">📋 週40時間法定労働時間チェック（当月平均）</div>
+  <div id="compWeekList"></div>
+</div>
+
+<!-- ===== APPROVAL MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>休暇申請 — 承認/却下</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="req-grid">
+        <div class="req-item"><label>申請者</label><span id="modalEmpName">-</span></div>
+        <div class="req-item"><label>部門</label><span id="modalDept">-</span></div>
+        <div class="req-item"><label>休暇種別</label><span id="modalType">-</span></div>
+        <div class="req-item"><label>日数</label><span id="modalDays">-</span></div>
+        <div class="req-item" style="grid-column:1/-1"><label>期間</label><span id="modalPeriod">-</span></div>
+      </div>
+      <div style="margin-top:4px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px">コメント（任意）</label>
+        <textarea class="modal-textarea" id="modalMemo" rows="3" placeholder="承認・却下の理由を入力..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-reject" onclick="processLeave('reject')">却下</button>
+      <button class="btn btn-approve" onclick="processLeave('approve')">✓ 承認</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg">完了しました</span>
+</div>
+
+<!-- ================================================================
+     JAVASCRIPT
+================================================================ -->
+<script>
+'use strict';
+
+// ─── Deterministic hash ──────────────────────────────────────────
+function h(id, salt) {
+  let v = ((id + 1) * 2654435761 + (salt || 0) * 40503) >>> 0;
+  v = ((v ^ (v >>> 16)) * 0x45d9f3b) >>> 0;
+  v = ((v ^ (v >>> 16)) * 0x45d9f3b) >>> 0;
+  return (v ^ (v >>> 16)) / 4294967296;
+}
+function hi(id, salt, min, max) { return Math.floor(h(id, salt) * (max - min + 1)) + min; }
+function hf(id, salt, min, max) { return min + h(id, salt) * (max - min); }
+
+// ─── Constants ───────────────────────────────────────────────────
+const DEPTS = [
+  { name: '経営企画部', size: 12 },
+  { name: '営業部', size: 45 },
+  { name: 'マーケティング部', size: 28 },
+  { name: 'エンジニアリング部', size: 52 },
+  { name: 'オペレーション部', size: 22 },
+  { name: '管理部', size: 18 },
+  { name: 'サービス推進部', size: 9 },
+];
+const DEPT_OT_BASE = [28, 33, 30, 48, 36, 29, 27]; // avg OT by dept
+const SURNAMES = ['田中','鈴木','佐藤','高橋','伊藤','渡辺','中村','小林','加藤','吉田','山本','松本','井上','木村','林','斎藤','清水','山田','阿部','森','池田','橋本','山口','石川','上田','岡田','前田','藤原','近藤','村上','小川','石田','後藤','長谷川','高田','藤田','田村','岡本','中島','西村','青木','木下','三浦','福田','坂本'];
+const MALE_N = ['翔太','大輝','健太','拓也','優斗','一郎','浩二','正人','和也','健二','達也','博','隆','聡','誠','徹','豊','光','修','治','亮','洋','正','明','功'];
+const FEMALE_N = ['美咲','愛','優香','菜々子','真由','恵','麻衣','千夏','由美','沙織','香里','明美','裕子','智子','幸子','直子','典子','晴美','富子','絵里'];
+const LEAVE_TYPES = ['年次有給休暇','慶弔休暇','特別休暇','産前産後休暇','育児休業','介護休暇'];
+const MONTHS_12 = Array.from({length:12}, (_,i) => {
+  const d = new Date(2026, 4 - i, 1);
+  return { label: `${d.getFullYear()}年${d.getMonth()+1}月`, y: d.getFullYear(), m: d.getMonth() };
+});
+
+// ─── Employee Generation ─────────────────────────────────────────
+let EMPLOYEES = [];
+(function genEmployees() {
+  let id = 1;
+  DEPTS.forEach((dept, di) => {
+    for (let i = 0; i < dept.size; i++) {
+      const isMale = hi(id, 10, 0, 1) === 0;
+      const sn = SURNAMES[hi(id, 11, 0, SURNAMES.length - 1)];
+      const gn = isMale ? MALE_N[hi(id, 12, 0, MALE_N.length - 1)] : FEMALE_N[hi(id, 13, 0, FEMALE_N.length - 1)];
+      const baseOT = DEPT_OT_BASE[di] + hi(id, 14, -12, 18);
+      const monthlyOT = Math.max(8, Math.min(88, baseOT));
+      const leaveTotal = hi(id, 20, 18, 20);
+      const leaveUsed = hi(id, 21, 0, 14);
+      const hasMaternity = di !== 0 && hi(id, 30, 0, 39) === 0;
+      const hasChildcare = di !== 0 && hi(id, 31, 0, 59) === 0;
+      const nightOT = hi(id, 40, 0, 25); // 深夜労働時間（月）
+      const weekAvgH = 36 + hf(id, 50, 0, 14); // 週平均労働時間
+      EMPLOYEES.push({
+        id, name: `${sn} ${gn}`, dept: dept.name, deptIdx: di,
+        isManager: i < 2 && di > 0,
+        monthlyOT, prevOT: Math.max(5, monthlyOT + hi(id, 15, -8, 8)),
+        leaveTotal, leaveUsed, leaveRemaining: leaveTotal - leaveUsed,
+        leaveCompliant: leaveUsed >= 5,
+        condolenceLeave: hi(id, 22, 0, 3),
+        specialLeave: hi(id, 23, 0, 2),
+        hasMaternity, hasChildcare,
+        nightOT, weekAvgH,
+      });
+      id++;
+    }
+  });
+})();
+
+// ─── Leave Applications ───────────────────────────────────────────
+let LEAVE_APPS = [];
+(function genApps() {
+  let appId = 1;
+  const statuses = ['申請中','承認','却下','申請中','承認','承認'];
+  EMPLOYEES.filter((_, i) => i % 5 < 3).slice(0, 36).forEach((emp, i) => {
+    const type = LEAVE_TYPES[hi(emp.id, 60, 0, 5)];
+    const statusSeed = hi(emp.id, 61, 0, 5);
+    const status = statuses[statusSeed];
+    const startDay = hi(emp.id, 62, 1, 25);
+    const dur = hi(emp.id, 63, 1, 5);
+    const start = new Date(2026, 4, startDay);
+    const end = new Date(2026, 4, startDay + dur - 1);
+    const applied = new Date(2026, 4, Math.max(1, startDay - hi(emp.id, 64, 3, 10)));
+    LEAVE_APPS.push({
+      id: appId++, empId: emp.id, empName: emp.name, dept: emp.dept,
+      type, status,
+      startDate: fmt(start), endDate: fmt(end), days: dur,
+      appliedDate: fmt(applied), memo: ''
+    });
+  });
+})();
+function fmt(d) { return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`; }
+
+// ─── Monthly trend data (attendance rate) ────────────────────────
+const ATTEND_TREND = MONTHS_12.map((mo, i) => {
+  const base = 96.5 + Math.sin(i * 0.5) * 1.2 + (i === 1 ? -1.5 : 0);
+  return Math.round(base * 10) / 10;
+}).reverse();
+
+// ─── State ───────────────────────────────────────────────────────
+let currentTab = 'summary';
+let currentSubTab = { leave: 'balance' };
+let otPageNum = 0; const OT_PAGE_SIZE = 15;
+let leavePageNum = 0; const LEAVE_PAGE_SIZE = 15;
+let currentLeaveAppId = null;
+let chartDeptOT = null, chartAttend = null, chartIndOT = null;
+
+// ─── Filters ─────────────────────────────────────────────────────
+function getFilters() {
+  return {
+    monthIdx: +document.getElementById('monthFilter').value,
+    dept: document.getElementById('deptFilter').value,
+    search: document.getElementById('empSearch').value.trim().toLowerCase(),
+  };
+}
+function filteredEmps() {
+  const f = getFilters();
+  return EMPLOYEES.filter(e => {
+    if (f.dept && e.dept !== f.dept) return false;
+    if (f.search && !e.name.toLowerCase().includes(f.search)) return false;
+    return true;
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Month filter
+  const mf = document.getElementById('monthFilter');
+  MONTHS_12.forEach((mo, i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = mo.label;
+    mf.appendChild(o);
+  });
+  // Dept filter
+  const df = document.getElementById('deptFilter');
+  DEPTS.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.name; o.textContent = d.name;
+    df.appendChild(o);
+  });
+  // Individual employee select
+  const es = document.getElementById('indEmpSelect');
+  const im = document.getElementById('indMonthSelect');
+  EMPLOYEES.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = `${e.name}（${e.dept}）`;
+    es.appendChild(o);
+  });
+  MONTHS_12.forEach((mo, i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = mo.label;
+    im.appendChild(o);
+  });
+  // Header month
+  document.getElementById('hdrMonth').textContent = MONTHS_12[0].label.replace('年','年').replace('月','月');
+
+  renderAll();
+});
+
+// ─── Tab Switching ────────────────────────────────────────────────
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    const tabs = ['summary','leave','individual','compliance'];
+    b.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  renderAll();
+}
+function switchSubTab(section, name) {
+  currentSubTab[section] = name;
+  const parent = document.getElementById(`tab-${section}`);
+  parent.querySelectorAll('.sub-tab').forEach((b, i) => {
+    const map = { leave: ['balance','requests','alert'] };
+    b.classList.toggle('active', map[section][i] === name);
+  });
+  parent.querySelectorAll('.sub-tab-content').forEach(t => t.classList.remove('active'));
+  const stMap = { balance: 'stLeaveBalance', requests: 'stLeaveRequests', alert: 'stLeaveAlert' };
+  document.getElementById(stMap[name]).classList.add('active');
+  renderAll();
+}
+
+function onFilterChange() { renderAll(); }
+function renderAll() {
+  if (currentTab === 'summary') renderSummary();
+  if (currentTab === 'leave') renderLeave();
+  if (currentTab === 'individual') renderIndividual();
+  if (currentTab === 'compliance') renderCompliance();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TAB 1: SUMMARY
+// ─────────────────────────────────────────────────────────────────
+function renderSummary() {
+  const emps = filteredEmps();
+  if (!emps.length) return;
+  document.getElementById('filterCount').textContent = `${emps.length}名 表示中`;
+
+  const avgOT = Math.round(emps.reduce((s,e)=>s+e.monthlyOT,0) / emps.length);
+  const avgActual = 160 + avgOT;
+  const avgAbsent = (hf(1, 70, 0.3, 1.2)).toFixed(1);
+
+  document.getElementById('scActual').textContent = avgActual;
+  document.getElementById('scActualBar').style.width = Math.min(100, avgActual / 220 * 100) + '%';
+  document.getElementById('scOT').textContent = avgOT;
+  document.getElementById('scOTBar').style.width = Math.min(100, avgOT / 80 * 100) + '%';
+  document.getElementById('scAbsent').textContent = avgAbsent;
+  document.getElementById('scAbsentBar').style.width = Math.min(100, parseFloat(avgAbsent) / 5 * 100) + '%';
+
+  const otCard = document.getElementById('scOTCard');
+  const otAccent = document.getElementById('scOTAccent');
+  if (avgOT >= 80) {
+    otCard.classList.add('danger'); otCard.classList.remove('warn');
+    otAccent.className = 'card-accent danger';
+  } else if (avgOT >= 45) {
+    otCard.classList.add('warn'); otCard.classList.remove('danger');
+    otAccent.className = 'card-accent warn';
+  } else {
+    otCard.classList.remove('warn','danger'); otAccent.className = 'card-accent';
+  }
+
+  const over80 = emps.filter(e=>e.monthlyOT>=80);
+  const over45 = emps.filter(e=>e.monthlyOT>=45 && e.monthlyOT<80);
+  document.getElementById('alertBox80').style.display = over80.length ? 'flex' : 'none';
+  document.getElementById('alertBox45').style.display = over45.length ? 'flex' : 'none';
+
+  renderDeptOTChart(emps);
+  renderAttendTrendChart();
+  renderOTAlertTable(emps);
+}
+
+function renderDeptOTChart(emps) {
+  const deptMap = {};
+  DEPTS.forEach(d => { deptMap[d.name] = []; });
+  emps.forEach(e => { if (deptMap[e.dept]) deptMap[e.dept].push(e.monthlyOT); });
+  const labels = [], data = [], colors = [];
+  DEPTS.forEach(d => {
+    const vals = deptMap[d.name];
+    if (!vals.length) return;
+    const avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    labels.push(d.name); data.push(avg);
+    colors.push(avg >= 80 ? '#ef4444' : avg >= 45 ? '#f59e0b' : '#52b788');
+  });
+
+  const ctx = document.getElementById('deptOTChart');
+  if (chartDeptOT) { chartDeptOT.destroy(); chartDeptOT = null; }
+  chartDeptOT = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '平均残業時間(h)',
+        data,
+        backgroundColor: colors,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x}h` } },
+        annotation: {},
+      },
+      scales: {
+        x: {
+          beginAtZero: true, max: 90,
+          grid: { color: '#f0fdf4' },
+          ticks: { callback: v => v + 'h', font: { size: 11 } }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+      }
+    }
+  });
+}
+
+function renderAttendTrendChart() {
+  const ctx = document.getElementById('attendTrendChart');
+  if (chartAttend) { chartAttend.destroy(); chartAttend = null; }
+  chartAttend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: MONTHS_12.map(m=>m.label).reverse(),
+      datasets: [{
+        label: '出勤率(%)',
+        data: ATTEND_TREND,
+        borderColor: '#2d6a4f',
+        backgroundColor: 'rgba(82,183,136,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#2d6a4f',
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y}%` } }
+      },
+      scales: {
+        y: {
+          min: 93, max: 100,
+          grid: { color: '#f0fdf4' },
+          ticks: { callback: v => v + '%', font: { size: 11 } }
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 45 } }
+      }
+    }
+  });
+}
+
+let otAlertData = [];
+function renderOTAlertTable(emps) {
+  otAlertData = emps.filter(e => e.monthlyOT >= 45).sort((a,b) => b.monthlyOT - a.monthlyOT);
+  otPageNum = 0;
+  renderOTPage();
+}
+function renderOTPage() {
+  const start = otPageNum * OT_PAGE_SIZE;
+  const page = otAlertData.slice(start, start + OT_PAGE_SIZE);
+  const tbody = document.getElementById('otAlertBody');
+  tbody.innerHTML = page.map(e => {
+    const level = e.monthlyOT >= 80 ? 'danger' : 'warn';
+    const diff = e.monthlyOT - e.prevOT;
+    const diffStr = diff >= 0 ? `<span style="color:#ef4444">+${diff}h ▲</span>` : `<span style="color:#52b788">${diff}h ▼</span>`;
+    const pct = Math.min(100, e.monthlyOT / 90 * 100);
+    const fillColor = e.monthlyOT >= 80 ? '#ef4444' : '#f59e0b';
+    return `<tr>
+      <td><div class="emp-name">${e.name}</div><div class="emp-id">EMP${String(e.id).padStart(3,'0')}</div></td>
+      <td>${e.dept}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="ot-bar"><div class="ot-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+          <span style="font-weight:700;color:${fillColor}">${e.monthlyOT}h</span>
+        </div>
+      </td>
+      <td><span class="badge ${level}">${e.monthlyOT>=80?'🚨 80h超':'⚠️ 45h超'}</span></td>
+      <td>${diffStr}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('otPagInfo').textContent = `${start+1}〜${Math.min(start+OT_PAGE_SIZE, otAlertData.length)} / ${otAlertData.length}件`;
+  document.getElementById('otPrevBtn').disabled = otPageNum === 0;
+  document.getElementById('otNextBtn').disabled = start + OT_PAGE_SIZE >= otAlertData.length;
+}
+function otPage(dir) { otPageNum += dir; renderOTPage(); }
+
+// ─────────────────────────────────────────────────────────────────
+// TAB 2: LEAVE
+// ─────────────────────────────────────────────────────────────────
+let leaveTableData = [];
+function renderLeave() {
+  const sub = currentSubTab['leave'] || 'balance';
+  const emps = filteredEmps();
+  document.getElementById('filterCount').textContent = `${emps.length}名 表示中`;
+
+  if (sub === 'balance') renderLeaveBalance(emps);
+  if (sub === 'requests') renderLeaveRequests();
+  if (sub === 'alert') renderLeaveAlert(emps);
+}
+
+function renderLeaveBalance(emps) {
+  leaveTableData = emps;
+  leavePageNum = 0;
+  renderLeavePage();
+}
+function renderLeavePage() {
+  const start = leavePageNum * LEAVE_PAGE_SIZE;
+  const page = leaveTableData.slice(start, start + LEAVE_PAGE_SIZE);
+  const tbody = document.getElementById('leaveTableBody');
+  tbody.innerHTML = page.map(e => {
+    const pct = Math.round(e.leaveUsed / e.leaveTotal * 100);
+    const fillCls = pct >= 80 ? 'full' : pct >= 50 ? 'high' : pct >= 25 ? 'mid' : 'low';
+    const compBadge = e.leaveCompliant
+      ? '<span class="badge ok">✓ 5日達成</span>'
+      : '<span class="badge warn">⚠ 5日未満</span>';
+    return `<tr>
+      <td><div class="emp-name">${e.name}</div><div class="emp-id">EMP${String(e.id).padStart(3,'0')}</div></td>
+      <td>${e.dept}</td>
+      <td><strong>${e.leaveRemaining}</strong>日 <span style="font-size:11px;color:var(--muted)">/ ${e.leaveTotal}日</span></td>
+      <td>
+        <div style="min-width:120px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span>${e.leaveUsed}日取得</span><span>${pct}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${pct}%"></div></div>
+          <div style="margin-top:4px">${compBadge}</div>
+        </div>
+      </td>
+      <td>${e.condolenceLeave}日</td>
+      <td>${e.specialLeave}日</td>
+      <td>${e.hasMaternity ? '<span class="badge info">取得中</span>' : '—'}</td>
+      <td>${e.hasChildcare ? '<span class="badge info">取得中</span>' : '—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('leavePagInfo').textContent = `${start+1}〜${Math.min(start+LEAVE_PAGE_SIZE, leaveTableData.length)} / ${leaveTableData.length}件`;
+  document.getElementById('leavePrevBtn').disabled = leavePageNum === 0;
+  document.getElementById('leaveNextBtn').disabled = start + LEAVE_PAGE_SIZE >= leaveTableData.length;
+}
+function leavePage(dir) { leavePageNum += dir; renderLeavePage(); }
+
+function renderLeaveRequests() {
+  const f = getFilters();
+  const apps = LEAVE_APPS.filter(a => {
+    if (f.dept && a.dept !== f.dept) return false;
+    if (f.search && !a.empName.toLowerCase().includes(f.search)) return false;
+    return true;
+  });
+  const tbody = document.getElementById('leaveRequestBody');
+  tbody.innerHTML = apps.map(a => {
+    const sc = { '申請中':'pending', '承認':'approved', '却下':'rejected' }[a.status] || '';
+    const actionBtn = a.status === '申請中'
+      ? `<button onclick="openModal(${a.id})" style="padding:5px 12px;background:var(--gc-green);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">審査</button>`
+      : '—';
+    return `<tr>
+      <td><div class="emp-name">${a.empName}</div></td>
+      <td>${a.dept}</td>
+      <td>${a.type}</td>
+      <td>${a.startDate} 〜 ${a.endDate}</td>
+      <td>${a.days}日</td>
+      <td>${a.appliedDate}</td>
+      <td><span class="badge ${sc}">${a.status}</span>${a.memo ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${a.memo}</div>` : ''}</td>
+      <td>${actionBtn}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted)">該当する申請はありません</td></tr>';
+}
+
+function renderLeaveAlert(emps) {
+  const atRisk = emps.filter(e => !e.leaveCompliant && e.leaveTotal >= 10).sort((a,b) => a.leaveUsed - b.leaveUsed);
+  const el = document.getElementById('leaveAlertList');
+  el.innerHTML = atRisk.map(e => {
+    const need = Math.max(0, 5 - e.leaveUsed);
+    return `<div class="risk-item">
+      <div class="risk-num warn">!</div>
+      <div>
+        <div class="ri-name">${e.name}</div>
+        <div class="ri-dept">${e.dept}</div>
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span>取得済: ${e.leaveUsed}日</span><span style="color:#92400e">あと<strong>${need}日</strong>不足</span>
+        </div>
+        <div class="progress-bar" style="max-width:200px"><div class="progress-fill mid" style="width:${e.leaveUsed/5*100}%;max-width:100%"></div></div>
+      </div>
+      <span class="badge warn">⚠ ${need}日未取得</span>
+    </div>`;
+  }).join('') || '<div class="alert-box info"><div class="alert-icon">✅</div><div>全員が5日以上の有休を取得済みです。</div></div>';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TAB 3: INDIVIDUAL
+// ─────────────────────────────────────────────────────────────────
+function renderIndividual() {
+  const empId = +document.getElementById('indEmpSelect').value;
+  const monthIdx = +document.getElementById('indMonthSelect').value;
+  if (!empId) return;
+  const emp = EMPLOYEES.find(e => e.id === empId);
+  if (!emp) return;
+
+  // Mini card
+  document.getElementById('indEmpCard').style.display = 'flex';
+  document.getElementById('indAvatar').textContent = emp.name.charAt(0);
+  document.getElementById('indEmpName').textContent = emp.name;
+  document.getElementById('indEmpSub').textContent = `${emp.dept} | EMP${String(emp.id).padStart(3,'0')}`;
+
+  const mo = MONTHS_12[monthIdx];
+  renderCalendar(emp, mo.y, mo.m);
+  renderIndOTChart(emp, monthIdx);
+  render36Check(emp, monthIdx);
+}
+
+function renderCalendar(emp, year, month) {
+  document.getElementById('calTitle').textContent = `${year}年${month+1}月 勤怠カレンダー`;
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const calBody = document.getElementById('calBody');
+
+  // Generate attendance for each day (deterministic)
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(`<div class="cal-day empty"></div>`);
+
+  let workDays=0, absentDays=0, paidDays=0, holidayWork=0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = (firstDay + d - 1) % 7;
+    const isWeekend = dow === 0 || dow === 6;
+    let type = '';
+    if (isWeekend) {
+      type = hi(emp.id * 100 + d, 80, 0, 9) < 1 ? 'holiday-work' : 'weekend';
+    } else {
+      const r = hi(emp.id * 100 + d, 81, 0, 29);
+      type = r < 26 ? 'work' : r < 28 ? 'paid-leave' : 'absent';
+    }
+    if (type === 'work') workDays++;
+    else if (type === 'absent') absentDays++;
+    else if (type === 'paid-leave') paidDays++;
+    else if (type === 'holiday-work') holidayWork++;
+    const dotMap = { work: ['work','出勤'], absent: ['absent','欠勤'], 'paid-leave': ['paid-leave','有休'], 'holiday-work': ['holiday-work','休出'] };
+    const dot = dotMap[type] ? `<div class="cal-dot ${dotMap[type][0]}">${dotMap[type][1]}</div>` : '';
+    cells.push(`<div class="cal-day${isWeekend?' weekend':''}"><div class="day-num">${d}</div>${dot}</div>`);
+  }
+  calBody.innerHTML = cells.join('');
+
+  const totalH = (workDays + holidayWork) * 8 + emp.monthlyOT;
+  document.getElementById('calWork').textContent = workDays;
+  document.getElementById('calAbsent').textContent = absentDays;
+  document.getElementById('calPaid').textContent = paidDays;
+  document.getElementById('calHoliday').textContent = holidayWork;
+  document.getElementById('calActual').textContent = totalH;
+}
+
+function renderIndOTChart(emp, monthIdx) {
+  const labels = [], data = [], colors = [];
+  for (let i = 5; i >= 0; i--) {
+    const mi = monthIdx + i;
+    const mo = MONTHS_12[Math.min(mi, MONTHS_12.length - 1)];
+    labels.push(mo ? `${mo.m+1}月` : '-');
+    const ot = Math.max(5, emp.monthlyOT + hi(emp.id + i * 100, 90, -10, 10));
+    data.push(ot);
+    colors.push(ot >= 80 ? '#ef4444' : ot >= 45 ? '#f59e0b' : '#52b788');
+  }
+  const ctx = document.getElementById('indOTChart');
+  if (chartIndOT) { chartIndOT.destroy(); chartIndOT = null; }
+  chartIndOT = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '時間外労働(h)', data, backgroundColor: colors,
+        borderRadius: 6, borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true, max: 90,
+          grid: { color: '#f0fdf4' },
+          ticks: { callback: v => v + 'h', font: { size: 11 } }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function render36Check(emp, monthIdx) {
+  const monthOT = emp.monthlyOT;
+  // Accumulate ~8 months of OT for annual
+  let yearOT = 0;
+  for (let i = 0; i < 8; i++) {
+    yearOT += Math.max(0, emp.monthlyOT + hi(emp.id + i * 77, 95, -12, 8));
+  }
+  document.getElementById('agMonth').textContent = monthOT;
+  document.getElementById('agYear').textContent = yearOT;
+  const mPct = Math.min(100, monthOT / 90 * 100);
+  const yPct = Math.min(100, yearOT / 720 * 100);
+  const mBar = document.getElementById('agMonthBar');
+  const yBar = document.getElementById('agYearBar');
+  mBar.style.width = mPct + '%';
+  mBar.className = 'progress-fill ' + (monthOT >= 80 ? 'low' : monthOT >= 45 ? 'mid' : 'high');
+  yBar.style.width = yPct + '%';
+  yBar.className = 'progress-fill ' + (yearOT >= 360 ? 'low' : yearOT >= 250 ? 'mid' : 'high');
+
+  const status = document.getElementById('agStatus');
+  if (monthOT >= 80 || yearOT >= 360) {
+    status.className = 'alert-box danger';
+    status.innerHTML = '<div class="alert-icon">🚨</div><div><strong>違反リスク高</strong>：36協定の特別条項上限に近づいています。直ちに業務調整を行ってください。</div>';
+  } else if (monthOT >= 45 || yearOT >= 250) {
+    status.className = 'alert-box warn';
+    status.innerHTML = '<div class="alert-icon">⚠️</div><div><strong>注意</strong>：月45時間または年間累計250時間に近づいています。業務量の確認を推奨します。</div>';
+  } else {
+    status.className = 'alert-box info';
+    status.innerHTML = '<div class="alert-icon">✅</div><div>現在36協定の範囲内です。引き続き適正な労働時間管理を維持してください。</div>';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TAB 4: COMPLIANCE
+// ─────────────────────────────────────────────────────────────────
+function renderCompliance() {
+  const emps = filteredEmps();
+
+  // 36 Agreement risk (>45h)
+  const over45 = emps.filter(e => e.monthlyOT >= 45).sort((a,b) => b.monthlyOT - a.monthlyOT);
+  document.getElementById('comp36Count').textContent = over45.length;
+  document.getElementById('comp36List').innerHTML = over45.slice(0,20).map(e => {
+    const level = e.monthlyOT >= 80 ? 'danger' : 'warn';
+    return `<div class="risk-item">
+      <div class="risk-num ${level}">${e.monthlyOT >= 80 ? '🚨' : '⚠'}</div>
+      <div style="flex:1">
+        <div class="ri-name">${e.name}</div>
+        <div class="ri-dept">${e.dept}</div>
+      </div>
+      <div>
+        <div class="ot-bar" style="width:120px"><div class="ot-fill" style="width:${Math.min(100,e.monthlyOT/90*100)}%;background:${e.monthlyOT>=80?'#ef4444':'#f59e0b'}"></div></div>
+      </div>
+      <span class="badge ${level}" style="min-width:80px;text-align:center">${e.monthlyOT}h / 月</span>
+    </div>`;
+  }).join('') || '<div class="alert-box info"><div class="alert-icon">✅</div><div>45時間超の社員はいません。</div></div>';
+
+  // Leave 5-day compliance
+  const leaveRisk = emps.filter(e => !e.leaveCompliant && e.leaveTotal >= 10);
+  document.getElementById('compLeaveCount').textContent = leaveRisk.length;
+  document.getElementById('compLeaveList').innerHTML = leaveRisk.slice(0,15).map(e => {
+    return `<div class="risk-item">
+      <div class="risk-num warn">!</div>
+      <div style="flex:1"><div class="ri-name">${e.name}</div><div class="ri-dept">${e.dept}</div></div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:700;color:#92400e">${e.leaveUsed}日取得済</div>
+        <div style="font-size:11px;color:var(--muted)">あと${5-e.leaveUsed}日必要</div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="alert-box info"><div class="alert-icon">✅</div><div>5日取得義務を達成しています。</div></div>';
+
+  // Manager night work
+  const managers = emps.filter(e => e.isManager && e.nightOT > 0);
+  document.getElementById('compNightCount').textContent = managers.length;
+  document.getElementById('compNightList').innerHTML = managers.slice(0,10).map(e => {
+    return `<div class="risk-item">
+      <div class="risk-num warn">🌙</div>
+      <div style="flex:1"><div class="ri-name">${e.name}</div><div class="ri-dept">${e.dept} / 管理監督者</div></div>
+      <span class="badge warn">深夜労働 ${e.nightOT}h/月</span>
+    </div>`;
+  }).join('') || '<div class="alert-box info"><div class="alert-icon">✅</div><div>管理監督者の深夜労働は検出されていません。</div></div>';
+
+  // Weekly 40h
+  const weekOver = emps.filter(e => e.weekAvgH > 40).sort((a,b) => b.weekAvgH - a.weekAvgH);
+  document.getElementById('compWeekCount').textContent = weekOver.length;
+  document.getElementById('compWeekList').innerHTML = weekOver.slice(0,15).map(e => {
+    const lvl = e.weekAvgH > 48 ? 'danger' : 'warn';
+    return `<div class="risk-item">
+      <div class="risk-num ${lvl}">${Math.round(e.weekAvgH)}</div>
+      <div style="flex:1"><div class="ri-name">${e.name}</div><div class="ri-dept">${e.dept}</div></div>
+      <span class="badge ${lvl}">${e.weekAvgH.toFixed(1)}h/週（平均）</span>
+    </div>`;
+  }).join('') || '<div class="alert-box info"><div class="alert-icon">✅</div><div>週40時間超の社員はいません。</div></div>';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────────────────────────
+function openModal(appId) {
+  currentLeaveAppId = appId;
+  const app = LEAVE_APPS.find(a => a.id === appId);
+  if (!app) return;
+  document.getElementById('modalEmpName').textContent = app.empName;
+  document.getElementById('modalDept').textContent = app.dept;
+  document.getElementById('modalType').textContent = app.type;
+  document.getElementById('modalDays').textContent = app.days + '日';
+  document.getElementById('modalPeriod').textContent = `${app.startDate} 〜 ${app.endDate}`;
+  document.getElementById('modalMemo').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  currentLeaveAppId = null;
+}
+function processLeave(action) {
+  const app = LEAVE_APPS.find(a => a.id === currentLeaveAppId);
+  if (!app) return;
+  const memo = document.getElementById('modalMemo').value.trim();
+  app.status = action === 'approve' ? '承認' : '却下';
+  app.memo = memo;
+  closeModal();
+  const msg = action === 'approve'
+    ? `✅ ${app.empName}さんの休暇申請を承認しました`
+    : `❌ ${app.empName}さんの休暇申請を却下しました`;
+  showToast(msg, action === 'approve' ? 'ok' : 'danger');
+  renderLeaveRequests();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  const icons = { ok: '✅', warn: '⚠️', danger: '❌' };
+  document.getElementById('toastIcon').textContent = icons[type] || '✅';
+  document.getElementById('toastMsg').textContent = msg;
+  el.className = 'toast show' + (type !== 'ok' ? ' ' + type : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

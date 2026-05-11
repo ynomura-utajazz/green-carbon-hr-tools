@@ -1,0 +1,176 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "loading": "読み込み中...",
+    "noData": "データがありません",
+    "search": "検索",
+    "open": "開く",
+    "close": "閉じる",
+    "back": "戻る",
+    "next": "次へ",
+    "submit": "送信",
+    "today": "今日",
+    "tomorrow": "明日",
+    "yesterday": "昨日",
+    "all": "すべて",
+    "filter": "絞り込み",
+    "export": "エクスポート",
+    "import": "インポート",
+    "csv": "CSV",
+    "create": "作成",
+    "update": "更新",
+    "view": "表示",
+    "details": "詳細",
+    "loading_": "読み込み中…"
+  },
+  "nav": {
+    "home": "ホーム",
+    "directory": "社員名簿",
+    "recruiting": "採用",
+    "oneonone": "1on1",
+    "retention": "離職リスク",
+    "hrDashboard": "HR ダッシュボード",
+    "settings": "設定"
+  },
+  "ai": {
+    "generate": "AI で生成",
+    "generating": "生成中...",
+    "regenerate": "再生成",
+    "copy": "コピー",
+    "copied": "コピー済み",
+    "demoMode": "デモ"
+  },
+  "integrations": {
+    "title": "連携サービス",
+    "connected": "接続中",
+    "disconnected": "未接続",
+    "error": "エラー",
+    "connect": "接続する",
+    "reconnect": "再設定",
+    "disconnect": "連携解除",
+    "refresh": "再確認"
+  },
+  "category": {
+    "dashboard": "ダッシュボード",
+    "talent": "採用・入退社",
+    "people": "社員・組織",
+    "contract": "契約・委託",
+    "performance": "評価・人材戦略",
+    "engagement": "エンゲージメント",
+    "labor": "労務・コンプライアンス",
+    "compensation": "報酬",
+    "support": "サポート"
+  },
+  "appShell": {
+    "searchPlaceholder": "ツール・社員・ドキュメントを検索...",
+    "skipToContent": "メインコンテンツへスキップ",
+    "menu": "メニュー",
+    "v": "v"
+  },
+  "page": {
+    "recruiting": {
+      "title": "採用",
+      "subtitle": "候補者パイプライン・面接・オファーまでをカンバンで一元管理"
+    },
+    "oneonone": {
+      "title": "1on1 / メンタリング",
+      "subtitle": "メンバーとの対話を継続的に設計・記録・改善"
+    },
+    "retention": {
+      "title": "離職リスク",
+      "subtitle": "シグナルを早期検知し、マネージャー主導の介入を後押し"
+    },
+    "hrDashboard": {
+      "title": "HR ダッシュボード",
+      "subtitle": "経営層・HR 向けの統合分析ビュー"
+    },
+    "directory": {
+      "title": "社員名簿",
+      "subtitle": "全社員を横断検索"
+    },
+    "adminIntegrations": {
+      "title": "連携サービス管理",
+      "subtitle": "Slack / Google Workspace / freee の OAuth・Webhook 設定"
+    },
+    "adminAiUsage": {
+      "title": "AI Copilot 利用状況",
+      "subtitle": "直近 30 日のトークン消費・概算コスト・ユースケース別内訳"
+    },
+    "talentReview": {
+      "title": "タレントレビュー & サクセション",
+      "subtitle": "9-box × キーポジション × 後継候補"
+    },
+    "perfCalibration": {
+      "title": "評価キャリブレーション",
+      "subtitle": "OKR 達成度 × 360° 他者評価で 4 象限分類"
+    },
+    "advocacy": {
+      "title": "社員アドボカシー",
+      "subtitle": "外部発信（記事・登壇・ポッドキャスト・OSS）の一元管理"
+    },
+    "coaching": {
+      "title": "AI コーチング",
+      "subtitle": "GROW モデルベースの月次コーチング会話"
+    },
+    "wellbeing": {
+      "title": "ウェルビーイング",
+      "subtitle": "睡眠・ストレス・運動・ムードの自己申告"
+    },
+    "threeSixty": {
+      "title": "360° 評価",
+      "subtitle": "本人・マネージャー・同僚・部下の 4 視点"
+    },
+    "engagementDeep": {
+      "title": "エンゲージメント深掘り",
+      "subtitle": "在籍ステージ別の離脱要因分析"
+    },
+    "compBands": {
+      "title": "報酬グレード制度",
+      "subtitle": "市場ベンチマーク連動レンジ判定"
+    },
+    "learning": {
+      "title": "学習プラットフォーム",
+      "subtitle": "スキルマトリクス × ラーニングパス × 社内勉強会"
+    },
+    "diversity": {
+      "title": "D&I 深掘り",
+      "subtitle": "国籍・拠点・グレード・採用ファネルの格差検出"
+    },
+    "actionExtractor": {
+      "title": "AI 議事録 → アクション抽出",
+      "subtitle": "議事録から「誰が」「何を」「いつまでに」を構造化抽出"
+    },
+    "teamHealth": {
+      "title": "チーム健康度ダッシュボード",
+      "subtitle": "マネージャーが自チームの全指標を 1 画面で確認"
+    },
+    "careerPath": {
+      "title": "キャリアパス",
+      "subtitle": "過去ロール × 現職 × 将来オプション"
+    },
+    "hrisSync": {
+      "title": "HRIS 双方向同期",
+      "subtitle": "BambooHR / Workday との社員マスタ・評価・給与同期"
+    }
+  },
+  "actions": {
+    "approve": "承認",
+    "reject": "却下",
+    "send": "送信",
+    "schedule": "スケジュール",
+    "complete": "完了",
+    "remind": "リマインド",
+    "archive": "アーカイブ",
+    "duplicate": "複製"
+  },
+  "wellbeing": {
+    "sleep": "睡眠",
+    "stress": "ストレス",
+    "exercise": "運動",
+    "mood": "ムード",
+    "alerts": "警告"
+  }
+}

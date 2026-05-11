@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>オフライン — Green Carbon HR</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      background: #f7faf7;
+      color: #0f172a;
+      padding: 2rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0a0f0a; color: #e2e8f0; }
+    }
+    .card {
+      max-width: 28rem;
+      text-align: center;
+      padding: 2rem;
+      border-radius: 1rem;
+      background: white;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    @media (prefers-color-scheme: dark) {
+      .card { background: #111827; }
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #15803d, #4ade80);
+      color: white;
+      font-weight: 800;
+      font-size: 28px;
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    p {
+      margin: 0 0 1.25rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: #475569;
+    }
+    @media (prefers-color-scheme: dark) {
+      p { color: #94a3b8; }
+    }
+    button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      background: #16a34a;
+      color: white;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    button:hover { background: #15803d; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">GC</div>
+    <h1>オフラインです</h1>
+    <p>
+      ネットワーク接続を確認してください。<br />
+      ホーム画面に登録した状態でも、最新データの取得にはオンラインが必要です。
+    </p>
+    <button onclick="location.reload()">再試行</button>
+  </div>
+</body>
+</html>

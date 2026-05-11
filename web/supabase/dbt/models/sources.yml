@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: public
+    description: "Supabase public schema（Web アプリの本体テーブル）"
+    schema: public
+    tables:
+      - name: organizations
+      - name: employees
+        description: "社員マスタ"
+        columns:
+          - name: id
+            tests: [unique, not_null]
+          - name: email
+            tests: [unique]
+      - name: departments
+      - name: one_on_ones
+      - name: notifications
+      - name: candidates
+      - name: candidate_feedback
+      - name: ai_usage_log
+        description: "AI Copilot 利用履歴"
+      - name: integration_tokens
+      - name: audit_logs

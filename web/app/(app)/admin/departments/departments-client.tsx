@@ -438,12 +438,40 @@ function DepartmentFormDialog({
 }
 
 // ─── 組織図ノード（縦方向ツリー） ───────────────────────────────────
-function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boolean }) {
+// 各子ノードが自分の上に接続線を描画することで、親→子の縦線と
+// 兄弟間の横線を子の数に応じて正しい長さに収める。
+type SiblingPosition = "solo" | "first" | "middle" | "last";
+
+function OrgChartNode({
+  node,
+  isRoot = false,
+  position = "solo",
+}: {
+  node: TreeNode;
+  isRoot?: boolean;
+  position?: SiblingPosition;
+}) {
   const hasChildren = node.children.length > 0;
   return (
     <div className="flex flex-col items-center">
-      {/* 親ノードへの上向き接続線 */}
-      {!isRoot && <div className="h-4 w-px bg-border" />}
+      {/* 親ノードからの接続線（縦 + 兄弟横線の自分の担当分） */}
+      {!isRoot && (
+        <div className="relative h-4 w-full">
+          {/* 縦線（自分の中央から上へ） */}
+          <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-border" />
+          {/* 横線（兄弟がいるときだけ。first は中央〜右、last は左〜中央、middle は全幅） */}
+          {position !== "solo" && (
+            <div
+              className={cn(
+                "absolute top-0 h-px bg-border",
+                position === "first" && "left-1/2 right-0",
+                position === "last" && "left-0 right-1/2",
+                position === "middle" && "left-0 right-0",
+              )}
+            />
+          )}
+        </div>
+      )}
 
       {/* ノード本体 */}
       <div
@@ -469,27 +497,23 @@ function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boole
 
       {/* 子ノードたち */}
       {hasChildren && (
-        <>
-          {/* 親ノードから下に伸びる縦線 */}
-          <div className="h-4 w-px bg-border" />
-          {/* 子ノード群の上に渡る横線 + 各子へ繋ぐ縦線 */}
-          <div className="relative flex items-start justify-center gap-4">
-            {/* 横線（複数の子がいる場合のみ表示） */}
-            {node.children.length > 1 && (
-              <div
-                className="absolute left-0 right-0 top-0 h-px bg-border"
-                style={{
-                  // 一番左の子の中央 ~ 一番右の子の中央 までに線を引く
-                  marginLeft: "calc(min(140px, 100%) / 2)",
-                  marginRight: "calc(min(140px, 100%) / 2)",
-                }}
-              />
-            )}
-            {node.children.map((child) => (
-              <OrgChartNode key={child.id} node={child} />
-            ))}
-          </div>
-        </>
+        <div className="flex items-start gap-4">
+          {node.children.map((child, i) => (
+            <OrgChartNode
+              key={child.id}
+              node={child}
+              position={
+                node.children.length === 1
+                  ? "solo"
+                  : i === 0
+                    ? "first"
+                    : i === node.children.length - 1
+                      ? "last"
+                      : "middle"
+              }
+            />
+          ))}
+        </div>
       )}
     </div>
   );

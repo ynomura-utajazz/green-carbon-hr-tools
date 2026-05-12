@@ -256,7 +256,7 @@ create table alumni (
   full_name text not null,
   email text,
   current_company text,
-  current_role text,
+  current_role_title text,
   linkedin_url text,
   referral_score int,
   notes text,

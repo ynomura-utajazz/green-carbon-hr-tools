@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Users, Save, X } from "lucide-react";
+import { Building2, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Users, Save, X, List, GitBranch } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -161,30 +162,68 @@ export function DepartmentsClient({ departments }: { departments: Department[] }
         <KpiTile label="空部署" value={list.filter((d) => d.employee_count === 0).length} unit="件" />
       </div>
 
-      <Card>
-        <CardContent className="p-2">
-          {tree.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              部署がまだ登録されていません。「ルート部署を追加」から始めてください。
-            </div>
-          ) : (
-            <ul className="space-y-0.5">
-              {tree.map((node) => (
-                <TreeRow
-                  key={node.id}
-                  node={node}
-                  depth={0}
-                  expanded={expanded}
-                  onToggle={toggle}
-                  onAddChild={openCreate}
-                  onEdit={openEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="tree">
+        <TabsList>
+          <TabsTrigger value="tree" className="gap-2">
+            <List className="size-3.5" />
+            ツリー表示（編集）
+          </TabsTrigger>
+          <TabsTrigger value="chart" className="gap-2">
+            <GitBranch className="size-3.5" />
+            組織図ビュー
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="tree">
+          <Card>
+            <CardContent className="p-2">
+              {tree.length === 0 ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  部署がまだ登録されていません。「ルート部署を追加」から始めてください。
+                </div>
+              ) : (
+                <ul className="space-y-0.5">
+                  {tree.map((node) => (
+                    <TreeRow
+                      key={node.id}
+                      node={node}
+                      depth={0}
+                      expanded={expanded}
+                      onToggle={toggle}
+                      onAddChild={openCreate}
+                      onEdit={openEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="chart">
+          <Card>
+            <CardContent className="overflow-x-auto p-4">
+              {tree.length === 0 ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  部署がまだ登録されていません。
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <div className="org-chart inline-flex flex-col gap-6 py-4">
+                    {tree.map((node) => (
+                      <OrgChartNode key={node.id} node={node} isRoot />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="mt-4 text-center text-[11px] text-muted-foreground">
+                ※ 編集はツリー表示タブから。組織図ビューは閲覧専用
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {form && (
         <DepartmentFormDialog
@@ -394,6 +433,64 @@ function DepartmentFormDialog({
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ─── 組織図ノード（縦方向ツリー） ───────────────────────────────────
+function OrgChartNode({ node, isRoot = false }: { node: TreeNode; isRoot?: boolean }) {
+  const hasChildren = node.children.length > 0;
+  return (
+    <div className="flex flex-col items-center">
+      {/* 親ノードへの上向き接続線 */}
+      {!isRoot && <div className="h-4 w-px bg-border" />}
+
+      {/* ノード本体 */}
+      <div
+        className={cn(
+          "relative min-w-[140px] max-w-[200px] rounded-lg border bg-card px-3 py-2 text-center shadow-sm transition-shadow hover:shadow-md",
+          node.employee_count > 0 ? "border-gc-300/60 bg-gc-50/30" : "border-border",
+        )}
+      >
+        <div className="flex items-center justify-center gap-1.5">
+          <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+          <div className="text-xs font-semibold leading-tight">{node.name}</div>
+        </div>
+        {node.code && (
+          <div className="mt-1 font-mono text-[9px] text-muted-foreground">{node.code}</div>
+        )}
+        {node.employee_count > 0 && (
+          <div className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-gc-700">
+            <Users className="size-2.5" />
+            {node.employee_count}
+          </div>
+        )}
+      </div>
+
+      {/* 子ノードたち */}
+      {hasChildren && (
+        <>
+          {/* 親ノードから下に伸びる縦線 */}
+          <div className="h-4 w-px bg-border" />
+          {/* 子ノード群の上に渡る横線 + 各子へ繋ぐ縦線 */}
+          <div className="relative flex items-start justify-center gap-4">
+            {/* 横線（複数の子がいる場合のみ表示） */}
+            {node.children.length > 1 && (
+              <div
+                className="absolute left-0 right-0 top-0 h-px bg-border"
+                style={{
+                  // 一番左の子の中央 ~ 一番右の子の中央 までに線を引く
+                  marginLeft: "calc(min(140px, 100%) / 2)",
+                  marginRight: "calc(min(140px, 100%) / 2)",
+                }}
+              />
+            )}
+            {node.children.map((child) => (
+              <OrgChartNode key={child.id} node={child} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -559,6 +559,18 @@ export function CommandPalette() {
               </div>
             </div>
           </CommandItem>
+          <CommandItem
+            value="department departments 部署 組織 部門 部 課 ツリー hierarchy"
+            onSelect={() => go("/admin/departments")}
+          >
+            <Settings2 className="size-4 text-muted-foreground" />
+            <div className="flex-1">
+              <div className="font-medium">部署管理</div>
+              <div className="text-xs text-muted-foreground">
+                組織ツリーの追加・編集・削除・親変更
+              </div>
+            </div>
+          </CommandItem>
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="ヘルプ">

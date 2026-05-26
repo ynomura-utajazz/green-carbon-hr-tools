@@ -163,11 +163,29 @@ export function OneOnOneClient({
     ? (moodValues.reduce((a, b) => a + b, 0) / moodValues.length).toFixed(1)
     : "—";
 
+  // me が未解決の場合は静的なメッセージ画面に切り替え（manager={me!} のクラッシュ防止）
+  if (!me) {
+    return (
+      <div className="space-y-5">
+        <h1 className="text-2xl font-bold">1on1 管理</h1>
+        <Card>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            社員プロフィールが見つかりません。HR 管理者に連絡してください。
+            <br />
+            <span className="mt-2 inline-block text-xs">
+              (currentEmployeeId: {currentEmployeeId})
+            </span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <OneOnOneHeader
-        meName={me?.full_name ?? "あなた"}
-        meId={me?.id}
+        meName={me.full_name}
+        meId={me.id}
         onSchedule={() => { setScheduleForMemberId(null); setScheduleOpen(true); }}
       />
 

@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +48,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if (body.display_order !== undefined) updates.display_order = body.display_order;
   updates.updated_at = new Date().toISOString();
 
-  const { data, error } = await sb
+  // RLS bypass：hr_admin 未連携テスター対応
+  const admin = createServiceClient();
+  const writer = admin ?? sb;
+
+  const { data, error } = await writer
     .from("departments")
     .update(updates)
     .eq("id", id)
@@ -100,7 +105,10 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     return NextResponse.json({ ok: false, error: "has-employees" }, { status: 400 });
   }
 
-  const { error } = await sb.from("departments").delete().eq("id", id);
+  // RLS bypass：hr_admin 未連携テスター対応
+  const admin = createServiceClient();
+  const writer = admin ?? sb;
+  const { error } = await writer.from("departments").delete().eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 403 });
   return NextResponse.json({ ok: true });
 }

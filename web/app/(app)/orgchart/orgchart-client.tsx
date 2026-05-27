@@ -271,8 +271,10 @@ function LocationView({
   const byOffice = useMemo(() => {
     const map = new Map<string, DemoEmployee[]>();
     for (const e of employees) {
-      if (!map.has(e.office_location)) map.set(e.office_location, []);
-      map.get(e.office_location)!.push(e);
+      const loc = e.office_location;
+      if (!loc) continue; // 拠点未設定の社員はスキップ
+      if (!map.has(loc)) map.set(loc, []);
+      map.get(loc)!.push(e);
     }
     return map;
   }, [employees]);
@@ -284,8 +286,8 @@ function LocationView({
       const countries = new Set([
         e.nationality,
         ...(e.expertise_countries ?? []),
-        // 拠点の国コードも加える
-        e.office_location.split("-")[0],
+        // 拠点の国コードも加える（未設定なら空文字でフィルタされる）
+        e.office_location ? e.office_location.split("-")[0] : "",
       ]);
       for (const c of countries) {
         if (!c) continue;

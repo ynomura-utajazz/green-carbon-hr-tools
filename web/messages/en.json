@@ -62,7 +62,8 @@
     "engagement": "Engagement",
     "labor": "Labor & Compliance",
     "compensation": "Compensation",
-    "support": "Support"
+    "support": "Support",
+    "admin": "Administration"
   },
   "appShell": {
     "searchPlaceholder": "Search tools, people, docs...",

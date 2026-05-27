@@ -62,7 +62,8 @@
     "engagement": "エンゲージメント",
     "labor": "労務・コンプライアンス",
     "compensation": "報酬",
-    "support": "サポート"
+    "support": "サポート",
+    "admin": "管理者"
   },
   "appShell": {
     "searchPlaceholder": "ツール・社員・ドキュメントを検索...",

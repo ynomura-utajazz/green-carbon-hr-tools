@@ -101,9 +101,7 @@ export function PortalClient({ data }: { data: PortalData }) {
                 <Megaphone className="size-4 text-gc-700" />
                 <CardTitle className="text-base">お知らせ</CardTitle>
               </div>
-              <Link href="/announcements" className="text-xs text-muted-foreground hover:text-foreground">
-                すべて見る <ChevronRight className="inline size-3" />
-              </Link>
+              {/* announcements 一覧ページ実装後に有効化 */}
             </CardHeader>
             <CardContent className="pt-0">
               {!data.announcements.length ? (

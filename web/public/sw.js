@@ -10,7 +10,7 @@
  * 更新時：CACHE_VERSION を上げると旧キャッシュが activate で削除される。
  */
 
-const CACHE_VERSION = "gc-hr-v1";
+const CACHE_VERSION = "gc-hr-v2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const HTML_CACHE = `${CACHE_VERSION}-html`;
 
@@ -61,6 +61,7 @@ self.addEventListener("fetch", (event) => {
     url.pathname === "/apple-icon" ||
     url.pathname === "/icon-large" ||
     url.pathname === "/manifest.webmanifest" ||
+    url.pathname === "/manifest.json" ||
     url.pathname.endsWith(".woff2") ||
     url.pathname.endsWith(".woff")
   ) {

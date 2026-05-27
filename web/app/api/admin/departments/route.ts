@@ -17,7 +17,11 @@ export async function GET() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "not-authenticated" }, { status: 401 });
 
-  const { data, error } = await sb
+  // RLS バイパス（hr_admin 未連携テスター対応）
+  const admin = createServiceClient();
+  const reader = admin ?? sb;
+
+  const { data, error } = await reader
     .from("departments")
     .select("id, parent_id, code, name, display_order, created_at")
     .order("display_order", { ascending: true });

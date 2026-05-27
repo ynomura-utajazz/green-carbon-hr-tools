@@ -25,8 +25,10 @@ export const metadata: Metadata = {
   },
   description: "採用・オンボーディング・評価・1on1・サーベイをワンプラットフォームで",
   // Next 15 はファイル規約（app/icon.tsx 等）から自動で metadata を組むので
-  // icons プロパティ明示は不要。manifest は app/manifest.ts から自動配信。
-  manifest: "/manifest.webmanifest",
+  // icons プロパティ明示は不要。
+  // manifest は public/manifest.json を直接配信（PWA validators / Chrome devtools が
+  // /manifest.json を期待するケースがあるため静的ファイル化）。
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

@@ -9,6 +9,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 import { DepartmentsClient, type Department } from "./departments-client";
 
 export const dynamic = "force-dynamic";
@@ -28,13 +29,18 @@ export default async function DepartmentsPage() {
     );
   }
 
+  // RLS バイパス：hr_admin 未連携テスターでも部署一覧を見れるよう
+  // service role 経由で SELECT する。Phase B で employee_roles 自動付与後は通常クライアントに戻す。
+  const admin = createServiceClient();
+  const reader = admin ?? supabase;
+
   // 部署一覧 + 各部署の所属社員数
   const [{ data: depts }, { data: empCounts }] = await Promise.all([
-    supabase
+    reader
       .from("departments")
       .select("id, parent_id, code, name, display_order, created_at")
       .order("display_order", { ascending: true }),
-    supabase
+    reader
       .from("employees")
       .select("department_id, id")
       .eq("status", "active"),

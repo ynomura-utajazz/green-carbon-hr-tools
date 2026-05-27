@@ -491,14 +491,15 @@ function MemberRow({
   member, manager, sessions, actionItems, deptName, onClick,
 }: {
   member: DemoEmployee;
-  manager: DemoEmployee;
+  manager?: DemoEmployee;
   sessions: OneOnOneSession[];
   actionItems: ActionItem[];
   deptName: string;
   onClick: () => void;
 }) {
+  if (!member) return null;
   const memberSessions = sessions.filter(
-    (s) => s.member_id === member.id && s.manager_id === manager.id
+    (s) => s.member_id === member.id && s.manager_id === (manager?.id ?? "")
   );
   const completed = memberSessions
     .filter((s) => s.completed_at)
@@ -626,12 +627,13 @@ function MemberDetail({
   member, manager, sessions, actionItems, deptName, onClose,
 }: {
   member: DemoEmployee;
-  manager: DemoEmployee;
+  manager?: DemoEmployee;
   sessions: OneOnOneSession[];
   actionItems: ActionItem[];
   deptName: string;
   onClose: () => void;
 }) {
+  if (!member) return null;
   const completed = sessions
     .filter((s) => s.completed_at)
     .sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
@@ -710,11 +712,11 @@ function MemberDetail({
                 )}
                 <a
                   href={createGoogleCalendarEventUrl({
-                    title: `1on1: ${member.full_name} × ${manager.full_name}`,
+                    title: `1on1: ${member.full_name} × ${manager?.full_name ?? "マネージャー"}`,
                     description: upcoming.agenda || "1on1 ミーティング",
                     start: upcoming.scheduled_at,
                     end: new Date(new Date(upcoming.scheduled_at).getTime() + upcoming.duration_minutes * 60000),
-                    attendees: [member.email, manager.email],
+                    attendees: [member.email, ...(manager?.email ? [manager.email] : [])],
                     location: upcoming.meet_url ?? undefined,
                     timezone: "Asia/Tokyo",
                   })}
@@ -1130,7 +1132,7 @@ function ScheduleDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultMemberId: string | null;
-  manager: DemoEmployee;
+  manager?: DemoEmployee;
   members: DemoEmployee[];
 }) {
   const [memberId, setMemberId] = useState<string>(defaultMemberId ?? members[0]?.id ?? "");
@@ -1150,10 +1152,10 @@ function ScheduleDialog({
 
   const calendarUrl = member && memberId
     ? createGoogleCalendarEventUrl({
-        title: `1on1: ${member.full_name} × ${manager.full_name}`,
+        title: `1on1: ${member.full_name} × ${manager?.full_name ?? "マネージャー"}`,
         description: `${agenda}\n\nGoogle Meet: ${meetUrl}\n（このリンクは Green Carbon HR Tools が生成）`,
         start, end,
-        attendees: [member.email, manager.email],
+        attendees: [member.email, ...(manager?.email ? [manager.email] : [])],
         location: meetUrl,
         timezone: "Asia/Tokyo",
       })
@@ -1212,8 +1214,8 @@ function ScheduleDialog({
           <div className="rounded-md border bg-muted/40 p-3 text-xs">
             <div className="font-medium">招待プレビュー</div>
             <div className="mt-1 space-y-0.5 text-muted-foreground">
-              <div>件名: 1on1: {member?.full_name ?? "—"} × {manager.full_name}</div>
-              <div>参加者: {member?.email ?? "—"}, {manager.email}</div>
+              <div>件名: 1on1: {member?.full_name ?? "—"} × {manager?.full_name ?? "—"}</div>
+              <div>参加者: {member?.email ?? "—"}, {manager?.email ?? "—"}</div>
               <div className="truncate">Google Meet: {meetUrl}</div>
             </div>
           </div>

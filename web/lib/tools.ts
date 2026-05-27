@@ -9,6 +9,8 @@ import {
   Scale, ExternalLink as ExternalLinkIcon, Rocket, Swords, PiggyBank,
   Award, FlaskConical, Heart, Compass, Crown, Moon,
   Map as MapIcon,
+  Plug, ScrollText, ShieldCheck, Building2, Bot, Database, Smile,
+  GanttChart,
 } from "lucide-react";
 
 export type ToolCategory =
@@ -20,7 +22,8 @@ export type ToolCategory =
   | "engagement"     // サーベイ・表彰・研修・離職リスク
   | "labor"          // 労務・コンプライアンス
   | "compensation"   // 報酬
-  | "support";       // ヘルプデスク・目安箱
+  | "support"        // ヘルプデスク・目安箱
+  | "admin";         // 管理者・連携・監査
 
 export type ToolDef = {
   id: string;
@@ -458,7 +461,7 @@ export const TOOLS: ToolDef[] = [
     icon: Shuffle,
     href: "/org-management",
     category: "people",
-    keywords: ["異動", "配置", "辞令", "組織変更", "transfer"],
+    keywords: ["異動", "配置", "辞令", "組織変更", "transfer", "部署", "department", "組織"],
     status: "ready",
     requiresRole: ["hr_admin", "executive"],
     audience: ["hr_admin", "executive"],
@@ -731,6 +734,139 @@ export const TOOLS: ToolDef[] = [
     requiresRole: ["hr_admin", "executive"],
     audience: ["everyone"],
   },
+  // ───── admin（管理者・連携・監査） ─────
+  {
+    id: "departments-admin",
+    name: "部署管理",
+    description: "組織階層・部署マスタの追加編集・並べ替え。社員所属の集計も",
+    icon: Network,
+    href: "/admin/departments",
+    category: "admin",
+    keywords: ["部署", "組織", "階層", "departments"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "roles-admin",
+    name: "権限管理",
+    description: "hr_admin / manager / employee / executive 等のロール付与・剥奪",
+    icon: ShieldCheck,
+    href: "/admin/roles",
+    category: "admin",
+    keywords: ["権限", "ロール", "アクセス制御", "roles", "RBAC"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "integrations-admin",
+    name: "連携設定",
+    description: "freee / Slack / Google Workspace / Anthropic などの外部サービス連携",
+    icon: Plug,
+    href: "/admin/integrations",
+    category: "admin",
+    keywords: ["連携", "integration", "freee", "Slack", "Google", "API"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "audit-log-admin",
+    name: "監査ログ",
+    description: "全操作の監査証跡。誰が・いつ・何を変更したかを時系列追跡",
+    icon: ScrollText,
+    href: "/admin/audit-log",
+    category: "admin",
+    keywords: ["監査", "ログ", "audit", "履歴"],
+    status: "ready",
+    requiresRole: ["hr_admin", "executive"],
+    audience: ["hr_admin", "executive"],
+  },
+  {
+    id: "activity-stream-admin",
+    name: "アクティビティ",
+    description: "全社の最新活動ストリーム。承認・コメント・更新の集約ビュー",
+    icon: Activity,
+    href: "/admin/activity-stream",
+    category: "admin",
+    keywords: ["アクティビティ", "活動", "stream", "通知"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "ai-usage-admin",
+    name: "AI 利用量",
+    description: "Anthropic Claude / 各 AI 機能のトークン使用量・コスト・上限管理",
+    icon: BarChart3,
+    href: "/admin/ai-usage",
+    category: "admin",
+    keywords: ["AI", "利用量", "コスト", "Claude", "Anthropic", "usage"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "ai-agents-admin",
+    name: "AI エージェント",
+    description: "採用 AI・1on1 サマリ・退職予兆検知などの AI エージェント運用管理",
+    icon: Bot,
+    href: "/admin/ai-agents",
+    category: "admin",
+    keywords: ["AI", "エージェント", "agent", "自動化"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "hris-sync-admin",
+    name: "HRIS 同期",
+    description: "freee 人事労務などの HRIS と双方向同期。差分検出・コンフリクト解消",
+    icon: GanttChart,
+    href: "/admin/hris-sync",
+    category: "admin",
+    keywords: ["HRIS", "同期", "freee", "sync"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "data-lake-admin",
+    name: "データレイク",
+    description: "BigQuery / Snowflake 等への HR データ連携。分析チームへのデータ提供",
+    icon: Database,
+    href: "/admin/data-lake",
+    category: "admin",
+    keywords: ["データ", "lake", "BigQuery", "分析", "data"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "candidate-experience-admin",
+    name: "候補者体験管理",
+    description: "選考プロセスの候補者満足度・NPS 計測・改善アクション",
+    icon: Smile,
+    href: "/admin/candidate-experience",
+    category: "admin",
+    keywords: ["候補者", "体験", "NPS", "candidate"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
+    id: "competitor-pipeline-admin",
+    name: "競合パイプライン",
+    description: "競合他社の求人動向・採用ペースのウォッチ。タレントプール戦略立案",
+    icon: Swords,
+    href: "/admin/competitor-pipeline",
+    category: "admin",
+    keywords: ["競合", "パイプライン", "competitor"],
+    status: "ready",
+    requiresRole: ["hr_admin", "executive"],
+    audience: ["hr_admin", "executive"],
+  },
 ];
 
 export const CATEGORY_LABELS: Record<ToolCategory, string> = {
@@ -743,11 +879,12 @@ export const CATEGORY_LABELS: Record<ToolCategory, string> = {
   labor: "労務・コンプライアンス",
   compensation: "報酬",
   support: "サポート",
+  admin: "管理者",
 };
 
 export const CATEGORY_ORDER: ToolCategory[] = [
   "dashboard", "talent", "people", "contract", "performance",
-  "engagement", "labor", "compensation", "support",
+  "engagement", "labor", "compensation", "support", "admin",
 ];
 
 export function toolsByCategory() {

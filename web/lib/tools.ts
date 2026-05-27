@@ -736,6 +736,18 @@ export const TOOLS: ToolDef[] = [
   },
   // ───── admin（管理者・連携・監査） ─────
   {
+    id: "employees-admin",
+    name: "社員管理",
+    description: "社員の追加・編集・退職処理・部署/上司の付替え。Phase B 新規",
+    icon: Users2,
+    href: "/admin/employees",
+    category: "admin",
+    keywords: ["社員", "従業員", "メンバー", "employee", "CRUD", "退職", "異動"],
+    status: "ready",
+    requiresRole: ["hr_admin"],
+    audience: ["hr_admin"],
+  },
+  {
     id: "departments-admin",
     name: "部署管理",
     description: "組織階層・部署マスタの追加編集・並べ替え。社員所属の集計も",

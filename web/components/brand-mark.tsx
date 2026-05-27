@@ -47,7 +47,8 @@ export function BrandMark({ variant = "wordmark", size = "md", className }: Prop
           width={1140}
           height={250}
           priority
-          className="absolute left-0 top-1/2 -translate-y-1/2 select-none"
+          // ダークモードで黒字部分が背景と同化するため invert で反転
+          className="absolute left-0 top-1/2 -translate-y-1/2 select-none dark:invert"
           style={{ height: dimensions.icon.h * 1.05, width: "auto", maxWidth: "none" }}
         />
       </div>
@@ -60,7 +61,8 @@ export function BrandMark({ variant = "wordmark", size = "md", className }: Prop
       width={dimensions.wordmark.w}
       height={dimensions.wordmark.h}
       priority
-      className={cn("h-auto w-auto select-none", className)}
+      // ダークモードで黒字部分が背景と同化するため invert で反転
+      className={cn("h-auto w-auto select-none dark:invert", className)}
     />
   );
 }

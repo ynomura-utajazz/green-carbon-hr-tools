@@ -117,7 +117,10 @@ export function AppShell({ user, demo, children }: Props) {
             {user && <UserMenu user={user} />}
           </div>
         </header>
-        <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-5 md:px-8 md:py-8 focus:outline-none">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-5 md:px-8 md:py-8 focus:outline-none">
+          {/* 大画面でも間延びしないよう、コンテンツは最大 1600px に制限してセンタリング */}
+          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+        </main>
       </div>
 
       <CommandPalette />

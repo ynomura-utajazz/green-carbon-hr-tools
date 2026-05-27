@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, ChevronDown, Menu } from "lucide-react";
+import { Search, Menu, ChevronDown } from "lucide-react";
 import { TOOLS, CATEGORY_ORDER, toolsByCategory, type ToolCategory } from "@/lib/tools";
 import { useT } from "@/lib/use-t";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Sheet, SheetContent, SheetTrigger, SheetTitle,
@@ -20,6 +19,7 @@ import { IntegrationStatusButton } from "@/components/integration-status";
 import { NotificationsBell } from "@/components/notifications-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { UserMenu } from "@/components/user-menu";
 
 type Props = {
   user?: { name: string; email: string; avatarUrl?: string | null };
@@ -39,8 +39,8 @@ export function AppShell({ user, demo, children }: Props) {
       >
         {t("appShell.skipToContent")}
       </a>
-      {/* ── デスクトップ サイドバー ─────────────── */}
-      <aside className="hidden w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground md:flex md:flex-col">
+      {/* ── デスクトップ サイドバー（lg 以上。タブレットは hamburger） ─ */}
+      <aside className="hidden w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground lg:flex lg:flex-col">
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/" className="flex items-center gap-2">
             <BrandMark variant="wordmark" size="sm" />
@@ -63,7 +63,7 @@ export function AppShell({ user, demo, children }: Props) {
           {/* モバイル用ハンバーガー */}
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label={t("appShell.menu")}>
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t("appShell.menu")}>
                 <Menu className="size-5" />
               </Button>
             </SheetTrigger>
@@ -78,15 +78,15 @@ export function AppShell({ user, demo, children }: Props) {
             </SheetContent>
           </Sheet>
 
-          {/* モバイル用タイトル */}
-          <Link href="/" className="md:hidden">
+          {/* モバイル/タブレット用タイトル */}
+          <Link href="/" className="lg:hidden">
             <BrandMark variant="wordmark" size="sm" />
           </Link>
 
           {/* 検索ボックス（コマンドパレット起動） */}
           <Button
             variant="outline"
-            className="hidden h-9 max-w-md flex-1 justify-start gap-2 px-3 text-muted-foreground md:flex"
+            className="hidden h-9 max-w-md flex-1 justify-start gap-2 px-3 text-muted-foreground lg:flex"
             onClick={() =>
               window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
             }
@@ -103,7 +103,7 @@ export function AppShell({ user, demo, children }: Props) {
               variant="ghost"
               size="icon"
               aria-label="検索"
-              className="md:hidden"
+              className="lg:hidden"
               onClick={() =>
                 window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
               }
@@ -114,20 +114,7 @@ export function AppShell({ user, demo, children }: Props) {
             <LocaleSwitcher />
             <ThemeToggle />
             <NotificationsBell />
-            {user && (
-              <Button variant="ghost" className="h-9 gap-2 px-2">
-                <Avatar className="size-7">
-                  <AvatarFallback className="text-[10px]">
-                    {user.name.slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden text-left lg:block">
-                  <div className="text-xs font-medium leading-none">{user.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{user.email}</div>
-                </div>
-                <ChevronDown className="hidden size-3 opacity-60 lg:block" />
-              </Button>
-            )}
+            {user && <UserMenu user={user} />}
           </div>
         </header>
         <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-5 md:px-8 md:py-8 focus:outline-none">{children}</main>
@@ -140,56 +127,99 @@ export function AppShell({ user, demo, children }: Props) {
   );
 }
 
+const SIDEBAR_COLLAPSE_KEY = "gc.sidebar.collapsed";
+
 function SidebarNav({ onNavigate }: { onNavigate: () => void }) {
   const pathname = usePathname();
   const grouped = toolsByCategory();
   const t = useT();
   const catLabel = (c: ToolCategory) => t(`category.${c}`);
 
+  // 折りたたみ状態（localStorage 永続化）
+  const [collapsed, setCollapsed] = useState<Set<ToolCategory>>(new Set());
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw) as ToolCategory[];
+        if (Array.isArray(arr)) setCollapsed(new Set(arr));
+      }
+    } catch { /* ignore */ }
+    setHydrated(true);
+  }, []);
+
+  const toggle = useCallback((cat: ToolCategory) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSE_KEY, JSON.stringify(Array.from(next)));
+      } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4">
       {CATEGORY_ORDER.map((cat) => {
         const tools = grouped.get(cat) ?? [];
         if (!tools.length) return null;
+        const isCollapsed = hydrated && collapsed.has(cat);
         return (
           <div key={cat} className="mb-5">
-            <div className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {catLabel(cat)}
-            </div>
-            <ul className="flex flex-col gap-0.5">
-              {tools.map((tool) => {
-                const Icon = tool.icon;
-                const active = pathname === tool.href || pathname.startsWith(tool.href + "/");
-                return (
-                  <li key={tool.id}>
-                    <Link
-                      href={tool.href}
-                      onClick={onNavigate}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
-                        active
-                          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-                      )}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      <span className="truncate">{tool.name}</span>
-                      {tool.status === "planned" && (
-                        <span className="ml-auto text-[9px] uppercase tracking-wider text-muted-foreground">
-                          soon
-                        </span>
-                      )}
-                      {tool.status === "beta" && (
-                        <span className="ml-auto text-[9px] uppercase tracking-wider text-blue-600">
-                          beta
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            <button
+              type="button"
+              onClick={() => toggle(cat)}
+              aria-expanded={!isCollapsed}
+              aria-controls={`sidebar-cat-${cat}`}
+              className="flex w-full items-center justify-between rounded px-2 pb-1.5 pt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span>{catLabel(cat)}</span>
+              <ChevronDown
+                className={cn(
+                  "size-3 opacity-60 transition-transform",
+                  isCollapsed && "-rotate-90",
+                )}
+              />
+            </button>
+            {!isCollapsed && (
+              <ul id={`sidebar-cat-${cat}`} className="flex flex-col gap-0.5">
+                {tools.map((tool) => {
+                  const Icon = tool.icon;
+                  const active = pathname === tool.href || pathname.startsWith(tool.href + "/");
+                  return (
+                    <li key={tool.id}>
+                      <Link
+                        href={tool.href}
+                        onClick={onNavigate}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors",
+                          active
+                            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        <span className="truncate">{tool.name}</span>
+                        {tool.status === "planned" && (
+                          <span className="ml-auto text-[9px] uppercase tracking-wider text-muted-foreground">
+                            soon
+                          </span>
+                        )}
+                        {tool.status === "beta" && (
+                          <span className="ml-auto text-[9px] uppercase tracking-wider text-blue-600">
+                            beta
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         );
       })}

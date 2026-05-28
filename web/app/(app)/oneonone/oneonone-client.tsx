@@ -14,6 +14,7 @@ import {
   MOOD_EMOJI, MOOD_COLOR, MOOD_RANK,
   type OneOnOneSession, type ActionItem, type OneOnOneMood,
 } from "@/lib/demo/oneonones";
+import { ONEONONE_TOPIC_TAGS } from "@/lib/oneonone-topics";
 import {
   createGoogleCalendarEventUrl, fakeGoogleMeetUrl,
 } from "@/lib/google-calendar";
@@ -880,19 +881,74 @@ function RecordDialog({
   const [date, setDate] = useState<string>(today);
   const [duration, setDuration] = useState<string>("30");
   const [mood, setMood] = useState<OneOnOneMood | "">("");
-  const [topicsInput, setTopicsInput] = useState<string>("");
+  const [topics, setTopics] = useState<string[]>([]);
+  const [customTopic, setCustomTopic] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [aiExtracting, setAiExtracting] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string>("");
+
+  const toggleTopic = (t: string) => {
+    setTopics((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  };
+
+  const addCustomTopic = () => {
+    const v = customTopic.trim();
+    if (!v) return;
+    if (!topics.includes(v)) setTopics([...topics, v]);
+    setCustomTopic("");
+  };
+
+  const onAiExtract = async () => {
+    if (notes.trim().length < 10) {
+      toast.error("メモを 10 字以上書いてから AI 抽出を実行してください");
+      return;
+    }
+    setAiExtracting(true);
+    try {
+      const res = await fetch("/api/ai/extract-oneonone", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          notes,
+          member_name: member.full_name,
+          manager_name: manager.full_name,
+          meeting_date: date,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        toast.error(json.error || "AI 抽出に失敗しました");
+        setAiExtracting(false);
+        return;
+      }
+      const out = json.output as {
+        topics: string[];
+        mood: OneOnOneMood | null;
+        actions: { title: string; assignee: string; due_date: string | null }[];
+        summary_oneliner: string;
+      };
+      // フォームを抽出結果でプリフィル（ユーザーが確認・修正可）
+      setTopics(Array.from(new Set([...topics, ...out.topics])));
+      if (out.mood) setMood(out.mood);
+      setAiSummary(out.summary_oneliner);
+      toast.success(`AI 抽出完了: トピック ${out.topics.length} 件 / アクション ${out.actions.length} 件`, {
+        description: json.demo ? "デモ応答" : undefined,
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("AI 抽出で通信エラーが発生しました");
+    } finally {
+      setAiExtracting(false);
+    }
+  };
 
   const onSubmit = async () => {
     setSaving(true);
     try {
       // scheduled_at と completed_at を同じ日付に設定（過去 1on1 の事後記録）
       const isoAt = new Date(`${date}T14:00:00+09:00`).toISOString();
-      const topics = topicsInput
-        .split(/[,\s、]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const fullNotes = aiSummary ? `${aiSummary}\n\n${notes}` : notes;
 
       const res = await fetch("/api/oneonones", {
         method: "POST",
@@ -905,7 +961,7 @@ function RecordDialog({
           duration_minutes: Number(duration),
           mood: mood || null,
           topics,
-          notes: notes || null,
+          notes: fullNotes || null,
         }),
       });
       const json = await res.json();
@@ -970,24 +1026,97 @@ function RecordDialog({
             </Select>
           </label>
 
-          <label className="space-y-1.5 text-sm">
-            <div className="text-xs font-medium text-muted-foreground">トピック（カンマ区切り）</div>
-            <Input
-              value={topicsInput}
-              onChange={(e) => setTopicsInput(e.target.value)}
-              placeholder="OKR進捗, キャリア相談, チーム課題"
-            />
-          </label>
+          <div className="space-y-1.5 text-sm">
+            <div className="text-xs font-medium text-muted-foreground">
+              トピック（複数選択可・集計用に標準化されています）
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {ONEONONE_TOPIC_TAGS.map((t) => {
+                const selected = topics.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => toggleTopic(t)}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                      selected
+                        ? "border-gc-600 bg-gc-50 text-gc-900 font-medium"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {selected ? "✓ " : ""}
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+            {/* フリータグ追加 */}
+            <div className="mt-1 flex gap-1.5">
+              <Input
+                placeholder="独自タグを追加（標準にない場合のみ）"
+                value={customTopic}
+                onChange={(e) => setCustomTopic(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomTopic();
+                  }
+                }}
+                className="h-8 text-xs"
+              />
+              <Button type="button" size="sm" variant="outline" onClick={addCustomTopic} className="h-8 text-xs">
+                追加
+              </Button>
+            </div>
+            {/* 選択中のフリータグ表示（標準外） */}
+            {topics.filter((t) => !(ONEONONE_TOPIC_TAGS as readonly string[]).includes(t)).length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                <span className="text-[10px] text-muted-foreground">独自タグ:</span>
+                {topics
+                  .filter((t) => !(ONEONONE_TOPIC_TAGS as readonly string[]).includes(t))
+                  .map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] text-amber-900"
+                    >
+                      {t}
+                      <button onClick={() => toggleTopic(t)} className="text-amber-900/60 hover:text-amber-900">
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            )}
+          </div>
 
-          <label className="space-y-1.5 text-sm">
-            <div className="text-xs font-medium text-muted-foreground">メモ・要点</div>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-muted-foreground">メモ・要点</div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onAiExtract}
+                disabled={aiExtracting || notes.length < 10}
+                className="h-7 gap-1.5 text-xs"
+              >
+                <Sparkles className="size-3" />
+                {aiExtracting ? "解析中..." : "AI で抽出"}
+              </Button>
+            </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="何が議論されたか、合意事項、次回までのフォロー等"
-              className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              placeholder="何が議論されたか、合意事項、次回までのフォロー等を自由に書いてください。書き終えたら『AI で抽出』をクリックするとトピック・気分・サマリが自動入力されます。"
+              className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
-          </label>
+            {aiSummary && (
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-2 text-xs text-blue-900">
+                <span className="font-medium">AI サマリ:</span> {aiSummary}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-2 flex items-center justify-end gap-2">

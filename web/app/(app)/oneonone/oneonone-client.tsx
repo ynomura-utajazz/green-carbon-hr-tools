@@ -634,6 +634,7 @@ function MemberDetail({
   onClose: () => void;
 }) {
   if (!member) return null;
+  const [recordOpen, setRecordOpen] = useState(false);
   const completed = sessions
     .filter((s) => s.completed_at)
     .sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
@@ -668,9 +669,16 @@ function MemberDetail({
               {member.slack_user_id && <span>· Slack {member.slack_user_id}</span>}
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="閉じる">
-            <X className="size-4" />
-          </Button>
+          <div className="flex flex-col items-end gap-1.5">
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="閉じる">
+              <X className="size-4" />
+            </Button>
+            {manager && (
+              <Button size="sm" variant="outline" onClick={() => setRecordOpen(true)} className="gap-1.5">
+                <CheckCircle2 className="size-3.5" /> 1on1 を記録
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
@@ -846,7 +854,152 @@ function MemberDetail({
           </ol>
         )}
       </div>
+
+      {manager && (
+        <RecordDialog
+          open={recordOpen}
+          onOpenChange={setRecordOpen}
+          manager={manager}
+          member={member}
+        />
+      )}
     </>
+  );
+}
+
+// ─── 1on1 を記録するダイアログ ─────────────
+function RecordDialog({
+  open, onOpenChange, manager, member,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  manager: DemoEmployee;
+  member: DemoEmployee;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState<string>(today);
+  const [duration, setDuration] = useState<string>("30");
+  const [mood, setMood] = useState<OneOnOneMood | "">("");
+  const [topicsInput, setTopicsInput] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+
+  const onSubmit = async () => {
+    setSaving(true);
+    try {
+      // scheduled_at と completed_at を同じ日付に設定（過去 1on1 の事後記録）
+      const isoAt = new Date(`${date}T14:00:00+09:00`).toISOString();
+      const topics = topicsInput
+        .split(/[,\s、]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const res = await fetch("/api/oneonones", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          manager_id: manager.id,
+          member_id: member.id,
+          scheduled_at: isoAt,
+          completed_at: isoAt,
+          duration_minutes: Number(duration),
+          mood: mood || null,
+          topics,
+          notes: notes || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        toast.error(json.error || "記録に失敗しました");
+        setSaving(false);
+        return;
+      }
+      toast.success(`${member.full_name} さんとの 1on1 を記録しました`);
+      onOpenChange(false);
+      // ページをリロードして KPI を更新
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      toast.error("通信エラーが発生しました");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !saving && onOpenChange(o)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>1on1 を記録</DialogTitle>
+          <DialogDescription>
+            {member.full_name} さんとの 1on1 の実施内容を記録します（事後記録）。
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="space-y-1.5 text-sm">
+              <div className="text-xs font-medium text-muted-foreground">実施日</div>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <div className="text-xs font-medium text-muted-foreground">所要時間（分）</div>
+              <Select value={duration} onValueChange={setDuration}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 分</SelectItem>
+                  <SelectItem value="30">30 分</SelectItem>
+                  <SelectItem value="45">45 分</SelectItem>
+                  <SelectItem value="60">60 分</SelectItem>
+                  <SelectItem value="90">90 分</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+          </div>
+
+          <label className="space-y-1.5 text-sm">
+            <div className="text-xs font-medium text-muted-foreground">気分</div>
+            <Select value={mood} onValueChange={(v) => setMood(v as OneOnOneMood)}>
+              <SelectTrigger><SelectValue placeholder="未選択" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="great">{MOOD_EMOJI.great} 非常に良い</SelectItem>
+                <SelectItem value="good">{MOOD_EMOJI.good} 良い</SelectItem>
+                <SelectItem value="ok">{MOOD_EMOJI.ok} 普通</SelectItem>
+                <SelectItem value="down">{MOOD_EMOJI.down} やや低調</SelectItem>
+                <SelectItem value="bad">{MOOD_EMOJI.bad} 低調</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+
+          <label className="space-y-1.5 text-sm">
+            <div className="text-xs font-medium text-muted-foreground">トピック（カンマ区切り）</div>
+            <Input
+              value={topicsInput}
+              onChange={(e) => setTopicsInput(e.target.value)}
+              placeholder="OKR進捗, キャリア相談, チーム課題"
+            />
+          </label>
+
+          <label className="space-y-1.5 text-sm">
+            <div className="text-xs font-medium text-muted-foreground">メモ・要点</div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="何が議論されたか、合意事項、次回までのフォロー等"
+              className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </label>
+        </div>
+
+        <div className="mt-2 flex items-center justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
+            キャンセル
+          </Button>
+          <Button onClick={onSubmit} disabled={saving}>
+            {saving ? "保存中..." : "記録する"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1241,10 +1394,29 @@ function ScheduleDialog({
             href={calendarUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => {
+            onClick={async () => {
               toast.success("Google Calendar を新しいタブで開きました", {
                 description: "プリフィル済みのイベント作成画面を確認して保存してください。",
               });
+              // DB にも 1on1 セッション（未完了）として保存
+              if (member && manager) {
+                try {
+                  await fetch("/api/oneonones", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                      manager_id: manager.id,
+                      member_id: member.id,
+                      scheduled_at: start.toISOString(),
+                      duration_minutes: Number(duration),
+                      agenda,
+                      meet_url: meetUrl,
+                    }),
+                  });
+                } catch (e) {
+                  console.error("Failed to save 1on1 to DB:", e);
+                }
+              }
               setTimeout(() => onOpenChange(false), 200);
             }}
             className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"

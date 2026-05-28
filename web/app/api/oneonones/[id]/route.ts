@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,7 +50,10 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if (body.calendar_event_id !== undefined) updates.calendar_event_id = body.calendar_event_id;
   if (body.meet_url !== undefined) updates.meet_url = body.meet_url;
 
-  const { data, error } = await sb
+  // RLS テスター対応: 認証済みなら service role で更新
+  const admin = createServiceClient();
+  const writer = admin ?? sb;
+  const { data, error } = await writer
     .from("oneonones")
     .update(updates)
     .eq("id", id)
@@ -67,7 +71,9 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "not-authenticated" }, { status: 401 });
 
-  const { error } = await sb.from("oneonones").delete().eq("id", id);
+  const admin = createServiceClient();
+  const writer = admin ?? sb;
+  const { error } = await writer.from("oneonones").delete().eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   CalendarPlus, Clock, AlertCircle, CheckCircle2, MessageSquare,
   Sparkles, Users, ListChecks, X, ChevronRight, Video, Calendar as CalendarIcon,
-  Send,
+  Send, Pencil, Trash2,
 } from "lucide-react";
 import {
   type DemoEmployee, type DemoDept, officeByCode,
@@ -636,6 +636,36 @@ function MemberDetail({
 }) {
   if (!member) return null;
   const [recordOpen, setRecordOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<OneOnOneSession | null>(null);
+
+  const onEditSession = (s: OneOnOneSession) => {
+    setEditingSession(s);
+    setRecordOpen(true);
+  };
+
+  const onCloseRecord = (open: boolean) => {
+    setRecordOpen(open);
+    if (!open) setEditingSession(null);
+  };
+
+  const onDeleteSession = async (s: OneOnOneSession) => {
+    if (!window.confirm(`${formatDate(s.completed_at ?? s.scheduled_at)} の 1on1 記録を削除しますか？`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/oneonones/${s.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        toast.error(json.error || "削除に失敗しました");
+        return;
+      }
+      toast.success("1on1 記録を削除しました");
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      toast.error("通信エラーが発生しました");
+    }
+  };
   const completed = sessions
     .filter((s) => s.completed_at)
     .sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
@@ -811,7 +841,7 @@ function MemberDetail({
             {completed.map((s) => {
               const sessionActions = actionItems.filter((a) => a.one_on_one_id === s.id);
               return (
-                <li key={s.id} className="rounded-lg border bg-card p-3">
+                <li key={s.id} className="group rounded-lg border bg-card p-3">
                   <div className="flex items-center gap-2 text-xs">
                     <span className="font-medium">{formatDate(s.completed_at!)}</span>
                     <span className="text-muted-foreground">·</span>
@@ -820,6 +850,29 @@ function MemberDetail({
                       <span className="ml-auto inline-flex items-center gap-1">
                         <span style={{ color: MOOD_COLOR[s.mood] }}>●</span>
                         <span className="text-muted-foreground">{MOOD_EMOJI[s.mood]}</span>
+                      </span>
+                    )}
+                    {/* 編集 / 削除（ホバー時表示） */}
+                    {manager && (
+                      <span className="ml-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => onEditSession(s)}
+                          className="rounded p-1 hover:bg-muted"
+                          aria-label="編集"
+                          title="編集"
+                        >
+                          <Pencil className="size-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteSession(s)}
+                          className="rounded p-1 text-destructive hover:bg-destructive/10"
+                          aria-label="削除"
+                          title="削除"
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
                       </span>
                     )}
                   </div>
@@ -864,10 +917,12 @@ function MemberDetail({
 
       {manager && (
         <RecordDialog
+          key={editingSession?.id ?? "new"}
           open={recordOpen}
-          onOpenChange={setRecordOpen}
+          onOpenChange={onCloseRecord}
           manager={manager}
           member={member}
+          editSession={editingSession}
         />
       )}
     </>
@@ -876,23 +931,31 @@ function MemberDetail({
 
 // ─── 1on1 を記録するダイアログ ─────────────
 function RecordDialog({
-  open, onOpenChange, manager, member,
+  open, onOpenChange, manager, member, editSession,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   manager: DemoEmployee;
   member: DemoEmployee;
+  /** 編集モード用：指定すると PATCH 動作 + 初期値プリフィル */
+  editSession?: OneOnOneSession | null;
 }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [date, setDate] = useState<string>(today);
-  const [duration, setDuration] = useState<string>("30");
-  const [mood, setMood] = useState<OneOnOneMood | "">("");
-  const [topics, setTopics] = useState<string[]>([]);
+  const isEdit = !!editSession?.id;
+
+  const initialDate = editSession?.scheduled_at
+    ? new Date(editSession.scheduled_at).toISOString().slice(0, 10)
+    : today;
+
+  const [date, setDate] = useState<string>(initialDate);
+  const [duration, setDuration] = useState<string>(String(editSession?.duration_minutes ?? 30));
+  const [mood, setMood] = useState<OneOnOneMood | "">(editSession?.mood ?? "");
+  const [topics, setTopics] = useState<string[]>(editSession?.topics ?? []);
   const [customTopic, setCustomTopic] = useState<string>("");
-  const [notes, setNotes] = useState<string>("");
+  const [notes, setNotes] = useState<string>(editSession?.notes ?? "");
   const [saving, setSaving] = useState(false);
   const [aiExtracting, setAiExtracting] = useState(false);
-  const [aiSummary, setAiSummary] = useState<string>("");
+  const [aiSummary, setAiSummary] = useState<string>(editSession?.ai_summary ?? "");
 
   const toggleTopic = (t: string) => {
     setTopics((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -952,33 +1015,49 @@ function RecordDialog({
   const onSubmit = async () => {
     setSaving(true);
     try {
-      // scheduled_at と completed_at を同じ日付に設定（過去 1on1 の事後記録）
       const isoAt = new Date(`${date}T14:00:00+09:00`).toISOString();
 
-      const res = await fetch("/api/oneonones", {
-        method: "POST",
+      const url = isEdit ? `/api/oneonones/${editSession!.id}` : "/api/oneonones";
+      const method = isEdit ? "PATCH" : "POST";
+      const body = isEdit
+        ? {
+            scheduled_at: isoAt,
+            completed_at: isoAt,
+            duration_minutes: Number(duration),
+            mood: mood || null,
+            topics,
+            notes: notes || null,
+            ai_summary: aiSummary || null,
+          }
+        : {
+            manager_id: manager.id,
+            member_id: member.id,
+            scheduled_at: isoAt,
+            completed_at: isoAt,
+            duration_minutes: Number(duration),
+            mood: mood || null,
+            topics,
+            notes: notes || null,
+            ai_summary: aiSummary || null,
+          };
+
+      const res = await fetch(url, {
+        method,
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          manager_id: manager.id,
-          member_id: member.id,
-          scheduled_at: isoAt,
-          completed_at: isoAt,
-          duration_minutes: Number(duration),
-          mood: mood || null,
-          topics,
-          notes: notes || null,
-          ai_summary: aiSummary || null,
-        }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
-        toast.error(json.error || "記録に失敗しました");
+        toast.error(json.error || (isEdit ? "更新に失敗しました" : "記録に失敗しました"));
         setSaving(false);
         return;
       }
-      toast.success(`${member.full_name} さんとの 1on1 を記録しました`);
+      toast.success(
+        isEdit
+          ? `${member.full_name} さんとの 1on1 を更新しました`
+          : `${member.full_name} さんとの 1on1 を記録しました`,
+      );
       onOpenChange(false);
-      // ページをリロードして KPI を更新
       window.location.reload();
     } catch (e) {
       console.error(e);
@@ -991,9 +1070,11 @@ function RecordDialog({
     <Dialog open={open} onOpenChange={(o) => !saving && onOpenChange(o)}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>1on1 を記録</DialogTitle>
+          <DialogTitle>{isEdit ? "1on1 を編集" : "1on1 を記録"}</DialogTitle>
           <DialogDescription>
-            {member.full_name} さんとの 1on1 の実施内容を記録します（事後記録）。
+            {isEdit
+              ? `${member.full_name} さんとの過去の 1on1 を編集します。`
+              : `${member.full_name} さんとの 1on1 の実施内容を記録します（事後記録）。`}
           </DialogDescription>
         </DialogHeader>
 
@@ -1130,7 +1211,7 @@ function RecordDialog({
             キャンセル
           </Button>
           <Button onClick={onSubmit} disabled={saving}>
-            {saving ? "保存中..." : "記録する"}
+            {saving ? "保存中..." : isEdit ? "更新する" : "記録する"}
           </Button>
         </div>
       </DialogContent>

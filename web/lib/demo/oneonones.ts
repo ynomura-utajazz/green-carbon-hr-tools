@@ -18,6 +18,8 @@ export type OneOnOneSession = {
   mood: OneOnOneMood | null;
   agenda: string;
   notes: string;
+  /** AI 抽出で生成された 1 行サマリ（メモとは分離） */
+  ai_summary?: string | null;
   topics: string[];
   /** Google Calendar 連携 */
   calendar_event_id: string | null;

@@ -11,7 +11,6 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
 import { EmployeesClient, type EmployeeRow, type DeptOption } from "./employees-client";
 
 export const dynamic = "force-dynamic";
@@ -27,16 +26,13 @@ export default async function EmployeesAdminPage() {
     );
   }
 
-  const admin = createServiceClient();
-  const reader = admin ?? supabase;
-
   const [{ data: emps }, { data: depts }] = await Promise.all([
-    reader
+    supabase
       .from("employees")
       .select("id, employee_code, email, full_name, full_name_kana, preferred_name, display_name_en, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, resign_date, nationality")
       .is("deleted_at", null)
       .order("full_name", { ascending: true }),
-    reader
+    supabase
       .from("departments")
       .select("id, name, parent_id")
       .order("display_order", { ascending: true }),

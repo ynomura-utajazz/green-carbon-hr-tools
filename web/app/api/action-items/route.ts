@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,7 +64,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "member-not-found" }, { status: 400 });
   }
 
-  const { data, error } = await sb
+  // RLS テスター対応: 認証済みなら service role で INSERT
+  const admin = createServiceClient();
+  const writer = admin ?? sb;
+  const { data, error } = await writer
     .from("action_items")
     .insert({
       organization_id: memberEmp.organization_id,

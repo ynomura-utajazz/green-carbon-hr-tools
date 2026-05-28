@@ -91,9 +91,19 @@ function demoExtract(notes: string): OneOnOneExtractOutput {
     actions.push({ title: line.slice(0, 80), assignee, due_date: null });
   }
 
-  // サマリ生成
-  const summary_oneliner = notes.replace(/\s+/g, " ").trim().slice(0, 40)
-    + (notes.length > 40 ? "..." : "");
+  // サマリ生成（フォールバックは短すぎる場合は出さない）
+  let summary_oneliner = "";
+  const cleaned = notes.replace(/\s+/g, " ").trim();
+  if (cleaned.length >= 60) {
+    // 60 字以上なら最初の文をサマリとして抽出
+    const firstSentence = cleaned.match(/^[^。！？!?]+[。！？!?]/);
+    if (firstSentence) {
+      summary_oneliner = firstSentence[0].slice(0, 50);
+    } else {
+      summary_oneliner = cleaned.slice(0, 50) + "...";
+    }
+  }
+  // < 60 字ならサマリ無し（メモと重複するため）
 
   return {
     topics: topics.slice(0, 5),

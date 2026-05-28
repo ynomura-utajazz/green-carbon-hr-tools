@@ -8,7 +8,6 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,11 +78,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   setIf("phone");
   updates.updated_at = new Date().toISOString();
 
-  // RLS バイパス
-  const admin = createServiceClient();
-  const writer = admin ?? sb;
-
-  const { data, error } = await writer
+  const { data, error } = await sb
     .from("employees")
     .update(updates)
     .eq("id", id)
@@ -109,9 +104,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   if (!user) return NextResponse.json({ ok: false, error: "not-authenticated" }, { status: 401 });
 
   // 部下がいる社員は削除前に manager_id を解除する必要があるかチェック
-  const admin = createServiceClient();
-  const reader = admin ?? sb;
-  const { count } = await reader
+  const { count } = await sb
     .from("employees")
     .select("*", { count: "exact", head: true })
     .eq("manager_id", id)
@@ -125,8 +118,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   }
 
   // ソフト削除（履歴保持のため）
-  const writer = admin ?? sb;
-  const { error } = await writer
+  const { error } = await sb
     .from("employees")
     .update({ deleted_at: new Date().toISOString(), status: "resigned" })
     .eq("id", id);

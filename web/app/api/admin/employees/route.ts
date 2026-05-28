@@ -8,7 +8,6 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,10 +20,7 @@ export async function GET() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "not-authenticated" }, { status: 401 });
 
-  const admin = createServiceClient();
-  const reader = admin ?? sb;
-
-  const { data, error } = await reader
+  const { data, error } = await sb
     .from("employees")
     .select(EMP_SELECT)
     .is("deleted_at", null)
@@ -69,26 +65,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "missing-full_name" }, { status: 400 });
   }
 
-  // organization_id を取得（呼び出し元 or デフォルト）
-  const admin = createServiceClient();
-  const reader = admin ?? sb;
-
-  const { data: meEmp } = await reader
+  // organization_id を取得
+  const { data: meEmp } = await sb
     .from("employees")
     .select("organization_id")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-  let orgId = meEmp?.organization_id as string | undefined;
-  if (!orgId) {
-    const { data: anyOrg } = await reader
-      .from("organizations")
-      .select("id")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    orgId = anyOrg?.id as string | undefined;
-  }
+  const orgId = meEmp?.organization_id as string | undefined;
   if (!orgId) {
     return NextResponse.json({ ok: false, error: "no-organization" }, { status: 403 });
   }
@@ -96,7 +80,7 @@ export async function POST(req: Request) {
   // employee_code は省略時に自動採番（既存最大値 + 1）
   let employeeCode = body.employee_code?.trim();
   if (!employeeCode) {
-    const { data: maxRow } = await reader
+    const { data: maxRow } = await sb
       .from("employees")
       .select("employee_code")
       .eq("organization_id", orgId)
@@ -109,8 +93,7 @@ export async function POST(req: Request) {
     employeeCode = `E${String(next).padStart(5, "0")}`;
   }
 
-  const writer = admin ?? sb;
-  const { data, error } = await writer
+  const { data, error } = await sb
     .from("employees")
     .insert({
       organization_id: orgId,

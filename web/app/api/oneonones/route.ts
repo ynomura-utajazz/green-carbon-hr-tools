@@ -8,13 +8,12 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SELECT =
-  "id, organization_id, manager_id, member_id, scheduled_at, completed_at, duration_minutes, mood, agenda, notes, topics, calendar_event_id, meet_url, created_at, updated_at";
+  "id, organization_id, manager_id, member_id, scheduled_at, completed_at, duration_minutes, mood, agenda, notes, ai_summary, topics, calendar_event_id, meet_url, created_at, updated_at";
 
 export async function GET(req: Request) {
   const sb = await createClient();
@@ -25,9 +24,7 @@ export async function GET(req: Request) {
   const managerId = searchParams.get("manager_id");
   const memberId = searchParams.get("member_id");
 
-  const admin = createServiceClient();
-  const reader = admin ?? sb;
-  let q = reader.from("oneonones").select(SELECT).order("scheduled_at", { ascending: false });
+  let q = sb.from("oneonones").select(SELECT).order("scheduled_at", { ascending: false });
   if (managerId) q = q.eq("manager_id", managerId);
   if (memberId) q = q.eq("member_id", memberId);
 
@@ -49,6 +46,7 @@ type CreateBody = {
   completed_at?: string;
   mood?: "great" | "good" | "ok" | "down" | "bad";
   notes?: string;
+  ai_summary?: string;
 };
 
 export async function POST(req: Request) {
@@ -70,11 +68,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "missing-scheduled_at" }, { status: 400 });
   }
 
-  const admin = createServiceClient();
-  const reader = admin ?? sb;
-
   // organization_id は manager 側から継承
-  const { data: managerEmp } = await reader
+  const { data: managerEmp } = await sb
     .from("employees")
     .select("organization_id")
     .eq("id", body.manager_id)
@@ -83,8 +78,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "manager-not-found" }, { status: 400 });
   }
 
-  const writer = admin ?? sb;
-  const { data, error } = await writer
+  const { data, error } = await sb
     .from("oneonones")
     .insert({
       organization_id: managerEmp.organization_id,
@@ -99,6 +93,7 @@ export async function POST(req: Request) {
       completed_at: body.completed_at ?? null,
       mood: body.mood ?? null,
       notes: body.notes ?? null,
+      ai_summary: body.ai_summary ?? null,
     })
     .select(SELECT)
     .single();

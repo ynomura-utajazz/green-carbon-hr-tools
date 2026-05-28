@@ -830,8 +830,14 @@ function MemberDetail({
                       ))}
                     </div>
                   )}
+                  {s.ai_summary && (
+                    <div className="mt-2 flex items-start gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2 py-1.5 text-xs text-blue-900">
+                      <Sparkles className="size-3 shrink-0 mt-0.5" />
+                      <span><span className="font-medium">AI サマリ: </span>{s.ai_summary}</span>
+                    </div>
+                  )}
                   {s.notes && (
-                    <p className="mt-2 text-sm leading-relaxed text-foreground/90">{s.notes}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/90 whitespace-pre-line">{s.notes}</p>
                   )}
                   {sessionActions.length > 0 && (
                     <ul className="mt-2.5 space-y-1 border-t pt-2">
@@ -948,7 +954,6 @@ function RecordDialog({
     try {
       // scheduled_at と completed_at を同じ日付に設定（過去 1on1 の事後記録）
       const isoAt = new Date(`${date}T14:00:00+09:00`).toISOString();
-      const fullNotes = aiSummary ? `${aiSummary}\n\n${notes}` : notes;
 
       const res = await fetch("/api/oneonones", {
         method: "POST",
@@ -961,7 +966,8 @@ function RecordDialog({
           duration_minutes: Number(duration),
           mood: mood || null,
           topics,
-          notes: fullNotes || null,
+          notes: notes || null,
+          ai_summary: aiSummary || null,
         }),
       });
       const json = await res.json();

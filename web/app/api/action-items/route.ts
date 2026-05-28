@@ -5,7 +5,6 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,9 +22,7 @@ export async function GET(req: Request) {
   const assigneeId = searchParams.get("assignee_id");
   const oneOnOneId = searchParams.get("one_on_one_id");
 
-  const admin = createServiceClient();
-  const reader = admin ?? sb;
-  let q = reader.from("action_items").select(SELECT).order("due_date", { ascending: true });
+  let q = sb.from("action_items").select(SELECT).order("due_date", { ascending: true });
   if (memberId) q = q.eq("member_id", memberId);
   if (assigneeId) q = q.eq("assignee_id", assigneeId);
   if (oneOnOneId) q = q.eq("one_on_one_id", oneOnOneId);
@@ -57,9 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "missing-required-fields" }, { status: 400 });
   }
 
-  const admin = createServiceClient();
-  const reader = admin ?? sb;
-  const { data: memberEmp } = await reader
+  const { data: memberEmp } = await sb
     .from("employees")
     .select("organization_id")
     .eq("id", body.member_id)
@@ -68,8 +63,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "member-not-found" }, { status: 400 });
   }
 
-  const writer = admin ?? sb;
-  const { data, error } = await writer
+  const { data, error } = await sb
     .from("action_items")
     .insert({
       organization_id: memberEmp.organization_id,

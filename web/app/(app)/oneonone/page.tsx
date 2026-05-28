@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
 import { isDemoMode, DEMO_CURRENT_EMPLOYEE_ID } from "@/lib/demo/mock-data";
 import {
   DEMO_EMPLOYEES, DEMO_DEPARTMENTS,
@@ -52,8 +51,6 @@ export default async function OneOnOnePage() {
   // 本番：認証ユーザーから employees 行を解決
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const admin = createServiceClient();
-  const reader = admin ?? supabase;
 
   let currentEmployeeId = "<auth-resolved>";
   let employees: DemoEmployee[] = [];
@@ -64,26 +61,26 @@ export default async function OneOnOnePage() {
 
   if (user) {
     const [{ data: me }, { data: emps }, { data: depts }, { data: ones }, { data: actions }] = await Promise.all([
-      reader
+      supabase
         .from("employees")
         .select("id")
         .eq("auth_user_id", user.id)
         .is("deleted_at", null)
         .maybeSingle(),
-      reader
+      supabase
         .from("employees")
         .select("id, employee_code, email, full_name, full_name_kana, display_name_en, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality")
         .is("deleted_at", null)
         .order("full_name", { ascending: true }),
-      reader
+      supabase
         .from("departments")
         .select("id, name, parent_id, display_order")
         .order("display_order", { ascending: true }),
-      reader
+      supabase
         .from("oneonones")
-        .select("id, manager_id, member_id, scheduled_at, completed_at, duration_minutes, mood, agenda, notes, topics, calendar_event_id, meet_url")
+        .select("id, manager_id, member_id, scheduled_at, completed_at, duration_minutes, mood, agenda, notes, ai_summary, topics, calendar_event_id, meet_url")
         .order("scheduled_at", { ascending: false }),
-      reader
+      supabase
         .from("action_items")
         .select("id, one_on_one_id, member_id, assignee_id, title, due_date, completed_at"),
     ]);
@@ -106,6 +103,7 @@ export default async function OneOnOnePage() {
       mood: (s.mood as OneOnOneSession["mood"]) ?? null,
       agenda: (s.agenda as string | null) ?? "",
       notes: (s.notes as string | null) ?? "",
+      ai_summary: (s.ai_summary as string | null) ?? null,
       topics: (s.topics as string[]) ?? [],
       calendar_event_id: (s.calendar_event_id as string | null) ?? null,
       meet_url: (s.meet_url as string | null) ?? null,

@@ -5,7 +5,6 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,9 +37,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if (body.due_date !== undefined) updates.due_date = body.due_date;
   if (body.completed_at !== undefined) updates.completed_at = body.completed_at;
 
-  const admin = createServiceClient();
-  const writer = admin ?? sb;
-  const { data, error } = await writer
+  const { data, error } = await sb
     .from("action_items")
     .update(updates)
     .eq("id", id)
@@ -58,9 +55,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "not-authenticated" }, { status: 401 });
 
-  const admin = createServiceClient();
-  const writer = admin ?? sb;
-  const { error } = await writer.from("action_items").delete().eq("id", id);
+  const { error } = await sb.from("action_items").delete().eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

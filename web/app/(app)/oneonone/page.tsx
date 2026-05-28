@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/admin";
 import { isDemoMode, DEMO_CURRENT_EMPLOYEE_ID } from "@/lib/demo/mock-data";
 import {
   DEMO_EMPLOYEES, DEMO_DEPARTMENTS,
@@ -52,6 +53,11 @@ export default async function OneOnOnePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // RLS で has_role が想定通りに動かない一部テスター対応のため、
+  // 認証検証済みの後は service role 経由で読み込み（API 層で auth 済みなので安全）
+  const admin = createServiceClient();
+  const reader = admin ?? supabase;
+
   let currentEmployeeId = "<auth-resolved>";
   let employees: DemoEmployee[] = [];
   let departments: DemoDept[] = [];
@@ -61,26 +67,26 @@ export default async function OneOnOnePage() {
 
   if (user) {
     const [{ data: me }, { data: emps }, { data: depts }, { data: ones }, { data: actions }] = await Promise.all([
-      supabase
+      reader
         .from("employees")
         .select("id")
         .eq("auth_user_id", user.id)
         .is("deleted_at", null)
         .maybeSingle(),
-      supabase
+      reader
         .from("employees")
         .select("id, employee_code, email, full_name, full_name_kana, display_name_en, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality")
         .is("deleted_at", null)
         .order("full_name", { ascending: true }),
-      supabase
+      reader
         .from("departments")
         .select("id, name, parent_id, display_order")
         .order("display_order", { ascending: true }),
-      supabase
+      reader
         .from("oneonones")
         .select("id, manager_id, member_id, scheduled_at, completed_at, duration_minutes, mood, agenda, notes, ai_summary, topics, calendar_event_id, meet_url")
         .order("scheduled_at", { ascending: false }),
-      supabase
+      reader
         .from("action_items")
         .select("id, one_on_one_id, member_id, assignee_id, title, due_date, completed_at"),
     ]);

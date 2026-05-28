@@ -785,6 +785,16 @@ function MemberDetail({
         )}
       </div>
 
+      {manager && (
+        <div className="px-5 pt-3">
+          <ActionItemAdder
+            memberId={member.id}
+            assigneeId={manager.id}
+            onAdded={() => window.location.reload()}
+          />
+        </div>
+      )}
+
       {openActions.length > 0 && (
         <div className="p-5 pb-2">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -795,7 +805,28 @@ function MemberDetail({
               const overdue = a.due_date && new Date(a.due_date) < new Date();
               return (
                 <li key={a.id} className="flex items-center gap-2 rounded-md border bg-card p-2.5 text-sm">
-                  <input type="checkbox" className="size-4 rounded border" disabled />
+                  <input
+                    type="checkbox"
+                    className="size-4 rounded border cursor-pointer"
+                    onChange={async () => {
+                      try {
+                        const res = await fetch(`/api/action-items/${a.id}`, {
+                          method: "PATCH",
+                          headers: { "content-type": "application/json" },
+                          body: JSON.stringify({ completed_at: new Date().toISOString() }),
+                        });
+                        const json = await res.json();
+                        if (!res.ok || !json.ok) {
+                          toast.error(json.error || "更新に失敗しました");
+                          return;
+                        }
+                        toast.success("アクションを完了にしました");
+                        window.location.reload();
+                      } catch {
+                        toast.error("通信エラーが発生しました");
+                      }
+                    }}
+                  />
                   <div className="flex-1">{a.title}</div>
                   {a.due_date && (
                     <span className={cn("text-xs whitespace-nowrap", overdue && "font-medium text-red-700")}>
@@ -929,6 +960,99 @@ function MemberDetail({
   );
 }
 
+// ─── アクション項目クイック追加 ─────────────
+function ActionItemAdder({
+  memberId, assigneeId, oneOnOneId, onAdded,
+}: {
+  memberId: string;
+  assigneeId: string;
+  oneOnOneId?: string;
+  onAdded: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [assignTo, setAssignTo] = useState<"member" | "manager">("member");
+
+  const onSubmit = async () => {
+    if (!title.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/action-items", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          one_on_one_id: oneOnOneId ?? null,
+          member_id: memberId,
+          assignee_id: assignTo === "member" ? memberId : assigneeId,
+          title: title.trim(),
+          due_date: dueDate || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        toast.error(json.error || "追加に失敗しました");
+        setSubmitting(false);
+        return;
+      }
+      toast.success("アクション項目を追加しました");
+      setTitle("");
+      setDueDate("");
+      onAdded();
+    } catch {
+      toast.error("通信エラーが発生しました");
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-dashed bg-muted/30 p-2.5">
+      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        アクション項目を追加
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && title.trim() && !submitting) {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
+          placeholder="例: 来週までに OKR ドラフトを共有"
+          className="h-8 flex-1 min-w-[200px] text-xs"
+        />
+        <Input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="h-8 w-[140px] text-xs"
+          placeholder="期限"
+        />
+        <Select value={assignTo} onValueChange={(v) => setAssignTo(v as "member" | "manager")}>
+          <SelectTrigger className="h-8 w-[110px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="member">本人</SelectItem>
+            <SelectItem value="manager">上司</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          size="sm"
+          onClick={onSubmit}
+          disabled={!title.trim() || submitting}
+          className="h-8 text-xs"
+        >
+          {submitting ? "追加中..." : "追加"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── 1on1 を記録するダイアログ ─────────────
 function RecordDialog({
   open, onOpenChange, manager, member, editSession,
@@ -956,6 +1080,7 @@ function RecordDialog({
   const [saving, setSaving] = useState(false);
   const [aiExtracting, setAiExtracting] = useState(false);
   const [aiSummary, setAiSummary] = useState<string>(editSession?.ai_summary ?? "");
+  const [pendingActions, setPendingActions] = useState<{ title: string; assignee: "self" | "manager" | "other"; due_date: string | null }[]>([]);
 
   const toggleTopic = (t: string) => {
     setTopics((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -994,15 +1119,17 @@ function RecordDialog({
       const out = json.output as {
         topics: string[];
         mood: OneOnOneMood | null;
-        actions: { title: string; assignee: string; due_date: string | null }[];
+        actions: { title: string; assignee: "self" | "manager" | "other"; due_date: string | null }[];
         summary_oneliner: string;
       };
       // フォームを抽出結果でプリフィル（ユーザーが確認・修正可）
       setTopics(Array.from(new Set([...topics, ...out.topics])));
       if (out.mood) setMood(out.mood);
       setAiSummary(out.summary_oneliner);
+      // アクション項目を「記録する」時に一緒に作成するため保持
+      setPendingActions(out.actions);
       toast.success(`AI 抽出完了: トピック ${out.topics.length} 件 / アクション ${out.actions.length} 件`, {
-        description: json.demo ? "デモ応答" : undefined,
+        description: json.demo ? "デモ応答（API キー未設定時のキーワード推定）" : undefined,
       });
     } catch (e) {
       console.error(e);
@@ -1052,10 +1179,36 @@ function RecordDialog({
         setSaving(false);
         return;
       }
+
+      // AI 抽出で得られたアクション項目を一括登録（新規作成時のみ）
+      let actionCount = 0;
+      if (!isEdit && pendingActions.length > 0 && json.session?.id) {
+        const oneOnOneId = json.session.id;
+        await Promise.all(
+          pendingActions.map(async (a) => {
+            try {
+              const assigneeId = a.assignee === "manager" ? manager.id : member.id;
+              const r = await fetch("/api/action-items", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  one_on_one_id: oneOnOneId,
+                  member_id: member.id,
+                  assignee_id: assigneeId,
+                  title: a.title,
+                  due_date: a.due_date,
+                }),
+              });
+              if (r.ok) actionCount++;
+            } catch { /* ignore individual failures */ }
+          }),
+        );
+      }
+
       toast.success(
         isEdit
           ? `${member.full_name} さんとの 1on1 を更新しました`
-          : `${member.full_name} さんとの 1on1 を記録しました`,
+          : `${member.full_name} さんとの 1on1 を記録しました${actionCount ? `（アクション ${actionCount} 件も登録）` : ""}`,
       );
       onOpenChange(false);
       window.location.reload();
@@ -1204,6 +1357,33 @@ function RecordDialog({
               </div>
             )}
           </div>
+
+          {/* AI が抽出したアクション項目（保存時に一括登録） */}
+          {!isEdit && pendingActions.length > 0 && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs space-y-1.5">
+              <div className="font-medium text-amber-900">
+                AI 抽出のアクション項目 ({pendingActions.length} 件) — 保存時に登録されます
+              </div>
+              <ul className="space-y-1">
+                {pendingActions.map((a, i) => (
+                  <li key={i} className="flex items-center gap-2 text-amber-900/90">
+                    <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px]">
+                      {a.assignee === "manager" ? "上司" : "本人"}
+                    </span>
+                    <span className="flex-1 truncate">{a.title}</span>
+                    {a.due_date && <span className="text-[10px]">期限 {a.due_date.slice(5)}</span>}
+                    <button
+                      onClick={() => setPendingActions(pendingActions.filter((_, j) => j !== i))}
+                      className="text-amber-900/60 hover:text-amber-900"
+                      title="このアクションを除外"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="mt-2 flex items-center justify-end gap-2">

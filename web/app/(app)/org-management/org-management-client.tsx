@@ -65,6 +65,21 @@ const TYPE_VARIANT: Record<TransferRow["transfer_type"], "default" | "secondary"
   grade_change: "default",
 };
 
+// 標準異動理由（集計用に標準化）
+const STANDARD_REASONS = [
+  "評価による昇格",
+  "本人希望",
+  "組織再編",
+  "業績による降格",
+  "スキルマッチング",
+  "マネジメントライン変更",
+  "ローテーション",
+  "後継者育成",
+  "業務都合",
+  "プロジェクト立ち上げ",
+  "その他",
+] as const;
+
 type FormState = {
   employee_id: string;
   transfer_type: TransferRow["transfer_type"];
@@ -74,6 +89,7 @@ type FormState = {
   to_job_title: string;
   to_job_grade: string;
   reason: string;
+  reason_remarks: string;
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -87,6 +103,7 @@ const EMPTY_FORM: FormState = {
   to_job_title: "",
   to_job_grade: "",
   reason: "",
+  reason_remarks: "",
 };
 
 export function OrgManagementClient({
@@ -131,7 +148,7 @@ export function OrgManagementClient({
           to_manager_id: form.to_manager_id || null,
           to_job_title: form.to_job_title || undefined,
           to_job_grade: form.to_job_grade || undefined,
-          reason: form.reason || undefined,
+          reason: [form.reason, form.reason_remarks].filter(Boolean).join(" / ") || undefined,
         }),
       });
       const json = await res.json();
@@ -323,11 +340,24 @@ export function OrgManagementClient({
             <Field label="変更後のグレード">
               <Input value={form.to_job_grade} onChange={(e) => setForm({ ...form, to_job_grade: e.target.value })} placeholder="例: M3" />
             </Field>
-            <div className="col-span-2">
-              <Field label="理由 / 備考">
-                <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="本人希望 / 組織再編 / 評価による昇格 等" />
-              </Field>
-            </div>
+            <Field label="主理由（集計用に標準化）">
+              <Select value={form.reason || "_none"} onValueChange={(v) => setForm({ ...form, reason: v === "_none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="未選択" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">（未選択）</SelectItem>
+                  {STANDARD_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="備考（自由記述）">
+              <Input
+                value={form.reason_remarks}
+                onChange={(e) => setForm({ ...form, reason_remarks: e.target.value })}
+                placeholder="補足事項があれば記入"
+              />
+            </Field>
           </div>
 
           {selectedEmp && (

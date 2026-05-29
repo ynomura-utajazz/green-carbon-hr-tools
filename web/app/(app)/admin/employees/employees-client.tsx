@@ -14,6 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Field } from "@/components/ui/field";
 import { cn, initials } from "@/lib/utils";
 
 export type EmployeeRow = {
@@ -393,15 +394,6 @@ export function EmployeesClient({
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="space-y-1.5 text-sm">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      {children}
-    </label>
   );
 }
 

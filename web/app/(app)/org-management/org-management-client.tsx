@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Shuffle, ArrowRight, Calendar, Plus, FileText, X, CheckCircle2, Trash2 } from "lucide-react";
+import { Shuffle, ArrowRight, Calendar, Plus, X, CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -14,6 +14,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Field } from "@/components/ui/field";
+import { KpiTile } from "@/components/ui/kpi-tile";
 import { initials } from "@/lib/utils";
 
 export type TransferRow = {
@@ -65,6 +67,21 @@ const TYPE_VARIANT: Record<TransferRow["transfer_type"], "default" | "secondary"
   grade_change: "default",
 };
 
+// 標準異動理由（集計用に標準化）
+const STANDARD_REASONS = [
+  "評価による昇格",
+  "本人希望",
+  "組織再編",
+  "業績による降格",
+  "スキルマッチング",
+  "マネジメントライン変更",
+  "ローテーション",
+  "後継者育成",
+  "業務都合",
+  "プロジェクト立ち上げ",
+  "その他",
+] as const;
+
 type FormState = {
   employee_id: string;
   transfer_type: TransferRow["transfer_type"];
@@ -74,6 +91,7 @@ type FormState = {
   to_job_title: string;
   to_job_grade: string;
   reason: string;
+  reason_remarks: string;
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -87,6 +105,7 @@ const EMPTY_FORM: FormState = {
   to_job_title: "",
   to_job_grade: "",
   reason: "",
+  reason_remarks: "",
 };
 
 export function OrgManagementClient({
@@ -131,7 +150,7 @@ export function OrgManagementClient({
           to_manager_id: form.to_manager_id || null,
           to_job_title: form.to_job_title || undefined,
           to_job_grade: form.to_job_grade || undefined,
-          reason: form.reason || undefined,
+          reason: [form.reason, form.reason_remarks].filter(Boolean).join(" / ") || undefined,
         }),
       });
       const json = await res.json();
@@ -323,11 +342,24 @@ export function OrgManagementClient({
             <Field label="変更後のグレード">
               <Input value={form.to_job_grade} onChange={(e) => setForm({ ...form, to_job_grade: e.target.value })} placeholder="例: M3" />
             </Field>
-            <div className="col-span-2">
-              <Field label="理由 / 備考">
-                <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="本人希望 / 組織再編 / 評価による昇格 等" />
-              </Field>
-            </div>
+            <Field label="主理由（集計用に標準化）">
+              <Select value={form.reason || "_none"} onValueChange={(v) => setForm({ ...form, reason: v === "_none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="未選択" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">（未選択）</SelectItem>
+                  {STANDARD_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="備考（自由記述）">
+              <Input
+                value={form.reason_remarks}
+                onChange={(e) => setForm({ ...form, reason_remarks: e.target.value })}
+                placeholder="補足事項があれば記入"
+              />
+            </Field>
           </div>
 
           {selectedEmp && (
@@ -428,43 +460,3 @@ function TransferRowView({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="space-y-1.5 text-sm">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      {children}
-    </label>
-  );
-}
-
-function KpiTile({
-  icon: Icon, label, value, unit, tone,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string; value: number | string; unit: string;
-  tone: "primary" | "success" | "warning" | "danger" | "muted";
-}) {
-  const cls = {
-    primary: "text-gc-700 bg-gc-50 border-gc-200",
-    success: "text-emerald-700 bg-emerald-50 border-emerald-200",
-    warning: "text-amber-800 bg-amber-50 border-amber-200",
-    danger: "text-red-800 bg-red-50 border-red-200",
-    muted: "text-muted-foreground bg-muted/50 border-border",
-  }[tone];
-  return (
-    <Card>
-      <CardContent className="flex items-start gap-3 p-4">
-        <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg border ${cls}`}>
-          <Icon className="size-4" />
-        </div>
-        <div>
-          <div className="text-xs text-muted-foreground">{label}</div>
-          <div className="mt-0.5 flex items-baseline gap-1">
-            <span className="text-2xl font-bold tabular-nums tracking-tight">{value}</span>
-            <span className="text-xs text-muted-foreground">{unit}</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}

@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
+import { createServiceClient, getWriter } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,22 +54,22 @@ export async function POST(req: Request) {
   if (!body.transfer_type) return NextResponse.json({ ok: false, error: "missing-transfer_type" }, { status: 400 });
   if (!body.effective_date) return NextResponse.json({ ok: false, error: "missing-effective_date" }, { status: 400 });
 
-  // 対象社員の現在の状態を取得して from_* に記録
+  // 対象社員の現在の状態 + 起案者を並列取得
   const admin = createServiceClient();
   const reader = admin ?? sb;
-  const { data: emp } = await reader
-    .from("employees")
-    .select("organization_id, department_id, manager_id, job_title, job_grade")
-    .eq("id", body.employee_id)
-    .maybeSingle();
+  const [{ data: emp }, { data: meEmp }] = await Promise.all([
+    reader
+      .from("employees")
+      .select("organization_id, department_id, manager_id, job_title, job_grade")
+      .eq("id", body.employee_id)
+      .maybeSingle(),
+    reader
+      .from("employees")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .maybeSingle(),
+  ]);
   if (!emp) return NextResponse.json({ ok: false, error: "employee-not-found" }, { status: 400 });
-
-  // 起案者の employee id を取得（任意）
-  const { data: meEmp } = await reader
-    .from("employees")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
 
   const writer = admin ?? sb;
   const { data, error } = await writer

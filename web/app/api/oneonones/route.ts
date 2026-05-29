@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/admin";
+import { getWriter } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,13 +79,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "manager-not-found" }, { status: 400 });
   }
 
-  // RLS で current_employee() のリンクが不完全なテスター対応のため、
-  // INSERT は認証済みユーザーであれば service role 経由で実行する。
-  // (上で managerEmp の存在を確認済みなので不正な org への書込みは発生しない)
-  const admin = createServiceClient();
-  const writer = admin ?? sb;
-
-  const { data, error } = await writer
+  // RLS で current_employee() のリンクが不完全なテスター対応
+  const { data, error } = await getWriter(sb)
     .from("oneonones")
     .insert({
       organization_id: managerEmp.organization_id,

@@ -4,6 +4,12 @@
   "devCommand": "npm run dev",
   "framework": "nextjs",
   "regions": ["hnd1"],
+  "crons": [
+    {
+      "path": "/api/cron/keepalive",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/sw.js",

@@ -209,7 +209,9 @@ export function DepartmentsClient({ departments }: { departments: Department[] }
                   部署がまだ登録されていません。
                 </div>
               ) : (
-                <div className="flex justify-center">
+                // w-max min-w-full は必須（BUG-006）: overflow-x-auto 内で justify-center
+                // だけだと、内容がコンテナより広いとき左側がスクロール不能な領域に隠れる。
+                <div className="flex w-max min-w-full justify-center">
                   <div className="org-chart inline-flex flex-col gap-6 py-4">
                     {tree.map((node) => (
                       <OrgChartNode key={node.id} node={node} isRoot />

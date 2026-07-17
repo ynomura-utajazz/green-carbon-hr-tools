@@ -18,6 +18,9 @@ const PUBLIC_PATHS = [
 const STATIC_PREFIXES = [
   "/_next", "/favicon", "/icon", "/apple-icon", "/api/health",
   "/manifest", "/sw.js", "/offline.html", "/brand",
+  // Vercel Cron はセッション Cookie を持たないため、認証ガードに掛かると
+  // /login へリダイレクトされ、ジョブ本体が一度も実行されない。
+  "/api/cron",
 ];
 
 export async function updateSession(request: NextRequest) {

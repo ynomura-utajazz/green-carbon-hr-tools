@@ -12,7 +12,13 @@ const PUBLIC_PATHS = [
   "/api/public/track",
   "/api/public/feedback",
 ];
-const STATIC_PREFIXES = ["/_next", "/favicon", "/icon", "/apple-icon", "/api/health"];
+// 認証チェックを通さない静的アセット。
+// manifest はブラウザが credentials 無しで取得するため、認証ガードに掛かると
+// /login の HTML が返り "Manifest: Line 1, column 1, Syntax error" になる（BUG-005）。
+const STATIC_PREFIXES = [
+  "/_next", "/favicon", "/icon", "/apple-icon", "/api/health",
+  "/manifest", "/sw.js", "/offline.html", "/brand",
+];
 
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;

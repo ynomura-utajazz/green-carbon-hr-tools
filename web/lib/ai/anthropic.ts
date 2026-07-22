@@ -15,7 +15,27 @@ const API_VERSION = "2023-06-01";
 export type ClaudeModel =
   | "claude-sonnet-4-5"
   | "claude-haiku-4-5"
-  | "claude-opus-4-1";
+  | "claude-opus-4-8";
+
+// temperature を受け付けないモデル（Opus 4.7/4.8 系は送ると 400）。
+// 4.5 系（Sonnet/Haiku）は従来どおり temperature を送る。
+const SAMPLING_UNSUPPORTED = new Set<string>(["claude-opus-4-8"]);
+
+/** モデルに応じて temperature を含めた/除いたリクエストボディを組み立てる。 */
+function buildBody(opts: GenerateOptions, extra: Record<string, unknown> = {}) {
+  const model = opts.model ?? "claude-sonnet-4-5";
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: opts.maxTokens ?? 1024,
+    system: opts.system,
+    messages: opts.messages,
+    ...extra,
+  };
+  if (!SAMPLING_UNSUPPORTED.has(model)) {
+    body.temperature = opts.temperature ?? 0.5;
+  }
+  return body;
+}
 
 export type Message = {
   role: "user" | "assistant";
@@ -47,13 +67,7 @@ export async function generate(opts: GenerateOptions): Promise<GenerateResult> {
   const key = getApiKey();
   if (!key) return { ok: false, error: "anthropic-not-configured" };
 
-  const body = {
-    model: opts.model ?? "claude-sonnet-4-5",
-    max_tokens: opts.maxTokens ?? 1024,
-    temperature: opts.temperature ?? 0.5,
-    system: opts.system,
-    messages: opts.messages,
-  };
+  const body = buildBody(opts);
 
   try {
     const res = await fetch(API, {
@@ -103,14 +117,7 @@ export async function generateStream(opts: GenerateOptions): Promise<Response | 
   const key = getApiKey();
   if (!key) return null;
 
-  const body = {
-    model: opts.model ?? "claude-sonnet-4-5",
-    max_tokens: opts.maxTokens ?? 1024,
-    temperature: opts.temperature ?? 0.5,
-    system: opts.system,
-    messages: opts.messages,
-    stream: true,
-  };
+  const body = buildBody(opts, { stream: true });
 
   return fetch(API, {
     method: "POST",

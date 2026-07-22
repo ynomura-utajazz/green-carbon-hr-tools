@@ -209,7 +209,8 @@ function FuturePlot({ options }: { options: { label: string; horizon: "1y" | "2y
             {x.label}
           </text>
         ))}
-        <text x={W / 2} y={H - 4} fontSize="9" fill="#475569" textAnchor="middle">時間軸 →</text>
+        {/* 軸キャプションは右端（矢印の向き）に寄せる。中央だと「2-3y」目盛りと重なる（F-004） */}
+        <text x={W - padX} y={H - 4} fontSize="9" fill="#475569" textAnchor="end">時間軸 →</text>
 
         {/* Y 軸ラベル */}
         {[0, 50, 100].map((v) => {

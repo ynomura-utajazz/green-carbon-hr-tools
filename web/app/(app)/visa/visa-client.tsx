@@ -102,7 +102,9 @@ export function VisaClient({
         <KpiTile icon={AlertTriangle} label="緊急（30日以内）" value={critical} unit="名" tone={critical > 0 ? "danger" : "muted"} hint="即時対応必要" onClick={() => setUrgencyFilter("critical")} disabled={critical === 0} />
         <KpiTile icon={Clock} label="警告（90日以内）" value={warning} unit="名" tone={warning > 0 ? "warning" : "muted"} hint="準備開始" onClick={() => setUrgencyFilter("warning")} disabled={warning === 0} />
         <KpiTile icon={FileText} label="申請進行中" value={inProgress} unit="件" tone="primary" hint="進捗追跡" onClick={() => setUrgencyFilter("all")} />
-        <KpiTile icon={Globe2} label="管理対象" value={total} unit="名" tone="muted" hint="国別ビューへ" onClick={() => setTab("by_country")} />
+        {/* 合計表示のみ。以前は押すと国別タブへ強制ジャンプして戻りづらかった（F-005）。
+            国別ビューはタブ一覧から直接開ける。 */}
+        <KpiTile icon={Globe2} label="管理対象" value={total} unit="名" tone="muted" />
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
@@ -203,8 +205,10 @@ function KpiTile({
   icon: React.ComponentType<{ className?: string }>;
   label: string; value: number | string; unit: string;
   tone: "primary" | "success" | "warning" | "danger" | "muted";
-  onClick: () => void; hint: string; disabled?: boolean;
+  onClick?: () => void; hint?: string; disabled?: boolean;
 }) {
+  // onClick が無ければ情報表示のみ（ホバー演出・シェブロンを出さない）
+  const interactive = !!onClick && !disabled;
   const cls = {
     primary: "text-gc-700 bg-gc-50 border-gc-200",
     success: "text-emerald-700 bg-emerald-50 border-emerald-200",
@@ -216,8 +220,13 @@ function KpiTile({
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      className="group flex w-full items-start gap-3 rounded-xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-gc-300 hover:shadow-md disabled:cursor-default"
+      disabled={disabled || !onClick}
+      className={cn(
+        "group flex w-full items-start gap-3 rounded-xl border bg-card p-4 text-left shadow-sm transition-all",
+        interactive
+          ? "hover:-translate-y-0.5 hover:border-gc-300 hover:shadow-md"
+          : "cursor-default",
+      )}
     >
       <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg border ${cls}`}>
         <Icon className="size-4" />
@@ -225,13 +234,13 @@ function KpiTile({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           {label}
-          {!disabled && <ChevronRight className="size-3 opacity-0 transition-opacity group-hover:opacity-60" />}
+          {interactive && <ChevronRight className="size-3 opacity-0 transition-opacity group-hover:opacity-60" />}
         </div>
         <div className="mt-0.5 flex items-baseline gap-1">
           <span className="text-2xl font-bold tabular-nums tracking-tight">{value}</span>
           <span className="text-xs text-muted-foreground">{unit}</span>
         </div>
-        {!disabled && hint && (
+        {interactive && hint && (
           <div className="mt-1 truncate text-[10px] text-muted-foreground/80 group-hover:text-gc-700">
             {hint} →
           </div>

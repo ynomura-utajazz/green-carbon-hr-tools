@@ -31,8 +31,10 @@ export function AppShell({ user, demo, children }: Props) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const t = useT();
 
+  // h-screen + overflow-hidden でページ全体を固定高にし、サイドバーとコンテンツを
+  // 独立スクロールにする（F-003: 以前はページごとスクロールしてサイドバーも一緒に動いていた）。
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-md focus:bg-gc-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-lg"
@@ -53,7 +55,7 @@ export function AppShell({ user, demo, children }: Props) {
       </aside>
 
       {/* ── メイン ─────────────────── */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {demo && (
           <div className="border-b bg-amber-50 px-4 py-1.5 text-center text-xs font-medium text-amber-900 md:px-8">
             🟡 デモモード中（モックデータで描画中）。本番運用時は <code className="font-mono">.env.local</code> に Supabase クレデンシャルを設定してください。
@@ -117,7 +119,7 @@ export function AppShell({ user, demo, children }: Props) {
             {user && <UserMenu user={user} />}
           </div>
         </header>
-        <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-5 md:px-8 md:py-8 focus:outline-none">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto px-4 py-5 md:px-8 md:py-8 focus:outline-none">
           {/* 大画面でも間延びしないよう、コンテンツは最大 1600px に制限してセンタリング */}
           <div className="mx-auto w-full max-w-[1600px]">{children}</div>
         </main>

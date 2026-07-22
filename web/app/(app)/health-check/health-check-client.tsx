@@ -30,6 +30,9 @@ function SlackIconSmall({ className }: { className?: string }) {
   );
 }
 
+// 全社員リストの絞り込み種別（KPI からの遷移とプルダウンで共有）
+type HealthListFilter = "all" | "unfinished" | "followup" | "unscheduled";
+
 export function HealthCheckClient({
   records, compliance, employees, departments,
 }: {
@@ -42,6 +45,8 @@ export function HealthCheckClient({
   const deptMap = useMemo(() => new Map(departments.map((d) => [d.id, d])), [departments]);
   const [tab, setTab] = useState<"dashboard" | "all" | "law">("dashboard");
   const [selected, setSelected] = useState<HealthRecord | null>(null);
+  // 全社員タブの絞り込み。KPI から遷移する際に対象者だけを表示するため親で保持（F-006）。
+  const [listFilter, setListFilter] = useState<HealthListFilter>("all");
 
   // KPI
   const completion = completionRate();
@@ -73,8 +78,8 @@ export function HealthCheckClient({
       {/* KPI */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiTile icon={ClipboardCheck} label="受診率" value={`${completion}%`} unit="" tone={completion >= 80 ? "success" : "warning"} hint={`${records.filter(r => r.checked_at).length} / ${records.length} 名`} onClick={() => setTab("dashboard")} />
-        <KpiTile icon={AlertCircle} label="要再検査・要精密" value={followups.length} unit="名" tone={followups.length > 0 ? "danger" : "muted"} hint="C・D 判定" onClick={() => setTab("all")} disabled={followups.length === 0} />
-        <KpiTile icon={Clock} label="未予約" value={unscheduledList.length} unit="名" tone={unscheduledList.length > 0 ? "warning" : "muted"} hint="日程調整必要" onClick={() => setTab("all")} disabled={unscheduledList.length === 0} />
+        <KpiTile icon={AlertCircle} label="要再検査・要精密" value={followups.length} unit="名" tone={followups.length > 0 ? "danger" : "muted"} hint="C・D 判定" onClick={() => { setTab("all"); setListFilter("followup"); }} disabled={followups.length === 0} />
+        <KpiTile icon={Clock} label="未予約" value={unscheduledList.length} unit="名" tone={unscheduledList.length > 0 ? "warning" : "muted"} hint="日程調整必要" onClick={() => { setTab("all"); setListFilter("unscheduled"); }} disabled={unscheduledList.length === 0} />
         <KpiTile icon={ScrollText} label="法令準拠" value={`${compliance.length - violations} / ${compliance.length}`} unit="" tone={violations > 0 ? "warning" : "success"} hint="法令チェック" onClick={() => setTab("law")} />
       </div>
 
@@ -216,7 +221,7 @@ export function HealthCheckClient({
         </TabsContent>
 
         <TabsContent value="all">
-          <RecordsList records={records} empMap={empMap} onSelect={setSelected} />
+          <RecordsList records={records} empMap={empMap} onSelect={setSelected} filter={listFilter} onFilterChange={setListFilter} />
         </TabsContent>
 
         <TabsContent value="law">
@@ -284,17 +289,19 @@ function KpiTile({
 }
 
 function RecordsList({
-  records, empMap, onSelect,
+  records, empMap, onSelect, filter, onFilterChange,
 }: {
   records: HealthRecord[];
   empMap: Map<string, DemoEmployee>;
   onSelect: (r: HealthRecord) => void;
+  filter: HealthListFilter;
+  onFilterChange: (f: HealthListFilter) => void;
 }) {
-  const [filter, setFilter] = useState<"all" | "unfinished" | "followup">("all");
-
   const filtered = useMemo(() => {
     if (filter === "unfinished") return records.filter((r) => !r.checked_at);
     if (filter === "followup") return records.filter((r) => r.followup_required);
+    // 未予約 = 未受診かつ予約なし（lib/demo/health-check.ts の unscheduled() と一致）
+    if (filter === "unscheduled") return records.filter((r) => !r.checked_at && !r.scheduled_at);
     return records;
   }, [records, filter]);
 
@@ -302,11 +309,12 @@ function RecordsList({
     <div className="space-y-3">
       <Card>
         <CardContent className="p-3">
-          <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+          <Select value={filter} onValueChange={(v) => onFilterChange(v as HealthListFilter)}>
             <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全件</SelectItem>
               <SelectItem value="unfinished">未受診のみ</SelectItem>
+              <SelectItem value="unscheduled">未予約のみ</SelectItem>
               <SelectItem value="followup">要再検査のみ</SelectItem>
             </SelectContent>
           </Select>

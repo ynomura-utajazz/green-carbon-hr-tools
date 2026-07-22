@@ -29,7 +29,7 @@ export type UseCase =
 const PRICE_PER_M_TOKENS: Record<string, { input: number; output: number }> = {
   "claude-sonnet-4-5": { input: 3.0, output: 15.0 },
   "claude-haiku-4-5":  { input: 1.0, output: 5.0 },
-  "claude-opus-4-1":   { input: 15.0, output: 75.0 },
+  "claude-opus-4-8":   { input: 5.0, output: 25.0 },
 };
 
 const JPY_PER_USD = 150;

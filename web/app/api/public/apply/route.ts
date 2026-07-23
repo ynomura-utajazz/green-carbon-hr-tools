@@ -24,9 +24,15 @@ type Body = {
   years_of_experience?: number;
   cover_letter?: string;
   casual_only?: boolean;
+  // bot 対策（正規フォームには見えない/自動付与される）
+  company_website?: string;   // honeypot: 人間は空、bot が埋める
+  form_elapsed_ms?: number;   // フォーム表示から送信までの経過ms
 };
 
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
+// フォーム表示から送信までがこれ未満なら人間ではないとみなす（bot は瞬時に送信する）。
+const MIN_FILL_MS = 1500;
 
 export async function POST(req: Request) {
   let body: Body;
@@ -34,6 +40,19 @@ export async function POST(req: Request) {
   catch {
     return NextResponse.json({ ok: false, error: "invalid-json" }, { status: 400 });
   }
+
+  // ── bot 対策 ──────────────────────────────────────────────
+  // honeypot: 画面外の隠しフィールド。正規ユーザーには見えず空のまま。埋まっていれば bot。
+  // bot に「弾かれた」と学習させないため、成功を装って静かに破棄する（DB には書かない）。
+  if (typeof body.company_website === "string" && body.company_website.trim() !== "") {
+    console.warn("[careers/apply] honeypot triggered — dropping submission silently");
+    return NextResponse.json({ ok: true, application_id: `rcv-${Math.random().toString(36).slice(2, 10)}` });
+  }
+  // 送信が速すぎる（自動送信）場合は弾く。人間はやり直せるようリカバリ可能なエラーにする。
+  if (typeof body.form_elapsed_ms === "number" && body.form_elapsed_ms >= 0 && body.form_elapsed_ms < MIN_FILL_MS) {
+    return badRequest("送信が速すぎるようです。少し時間をおいて再度お試しください。");
+  }
+  // ─────────────────────────────────────────────────────────
 
   // バリデーション
   if (!body.position_id) return badRequest("missing-position-id");

@@ -22,6 +22,9 @@ export function ApplyForm({ positionId, positionTitle }: Props) {
   const [coverLetter, setCoverLetter] = useState("");
   const [casualOnly, setCasualOnly] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  // bot 対策: honeypot（人間は触れない隠し欄）とフォーム表示時刻。
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [mountedAt] = useState(() => Date.now());
 
   const submit = async () => {
     if (!agreed) {
@@ -46,6 +49,8 @@ export function ApplyForm({ positionId, positionTitle }: Props) {
           years_of_experience: yearsExp ? Number(yearsExp) : undefined,
           cover_letter: coverLetter,
           casual_only: casualOnly,
+          company_website: companyWebsite, // honeypot（常に空を期待）
+          form_elapsed_ms: Date.now() - mountedAt,
         }),
       });
       const json = (await res.json()) as
@@ -84,6 +89,20 @@ export function ApplyForm({ positionId, positionTitle }: Props) {
 
   return (
     <div className="space-y-3">
+      {/* honeypot: 画面外の隠し欄。正規ユーザーは触れず、bot だけが埋める。 */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+        <label htmlFor="company_website">Company Website</label>
+        <input
+          id="company_website"
+          name="company_website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={companyWebsite}
+          onChange={(e) => setCompanyWebsite(e.target.value)}
+        />
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="お名前" required>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="山田 太郎" required />

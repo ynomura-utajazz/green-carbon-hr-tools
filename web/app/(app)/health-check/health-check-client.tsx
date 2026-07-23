@@ -49,13 +49,13 @@ export function HealthCheckClient({
   const [listFilter, setListFilter] = useState<HealthListFilter>("all");
 
   // KPI
-  const completion = completionRate();
-  const followups = followupNeeded();
-  const unscheduledList = unscheduled();
-  const grouped = recordsByResult();
+  const completion = completionRate(records);
+  const followups = followupNeeded(records);
+  const unscheduledList = unscheduled(records);
+  const grouped = recordsByResult(records);
   const violations = compliance.filter((c) => c.status !== "ok").length;
 
-  const byDept = recordsByDept(employees.map((e) => ({ id: e.id, department_id: e.department_id })));
+  const byDept = recordsByDept(employees.map((e) => ({ id: e.id, department_id: e.department_id })), records);
 
   return (
     <div className="space-y-5">

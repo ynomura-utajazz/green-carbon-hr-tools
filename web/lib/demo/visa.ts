@@ -228,10 +228,10 @@ export function daysUntilExpiry(record: VisaRecord): number {
   return Math.floor((new Date(record.expires_at).getTime() - Date.now()) / 86_400_000);
 }
 
-export function recordsByUrgency(): Map<VisaUrgency, VisaRecord[]> {
+export function recordsByUrgency(records: VisaRecord[] = DEMO_VISA_RECORDS): Map<VisaUrgency, VisaRecord[]> {
   const map = new Map<VisaUrgency, VisaRecord[]>();
   for (const u of ["critical", "warning", "watch", "ok", "expired"] as VisaUrgency[]) map.set(u, []);
-  for (const r of DEMO_VISA_RECORDS) {
+  for (const r of records) {
     map.get(urgencyOf(r))!.push(r);
   }
   return map;

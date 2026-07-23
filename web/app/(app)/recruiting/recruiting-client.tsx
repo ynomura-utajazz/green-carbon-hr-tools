@@ -64,7 +64,7 @@ export function RecruitingClient({
 
   // KPI
   const openPositions = positions.filter((p) => p.is_open).length;
-  const inPipeline = activePipelineCount();
+  const inPipeline = activePipelineCount(candidates);
   const upcomingInterviews = interviews.filter((i) => i.status === "scheduled").length;
   const offerOut = candidates.filter((c) => c.stage === "offer").length;
 
@@ -162,7 +162,7 @@ export function RecruitingClient({
               candidate={selectedCandidate}
               position={positionMap.get(selectedCandidate.position_id)}
               empMap={empMap}
-              interviews={interviewsForCandidate(selectedCandidate.id)}
+              interviews={interviewsForCandidate(selectedCandidate.id, interviews)}
               onClose={() => setSelectedCandidate(null)}
             />
           )}
@@ -245,13 +245,13 @@ function PositionFilter({
 
 // ─── カンバン ──────────────────────────
 function PipelineKanban({
-  candidates: _candidates, positionId, onSelect,
+  candidates, positionId, onSelect,
 }: {
   candidates: Candidate[];
   positionId?: string;
   onSelect: (c: Candidate) => void;
 }) {
-  const grouped = candidatesByStage(positionId);
+  const grouped = candidatesByStage(candidates, positionId);
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
@@ -328,7 +328,7 @@ function KanbanCard({ candidate, onClick }: { candidate: Candidate; onClick: () 
 
 // ─── 求人一覧 ──────────────────────────
 function PositionsList({
-  positions, candidates: _candidates, empMap, onSelectPosition,
+  positions, candidates, empMap, onSelectPosition,
 }: {
   positions: Position[];
   candidates: Candidate[];
@@ -338,7 +338,7 @@ function PositionsList({
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       {positions.map((p) => {
-        const cands = candidatesForPosition(p.id);
+        const cands = candidatesForPosition(p.id, candidates);
         const active = cands.filter((c) => !["rejected", "withdrawn", "hired"].includes(c.stage));
         const hiringMgr = empMap.get(p.hiring_manager_id);
         const recruiter = empMap.get(p.recruiter_id);
@@ -884,7 +884,7 @@ function Analytics({
 
   // ポジションごとの状態
   const positionStats = positions.map((p) => {
-    const cands = candidatesForPosition(p.id);
+    const cands = candidatesForPosition(p.id, candidates);
     const active = cands.filter((c) => !["rejected", "withdrawn", "hired"].includes(c.stage));
     const offered = cands.filter((c) => c.stage === "offer").length;
     const hired = cands.filter((c) => c.stage === "hired").length;

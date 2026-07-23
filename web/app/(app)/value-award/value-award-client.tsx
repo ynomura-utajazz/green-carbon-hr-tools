@@ -43,11 +43,11 @@ export function ValueAwardClient({
   const [valueFilter, setValueFilter] = useState<ValueTag | "all">("all");
   const [showNominate, setShowNominate] = useState(false);
 
-  const mvp = thisMonthMVP();
+  const mvp = thisMonthMVP(awards);
   const mvpEmp = mvp ? empMap.get(mvp.id) : null;
 
   const filtered = valueFilter === "all" ? awards : awards.filter((a) => a.value === valueFilter);
-  const byValue = awardsByValue();
+  const byValue = awardsByValue(awards);
 
   return (
     <div className="space-y-5">
@@ -130,7 +130,7 @@ export function ValueAwardClient({
         </TabsContent>
 
         <TabsContent value="ranking">
-          <RankingView empMap={empMap} />
+          <RankingView awards={awards} empMap={empMap} />
         </TabsContent>
       </Tabs>
 
@@ -223,9 +223,9 @@ function ValueCard({ value, count, onClick }: { value: ValueTag; count: number; 
   );
 }
 
-function RankingView({ empMap }: { empMap: Map<string, DemoEmployee> }) {
-  const recipients = topRecipients().slice(0, 10);
-  const nominators = topNominators().slice(0, 10);
+function RankingView({ awards, empMap }: { awards: Award[]; empMap: Map<string, DemoEmployee> }) {
+  const recipients = topRecipients(awards).slice(0, 10);
+  const nominators = topNominators(awards).slice(0, 10);
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">

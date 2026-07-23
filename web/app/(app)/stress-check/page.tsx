@@ -1,12 +1,13 @@
-"use client";
-
-import { useState } from "react";
+import type { ComponentType } from "react";
 import { Brain, AlertTriangle, MessageSquare, ScrollText, Activity, Building2, Plus } from "lucide-react";
 import {
   DEMO_CAMPAIGNS, DEMO_RESULTS_2026, DEMO_GROUP_ANALYSIS, LEVEL_LABEL, LEVEL_TONE,
-  type StressLevel, highStressCount, consultationRequests, distributionByLevel,
+  parseStressQuestions, scoreStressResponse, aggregateGroupAnalysis,
+  type StressLevel, type StressCheckResult, type Campaign, type GroupAnalysis,
 } from "@/lib/demo/stress-check";
-import { DEMO_DEPARTMENTS } from "@/lib/demo/employees";
+import { DEMO_DEPARTMENTS, type DemoDept } from "@/lib/demo/employees";
+import { isDemoMode } from "@/lib/demo/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,15 +16,130 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default function StressCheckPage() {
-  const [tab, setTab] = useState<"overview" | "group" | "compliance">("overview");
+export default async function StressCheckPage() {
+  let results: StressCheckResult[];
+  let campaigns: Campaign[];
+  let groupAnalysis: GroupAnalysis[];
+  let departments: DemoDept[];
 
-  const distribution = distributionByLevel();
-  const total = DEMO_RESULTS_2026.length;
-  const active = DEMO_CAMPAIGNS[0];
-  const highCount = highStressCount();
-  const consultations = consultationRequests();
-  const responseRate = Math.round((active.response_count / active.target_count) * 100);
+  if (isDemoMode()) {
+    results = DEMO_RESULTS_2026;
+    campaigns = DEMO_CAMPAIGNS;
+    groupAnalysis = DEMO_GROUP_ANALYSIS;
+    departments = DEMO_DEPARTMENTS;
+  } else {
+    const supabase = await createClient();
+
+    // Phase 1: surveys / departments / employees を並列取得。
+    // employees は部署別集団分析の分母（部署別在籍数）と回答率の分母に使う。
+    const [surveysRes, deptsRes, empsRes] = await Promise.all([
+      supabase
+        .from("surveys")
+        .select("id, title, starts_at, ends_at, questions")
+        .order("starts_at", { ascending: false }),
+      supabase.from("departments").select("id, name, parent_id, display_order").order("display_order"),
+      supabase
+        .from("employees")
+        .select("id, department_id")
+        .eq("status", "active")
+        .is("deleted_at", null),
+    ]);
+    if (surveysRes.error) console.error("[stress-check] surveys query failed:", surveysRes.error.message);
+    if (deptsRes.error) console.error("[stress-check] departments query failed:", deptsRes.error.message);
+    if (empsRes.error) console.error("[stress-check] employees query failed:", empsRes.error.message);
+
+    departments = (deptsRes.data ?? []) as DemoDept[];
+
+    const activeEmployees = (empsRes.data ?? []) as { id: string; department_id: string | null }[];
+    const activeEmployeeCount = activeEmployees.length;
+    // employee_id -> department_id（集団分析の部署帰属にのみ使用。個人結果には持ち込まない）。
+    const deptByEmployee = new Map<string, string | null>();
+    const deptHeadcount = new Map<string, number>();
+    for (const e of activeEmployees) {
+      deptByEmployee.set(e.id, e.department_id ?? null);
+      if (e.department_id) deptHeadcount.set(e.department_id, (deptHeadcount.get(e.department_id) ?? 0) + 1);
+    }
+
+    // survey_type enum に 'stress' が無いため、title に「ストレス」/"stress" を含むサーベイを
+    // ストレスチェックとみなすヒューリスティック（needs_review: サーベイ命名規約に依存）。
+    type SurveyRow = { id: string; title: string | null; starts_at: string | null; ends_at: string | null; questions: unknown };
+    const STRESS_TITLE_RE = /ストレス|stress/i;
+    const stressSurveys = ((surveysRes.data ?? []) as SurveyRow[]).filter((s) => STRESS_TITLE_RE.test(s.title ?? ""));
+
+    // Phase 2: ストレスサーベイの回答を取得。
+    // answers / respondent_id は本来 PII だが、採点（レベル分布）と部署別集団分析の算出に必要。
+    // 【労安法66-10 の配慮】個人結果には employee_id を持ち込まず（常に null）、respondent_id は
+    // 集団分析の部署帰属にのみ使用し、事業者へはレベル分布と集団分析（10名以上）のみ開示する。
+    // RLS: hr_admin は匿名含む全件、それ以外は本人の回答のみが返る。
+    type RespRow = { survey_id: string; respondent_id: string | null; answers: unknown };
+    const stressSurveyIds = stressSurveys.map((s) => s.id);
+    let respRows: RespRow[] = [];
+    if (stressSurveyIds.length > 0) {
+      const respsRes = await supabase
+        .from("survey_responses")
+        .select("survey_id, respondent_id, answers")
+        .in("survey_id", stressSurveyIds);
+      if (respsRes.error) console.error("[stress-check] survey_responses query failed:", respsRes.error.message);
+      respRows = (respsRes.data ?? []) as RespRow[];
+    }
+
+    // survey_id ごとの回答数（回答率表示用）。
+    const respCountBySurvey = new Map<string, number>();
+    for (const r of respRows) respCountBySurvey.set(r.survey_id, (respCountBySurvey.get(r.survey_id) ?? 0) + 1);
+
+    const nowMs = Date.now();
+    // ストレスサーベイのみを Campaign にマップ（非ストレスサーベイは除外）。
+    campaigns = stressSurveys.map((s) => {
+      const startMs = s.starts_at ? new Date(s.starts_at).getTime() : 0;
+      const endMs = s.ends_at ? new Date(s.ends_at).getTime() : 0;
+      // status カラムは無いので日付から派生（下書き/進行中/完了）。
+      const status: Campaign["status"] =
+        nowMs < startMs ? "draft" : nowMs > endMs ? "analyzed" : "active";
+      return {
+        id: s.id,
+        name: s.title ?? "",
+        status,
+        starts_at: (s.starts_at ?? "").slice(0, 10),
+        ends_at: (s.ends_at ?? "").slice(0, 10),
+        // target_count カラムは無いため在籍者数を代理値に（needs_review）。
+        target_count: activeEmployeeCount,
+        response_count: respCountBySurvey.get(s.id) ?? 0,
+      };
+    });
+
+    // 最新のストレスサーベイ（starts_at desc の先頭）を「今回実施」とみなし、その回答を採点する。
+    const currentSurvey = stressSurveys[0];
+    if (currentSurvey) {
+      const questions = parseStressQuestions(currentSurvey.questions);
+      // 採点済み個人結果（employee_id は常に null）＋ 集団分析用の部署帰属を組で保持。
+      const scoredWithDept: { result: StressCheckResult; department_id: string | null }[] = [];
+      for (const r of respRows) {
+        if (r.survey_id !== currentSurvey.id) continue;
+        const result = scoreStressResponse(questions, r.answers);
+        if (!result) continue; // health_risk 欠測などで採点不能 → 除外
+        const departmentId = r.respondent_id ? deptByEmployee.get(r.respondent_id) ?? null : null;
+        scoredWithDept.push({ result, department_id: departmentId });
+      }
+      results = scoredWithDept.map((x) => x.result);
+      // 集団分析: 部署帰属できる回答のみ集計。全匿名なら空配列（集団分析不可）。
+      // 受検者数<10 の部署は high_stress_count がマスクされる（ヘルパー側で処理）。
+      groupAnalysis = aggregateGroupAnalysis(scoredWithDept, deptHeadcount);
+    } else {
+      // ストレスサーベイが見つからない場合は空状態（偽データを作らない）。
+      results = [];
+      groupAnalysis = [];
+    }
+  }
+
+  const distribution: Record<StressLevel, number> = { low: 0, medium: 0, high: 0, very_high: 0 };
+  for (const r of results) distribution[r.level]++;
+  const total = results.length;
+  const active = campaigns[0];
+  const responseCount = active?.response_count ?? 0;
+  const targetCount = active?.target_count ?? 0;
+  const responseRate = targetCount > 0 ? Math.round((responseCount / targetCount) * 100) : 0;
+  const highCount = results.filter((r) => r.level === "high" || r.level === "very_high").length;
+  const consultations = results.filter((r) => r.wants_consultation).length;
 
   return (
     <div className="space-y-5">
@@ -58,13 +174,13 @@ export default function StressCheckPage() {
 
       {/* KPI */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiTile icon={Activity} label="回答率" value={`${responseRate}%`} unit="" tone={responseRate >= 80 ? "success" : "warning"} hint={`${active.response_count} / ${active.target_count}`} />
+        <KpiTile icon={Activity} label="回答率" value={`${responseRate}%`} unit="" tone={responseRate >= 80 ? "success" : "warning"} hint={`${responseCount} / ${targetCount}`} />
         <KpiTile icon={AlertTriangle} label="高ストレス者" value={highCount} unit="名" tone={highCount > 0 ? "warning" : "muted"} hint="個別フォロー対象" />
         <KpiTile icon={MessageSquare} label="産業医面談希望" value={consultations} unit="件" tone={consultations > 0 ? "primary" : "muted"} hint="調整中" />
         <KpiTile icon={ScrollText} label="法令準拠" value="✓" unit="" tone="success" hint="50人以上事業場で年1回実施" />
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+      <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview" className="gap-2"><Activity className="size-3.5" />全社結果</TabsTrigger>
           <TabsTrigger value="group" className="gap-2"><Building2 className="size-3.5" />部門別</TabsTrigger>
@@ -79,7 +195,7 @@ export default function StressCheckPage() {
                 <ul className="space-y-2.5">
                   {(["low", "medium", "high", "very_high"] as StressLevel[]).map((lvl) => {
                     const count = distribution[lvl];
-                    const pct = (count / total) * 100;
+                    const pct = total > 0 ? (count / total) * 100 : 0;
                     return (
                       <li key={lvl} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
@@ -111,8 +227,8 @@ export default function StressCheckPage() {
               <CardContent className="p-4">
                 <h3 className="mb-3 text-sm font-semibold">過去3年の推移</h3>
                 <ul className="space-y-2">
-                  {DEMO_CAMPAIGNS.map((c) => {
-                    const pct = Math.round((c.response_count / c.target_count) * 100);
+                  {campaigns.map((c) => {
+                    const pct = c.target_count > 0 ? Math.round((c.response_count / c.target_count) * 100) : 0;
                     return (
                       <li key={c.id} className="rounded-md border bg-card p-2.5">
                         <div className="flex items-center justify-between text-sm">
@@ -141,11 +257,11 @@ export default function StressCheckPage() {
                 部門別 集団分析（10名以上のみ）
               </h3>
               <ul className="space-y-2">
-                {DEMO_GROUP_ANALYSIS
+                {groupAnalysis
                   .filter((g) => g.total >= 10)
                   .sort((a, b) => a.total_health_risk_score - b.total_health_risk_score)
                   .map((g) => {
-                    const dept = DEMO_DEPARTMENTS.find((d) => d.id === g.department_id);
+                    const dept = departments.find((d) => d.id === g.department_id);
                     if (!dept) return null;
                     const pct = Math.round((g.responded / g.total) * 100);
                     const risk = g.total_health_risk_score;
@@ -242,7 +358,7 @@ export default function StressCheckPage() {
 function KpiTile({
   icon: Icon, label, value, unit, tone, hint,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   label: string; value: number | string; unit: string;
   tone: "primary" | "success" | "warning" | "danger" | "muted";
   hint: string;

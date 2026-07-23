@@ -312,12 +312,15 @@ export const DEMO_INTERVIEWS: InterviewEvent[] = [
 ];
 
 // ─── ヘルパ ─────────────────────────────
-export function candidatesByStage(positionId?: string): Map<CandidateStage, Candidate[]> {
+export function candidatesByStage(
+  candidates: Candidate[] = DEMO_CANDIDATES,
+  positionId?: string,
+): Map<CandidateStage, Candidate[]> {
   const map = new Map<CandidateStage, Candidate[]>();
   for (const stage of [...STAGE_ORDER, "rejected", "withdrawn"] as CandidateStage[]) {
     map.set(stage, []);
   }
-  for (const c of DEMO_CANDIDATES) {
+  for (const c of candidates) {
     if (positionId && c.position_id !== positionId) continue;
     map.get(c.stage)!.push(c);
   }
@@ -330,8 +333,11 @@ export function nextStage(stage: CandidateStage): CandidateStage | null {
   return STAGE_ORDER[idx + 1];
 }
 
-export function interviewsForCandidate(candidateId: string): InterviewEvent[] {
-  return DEMO_INTERVIEWS
+export function interviewsForCandidate(
+  candidateId: string,
+  interviews: InterviewEvent[] = DEMO_INTERVIEWS,
+): InterviewEvent[] {
+  return interviews
     .filter((i) => i.candidate_id === candidateId)
     .sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at));
 }
@@ -340,10 +346,13 @@ export function positionById(id: string): Position | undefined {
   return DEMO_POSITIONS.find((p) => p.id === id);
 }
 
-export function candidatesForPosition(id: string): Candidate[] {
-  return DEMO_CANDIDATES.filter((c) => c.position_id === id);
+export function candidatesForPosition(
+  id: string,
+  candidates: Candidate[] = DEMO_CANDIDATES,
+): Candidate[] {
+  return candidates.filter((c) => c.position_id === id);
 }
 
-export function activePipelineCount(): number {
-  return DEMO_CANDIDATES.filter((c) => !["rejected", "withdrawn", "hired"].includes(c.stage)).length;
+export function activePipelineCount(candidates: Candidate[] = DEMO_CANDIDATES): number {
+  return candidates.filter((c) => !["rejected", "withdrawn", "hired"].includes(c.stage)).length;
 }

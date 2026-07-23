@@ -114,3 +114,218 @@ export function distributionByLevel(): Record<StressLevel, number> {
   for (const r of DEMO_RESULTS_2026) map[r.level]++;
   return map;
 }
+
+// ============================================================================
+// 実データ採点ヘルパー（純関数）
+//
+// 職業性ストレス簡易調査票（4件法・素点 1〜4）を想定した採点規約。
+// - survey.questions[].dimension で領域を判定する:
+//     'job_demand'      … 仕事の負担（素点が高い＝悪い → 反転）
+//     'social_support'  … 周囲のサポート（素点が高い＝良好 → そのまま）
+//     'job_satisfaction'… 仕事の満足感（素点が高い＝良好 → そのまま）
+//     'health_risk'     … 心身の不調・回復力（素点が高い＝悪い → 反転）
+//     'consultation'    … 産業医面談の希望（truthy=希望）
+// - 各領域スコア = その領域設問への数値回答の平均を 0〜100「高いほど良好」へ正規化。
+//
+// 【労安法第66条の10 の配慮】
+//   個人結果は事業者(hr_admin)に開示してはならない。本ヘルパーが返す
+//   StressCheckResult.employee_id は常に null（匿名固定）で、氏名や respondent_id を
+//   個人結果に持ち込まない。事業者へは「レベル分布」と「集団分析（部署別・10名以上）」
+//   のみを開示する前提で使用すること。
+// ============================================================================
+
+export type StressDimension = "job_demand" | "social_support" | "job_satisfaction" | "health_risk";
+
+/** 採点に必要な最小限の設問情報（surveys.questions jsonb からパースして渡す）。 */
+export type ScoringQuestion = {
+  id: string;
+  dimension: string | null;
+  kind: string | null;
+};
+
+/**
+ * surveys.questions jsonb を採点用の ScoringQuestion[] に best-effort でパースする。
+ * 実データ依存の形（[{id, text, kind, dimension, ...}]）を想定し、堅牢に扱う。
+ */
+export function parseStressQuestions(raw: unknown): ScoringQuestion[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((q, i) => {
+    const o = (q ?? {}) as Record<string, unknown>;
+    return {
+      id: String(o.id ?? o.question_id ?? `q${i + 1}`),
+      dimension: o.dimension != null ? String(o.dimension) : null,
+      kind: o.kind != null ? String(o.kind) : null,
+    };
+  });
+}
+
+/**
+ * survey_responses.answers jsonb を question_id -> 回答値の Map に正規化する。
+ * 実データ依存で 2 形式の両対応:
+ *   - オブジェクト形: {"<question_id>": <value>}
+ *   - 配列形:        [{id|question_id, value|answer}]
+ */
+function toAnswerMap(answers: unknown): Map<string, unknown> {
+  const map = new Map<string, unknown>();
+  if (Array.isArray(answers)) {
+    for (const item of answers) {
+      if (item && typeof item === "object") {
+        const o = item as Record<string, unknown>;
+        const qid = o.question_id ?? o.id ?? o.questionId;
+        if (qid == null) continue;
+        const val = "value" in o ? o.value : "answer" in o ? o.answer : undefined;
+        map.set(String(qid), val);
+      }
+    }
+  } else if (answers && typeof answers === "object") {
+    for (const [k, v] of Object.entries(answers as Record<string, unknown>)) {
+      map.set(String(k), v);
+    }
+  }
+  return map;
+}
+
+/** 面談希望設問の回答が「希望する（truthy）」かを判定する。 */
+function isConsultTruthy(raw: unknown): boolean {
+  if (raw == null) return false;
+  if (typeof raw === "boolean") return raw;
+  if (typeof raw === "number") return raw > 0;
+  if (typeof raw === "string") {
+    const s = raw.trim().toLowerCase();
+    if (s === "" || s === "false" || s === "0" || s === "no" || s === "いいえ" || s === "希望しない") return false;
+    return true; // "はい" / "希望する" / "yes" / "1" / "true" 等
+  }
+  return Boolean(raw);
+}
+
+/**
+ * health_risk スコア（0-100「高いほど良好」）から高ストレスレベルを判定する【簡便法】。
+ * 素点が低い（＝心身の不調が強い）ほど高ストレス。閾値は簡易法の目安であり、
+ * 厳密な高ストレス者判定（実施者・産業医による）とは別物であることに留意。
+ */
+export function levelFromHealthRisk(healthRisk: number): StressLevel {
+  if (healthRisk < 30) return "very_high"; // 高ストレス（要対応）
+  if (healthRisk < 45) return "high";      // 高ストレス
+  if (healthRisk < 60) return "medium";    // やや高ストレス
+  return "low";                             // 良好
+}
+
+/**
+ * 1 回答分を採点して StressCheckResult を返す（純関数）。
+ * - health_risk 設問への数値回答が 1 つも無い場合はレベル判定不能のため null を返す
+ *   （偽データを作らず集計から除外する）。
+ * - employee_id は常に null（匿名固定）。氏名・respondent_id は結果に含めない。
+ */
+export function scoreStressResponse(
+  questions: ScoringQuestion[],
+  answers: unknown,
+  respondedAt: string | null = null,
+): StressCheckResult | null {
+  const answerMap = toAnswerMap(answers);
+  const buckets: Record<StressDimension, number[]> = {
+    job_demand: [],
+    social_support: [],
+    job_satisfaction: [],
+    health_risk: [],
+  };
+  let wantsConsultation = false;
+
+  for (const q of questions) {
+    const raw = answerMap.get(q.id);
+    const dim = q.dimension;
+    if (dim === "consultation") {
+      if (isConsultTruthy(raw)) wantsConsultation = true;
+      continue;
+    }
+    if (dim === "job_demand" || dim === "social_support" || dim === "job_satisfaction" || dim === "health_risk") {
+      const n = Number(raw); // 数値回答のみ集計（text / 選択肢ラベルは NaN になり無視される）
+      if (Number.isFinite(n)) buckets[dim].push(n);
+    }
+  }
+
+  const avg = (arr: number[]): number | null =>
+    arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+
+  const healthAvg = avg(buckets.health_risk);
+  // レベル判定に必須の health_risk が欠測なら採点不能 → 除外。
+  if (healthAvg === null) return null;
+
+  const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
+  // 4件法(素点 1〜4)想定。max-min=3 で 0-100 に正規化。
+  const normPos = (a: number) => clamp(((a - 1) / 3) * 100);         // 高い素点＝良好はそのまま
+  const normNeg = (a: number) => clamp(100 - ((a - 1) / 3) * 100);   // 高い素点＝悪いは反転
+
+  const jobDemandAvg = avg(buckets.job_demand);
+  const supportAvg = avg(buckets.social_support);
+  const satisfactionAvg = avg(buckets.job_satisfaction);
+  const healthRisk = normNeg(healthAvg);
+
+  return {
+    employee_id: null, // 匿名固定（労安法66-10: 個人結果を事業者に紐付けない）
+    responded_at: respondedAt,
+    // 欠測領域は NaN（未算出のセンチネル）。集計側で Number.isFinite により除外される。
+    job_demand: jobDemandAvg === null ? NaN : normNeg(jobDemandAvg),
+    social_support: supportAvg === null ? NaN : normPos(supportAvg),
+    job_satisfaction: satisfactionAvg === null ? NaN : normPos(satisfactionAvg),
+    health_risk: healthRisk,
+    level: levelFromHealthRisk(healthRisk),
+    wants_consultation: wantsConsultation,
+  };
+}
+
+/** 集団分析で個人特定を避けるための受検者数の下限（この人数未満は高ストレス者数をマスク）。 */
+export const GROUP_MASK_THRESHOLD = 10;
+
+/**
+ * 採点済み個人結果を部署別に集約して GroupAnalysis[] を返す（純関数）。
+ * - department_id が null（＝respondent_id が匿名 or 部署不明）の回答は帰属不可のため除外。
+ *   全回答が匿名なら空配列（＝集団分析不可）を返す。
+ * - 【労安法66-10 の配慮】受検者数 < GROUP_MASK_THRESHOLD の部署は
+ *   high_stress_count を 0 にマスクして個人特定を防ぐ。
+ */
+export function aggregateGroupAnalysis(
+  scored: Array<{ result: StressCheckResult; department_id: string | null }>,
+  deptHeadcount?: Map<string, number>,
+): GroupAnalysis[] {
+  type Acc = {
+    responded: number;
+    high: number;
+    healthSum: number;
+    healthN: number;
+    supportSum: number;
+    supportN: number;
+  };
+  const byDept = new Map<string, Acc>();
+
+  for (const { result, department_id } of scored) {
+    if (!department_id) continue; // 匿名回答は部署帰属できない → 集団分析から除外
+    const acc =
+      byDept.get(department_id) ??
+      { responded: 0, high: 0, healthSum: 0, healthN: 0, supportSum: 0, supportN: 0 };
+    acc.responded++;
+    if (result.level === "high" || result.level === "very_high") acc.high++;
+    if (Number.isFinite(result.health_risk)) {
+      acc.healthSum += result.health_risk;
+      acc.healthN++;
+    }
+    if (Number.isFinite(result.social_support)) {
+      acc.supportSum += result.social_support;
+      acc.supportN++;
+    }
+    byDept.set(department_id, acc);
+  }
+
+  const out: GroupAnalysis[] = [];
+  for (const [department_id, acc] of byDept) {
+    out.push({
+      department_id,
+      total: deptHeadcount?.get(department_id) ?? acc.responded,
+      responded: acc.responded,
+      // 受検者数 < 10 は個人特定リスクのため高ストレス者数をマスク（労安法66-10 集団分析の匿名性配慮）。
+      high_stress_count: acc.responded >= GROUP_MASK_THRESHOLD ? acc.high : 0,
+      total_health_risk_score: acc.healthN > 0 ? Math.round(acc.healthSum / acc.healthN) : 0,
+      total_support_score: acc.supportN > 0 ? Math.round(acc.supportSum / acc.supportN) : 0,
+    });
+  }
+  return out;
+}

@@ -273,22 +273,175 @@ export const DEMO_ACTION_PLANS: ActionPlan[] = [
 ];
 
 // ─── ヘルパ ─────────────────────────
-export function activeCampaigns(): Campaign[] {
-  return DEMO_CAMPAIGNS.filter((c) => c.status === "active");
+// 既定引数はデモ定数。本番経路では page.tsx から実データ配列を渡す（Layer2 パターン）。
+export function activeCampaigns(campaigns: Campaign[] = DEMO_CAMPAIGNS): Campaign[] {
+  return campaigns.filter((c) => c.status === "active");
 }
 
-export function latestAnalyzedCampaign(): Campaign | undefined {
-  return DEMO_CAMPAIGNS
+export function latestAnalyzedCampaign(campaigns: Campaign[] = DEMO_CAMPAIGNS): Campaign | undefined {
+  return campaigns
     .filter((c) => c.status === "analyzed")
     .sort((a, b) => b.ends_at.localeCompare(a.ends_at))[0];
 }
 
-export function actionsForCampaign(campaignId: string): ActionPlan[] {
-  return DEMO_ACTION_PLANS.filter((a) => a.campaign_id === campaignId);
+export function actionsForCampaign(
+  campaignId: string,
+  actionPlans: ActionPlan[] = DEMO_ACTION_PLANS,
+): ActionPlan[] {
+  return actionPlans.filter((a) => a.campaign_id === campaignId);
 }
 
 export function responseRate(c: Campaign): number {
   return c.target_count > 0 ? Math.round((c.response_count / c.target_count) * 100) : 0;
+}
+
+// ─── 実データ採点ヘルパー（本番経路専用・純関数） ─────────────
+// surveys.questions(jsonb) と survey_responses.answers(jsonb) から
+// Campaign.results（dimensions / enps / by_department）を集計する。
+// デモ経路では使用しない（DEMO_CAMPAIGNS は集計済みの results を持つ）。
+
+/** survey_responses の1行（本番集計に必要な最小形） */
+export type ResponseInput = {
+  respondent_id: string | null; // null = 匿名。by_department は非null のみ集計。
+  answers: unknown;             // jsonb: {qid: value} か [{id|question_id, value|answer}]
+};
+
+/** 部門マッピング用の最小 employee 形（DemoEmployee も構造的に適合） */
+export type EmployeeDeptInput = { id: string; department_id: string };
+
+/**
+ * answers jsonb を question_id -> 生の回答値 の Map に正規化する。
+ * オブジェクト形 {"<qid>": value} と配列形 [{id|question_id, value|answer}] の両対応。
+ * パースできない形（null/プリミティブ等）は空 Map を返す（throw しない）。
+ */
+function normalizeAnswers(answers: unknown): Map<string, unknown> {
+  const map = new Map<string, unknown>();
+  if (!answers || typeof answers !== "object") return map;
+
+  if (Array.isArray(answers)) {
+    for (const item of answers) {
+      if (!item || typeof item !== "object") continue;
+      const rec = item as Record<string, unknown>;
+      const qid = rec.id ?? rec.question_id;
+      const val = "value" in rec ? rec.value : rec.answer;
+      if (qid != null) map.set(String(qid), val);
+    }
+    return map;
+  }
+
+  for (const [k, v] of Object.entries(answers as Record<string, unknown>)) {
+    map.set(k, v);
+  }
+  return map;
+}
+
+/** 数値化。数値回答のみ集計対象。text/選択肢/空値は null（除外）。 */
+function toFiniteNumber(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "boolean") return null; // Number(true)=1 の誤集計を防ぐ
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * 1 キャンペーン分の results を実データから集計する純関数。
+ * - dimensions: scale_5(1-5 そのまま) / scale_10(/2 で 0-5 正規化) の数値回答を dimension 別に平均。
+ *   enps / text / 選択肢設問は dimensions から除外。
+ * - enps: kind==='enps' 設問の回答(0-10)を promoter(9-10)/passive(7-8)/detractor(0-6) に集計し、
+ *   score=round((promoter-detractor)/total*100)。enps 設問への数値回答が無ければ enps は付与しない。
+ * - by_department: respondent_id が非null の回答のみ、employee.department_id 経由で
+ *   engagement dimension の scale 回答を部門別に平均。全匿名なら {}（空）。
+ * sentiment_keywords / top_actions は実データ源が無いため常に空配列。
+ */
+export function computeCampaignResults(
+  questions: Question[],
+  responses: ResponseInput[],
+  employees: EmployeeDeptInput[],
+): NonNullable<Campaign["results"]> {
+  const qById = new Map(questions.map((q) => [q.id, q]));
+  const empDept = new Map(employees.map((e) => [e.id, e.department_id]));
+
+  const dimSum: Record<string, number> = {};
+  const dimCount: Record<string, number> = {};
+
+  let promoter = 0;
+  let passive = 0;
+  let detractor = 0;
+  let enpsTotal = 0;
+
+  const deptSum: Record<string, number> = {};
+  const deptCount: Record<string, number> = {};
+
+  for (const resp of responses) {
+    const answers = normalizeAnswers(resp.answers);
+    for (const [qid, rawVal] of answers) {
+      const q = qById.get(qid);
+      if (!q) continue;
+      const num = toFiniteNumber(rawVal);
+      if (num === null) continue;
+
+      if (q.kind === "enps") {
+        enpsTotal++;
+        if (num >= 9) promoter++;
+        else if (num >= 7) passive++;
+        else detractor++;
+        continue;
+      }
+
+      // scale 系のみ dimensions に反映。scale_10 は /2 で 0-5 に正規化。
+      if (q.kind === "scale_5" || q.kind === "scale_10") {
+        const normalized = q.kind === "scale_10" ? num / 2 : num;
+        dimSum[q.dimension] = (dimSum[q.dimension] ?? 0) + normalized;
+        dimCount[q.dimension] = (dimCount[q.dimension] ?? 0) + 1;
+
+        // by_department: engagement dimension・記名回答のみ・部門別平均。
+        if (q.dimension === "engagement" && resp.respondent_id != null) {
+          const dept = empDept.get(resp.respondent_id);
+          if (dept) {
+            deptSum[dept] = (deptSum[dept] ?? 0) + normalized;
+            deptCount[dept] = (deptCount[dept] ?? 0) + 1;
+          }
+        }
+      }
+    }
+  }
+
+  const dimensions: Record<string, number> = {};
+  for (const dim of Object.keys(dimCount)) {
+    dimensions[dim] = dimSum[dim] / dimCount[dim];
+  }
+
+  const by_department: Record<string, number> = {};
+  for (const dept of Object.keys(deptCount)) {
+    by_department[dept] = deptSum[dept] / deptCount[dept];
+  }
+
+  const results: NonNullable<Campaign["results"]> = {
+    dimensions,
+    by_department,
+    sentiment_keywords: [],
+    top_actions: [],
+  };
+
+  if (enpsTotal > 0) {
+    results.enps = {
+      promoter,
+      passive,
+      detractor,
+      score: Math.round(((promoter - detractor) / enpsTotal) * 100),
+    };
+  }
+
+  return results;
+}
+
+/** 集計結果に表示可能な中身があるか（空なら results を付与しない判定に使う）。 */
+export function hasResultsContent(results: NonNullable<Campaign["results"]>): boolean {
+  return (
+    Object.keys(results.dimensions).length > 0 ||
+    Object.keys(results.by_department).length > 0 ||
+    results.enps != null
+  );
 }
 
 // パルス・スコアの推移（最新 6 ヶ月のシミュレーション）

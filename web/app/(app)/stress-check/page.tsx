@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { Brain, AlertTriangle, MessageSquare, ScrollText, Activity, Building2, Plus } from "lucide-react";
 import {
   DEMO_CAMPAIGNS, DEMO_RESULTS_2026, DEMO_GROUP_ANALYSIS, LEVEL_LABEL, LEVEL_TONE,
+  parseStressQuestions, scoreStressResponse, aggregateGroupAnalysis,
   type StressLevel, type StressCheckResult, type Campaign, type GroupAnalysis,
 } from "@/lib/demo/stress-check";
 import { DEMO_DEPARTMENTS, type DemoDept } from "@/lib/demo/employees";
@@ -28,62 +29,106 @@ export default async function StressCheckPage() {
     departments = DEMO_DEPARTMENTS;
   } else {
     const supabase = await createClient();
-    const [surveysRes, respsRes, deptsRes, empCountRes] = await Promise.all([
+
+    // Phase 1: surveys / departments / employees を並列取得。
+    // employees は部署別集団分析の分母（部署別在籍数）と回答率の分母に使う。
+    const [surveysRes, deptsRes, empsRes] = await Promise.all([
       supabase
         .from("surveys")
-        .select("id, title, starts_at, ends_at")
+        .select("id, title, starts_at, ends_at, questions")
         .order("starts_at", { ascending: false }),
-      // 集計用に survey_id のみ取得（answers jsonb は PII を含みうるため読まない）。
-      // RLS: hr_admin は匿名含む全件、それ以外は本人の回答のみが返る。
-      supabase.from("survey_responses").select("survey_id"),
       supabase.from("departments").select("id, name, parent_id, display_order").order("display_order"),
       supabase
         .from("employees")
-        .select("id", { count: "exact", head: true })
+        .select("id, department_id")
         .eq("status", "active")
         .is("deleted_at", null),
     ]);
     if (surveysRes.error) console.error("[stress-check] surveys query failed:", surveysRes.error.message);
-    if (respsRes.error) console.error("[stress-check] survey_responses query failed:", respsRes.error.message);
     if (deptsRes.error) console.error("[stress-check] departments query failed:", deptsRes.error.message);
-    if (empCountRes.error) console.error("[stress-check] employees count failed:", empCountRes.error.message);
+    if (empsRes.error) console.error("[stress-check] employees query failed:", empsRes.error.message);
 
-    // survey_id ごとの回答数を集計
-    const respCountBySurvey = new Map<string, number>();
-    for (const r of (respsRes.data ?? []) as { survey_id: string }[]) {
-      respCountBySurvey.set(r.survey_id, (respCountBySurvey.get(r.survey_id) ?? 0) + 1);
+    departments = (deptsRes.data ?? []) as DemoDept[];
+
+    const activeEmployees = (empsRes.data ?? []) as { id: string; department_id: string | null }[];
+    const activeEmployeeCount = activeEmployees.length;
+    // employee_id -> department_id（集団分析の部署帰属にのみ使用。個人結果には持ち込まない）。
+    const deptByEmployee = new Map<string, string | null>();
+    const deptHeadcount = new Map<string, number>();
+    for (const e of activeEmployees) {
+      deptByEmployee.set(e.id, e.department_id ?? null);
+      if (e.department_id) deptHeadcount.set(e.department_id, (deptHeadcount.get(e.department_id) ?? 0) + 1);
     }
 
-    const activeEmployeeCount = empCountRes.count ?? 0;
+    // survey_type enum に 'stress' が無いため、title に「ストレス」/"stress" を含むサーベイを
+    // ストレスチェックとみなすヒューリスティック（needs_review: サーベイ命名規約に依存）。
+    type SurveyRow = { id: string; title: string | null; starts_at: string | null; ends_at: string | null; questions: unknown };
+    const STRESS_TITLE_RE = /ストレス|stress/i;
+    const stressSurveys = ((surveysRes.data ?? []) as SurveyRow[]).filter((s) => STRESS_TITLE_RE.test(s.title ?? ""));
+
+    // Phase 2: ストレスサーベイの回答を取得。
+    // answers / respondent_id は本来 PII だが、採点（レベル分布）と部署別集団分析の算出に必要。
+    // 【労安法66-10 の配慮】個人結果には employee_id を持ち込まず（常に null）、respondent_id は
+    // 集団分析の部署帰属にのみ使用し、事業者へはレベル分布と集団分析（10名以上）のみ開示する。
+    // RLS: hr_admin は匿名含む全件、それ以外は本人の回答のみが返る。
+    type RespRow = { survey_id: string; respondent_id: string | null; answers: unknown };
+    const stressSurveyIds = stressSurveys.map((s) => s.id);
+    let respRows: RespRow[] = [];
+    if (stressSurveyIds.length > 0) {
+      const respsRes = await supabase
+        .from("survey_responses")
+        .select("survey_id, respondent_id, answers")
+        .in("survey_id", stressSurveyIds);
+      if (respsRes.error) console.error("[stress-check] survey_responses query failed:", respsRes.error.message);
+      respRows = (respsRes.data ?? []) as RespRow[];
+    }
+
+    // survey_id ごとの回答数（回答率表示用）。
+    const respCountBySurvey = new Map<string, number>();
+    for (const r of respRows) respCountBySurvey.set(r.survey_id, (respCountBySurvey.get(r.survey_id) ?? 0) + 1);
+
     const nowMs = Date.now();
+    // ストレスサーベイのみを Campaign にマップ（非ストレスサーベイは除外）。
+    campaigns = stressSurveys.map((s) => {
+      const startMs = s.starts_at ? new Date(s.starts_at).getTime() : 0;
+      const endMs = s.ends_at ? new Date(s.ends_at).getTime() : 0;
+      // status カラムは無いので日付から派生（下書き/進行中/完了）。
+      const status: Campaign["status"] =
+        nowMs < startMs ? "draft" : nowMs > endMs ? "analyzed" : "active";
+      return {
+        id: s.id,
+        name: s.title ?? "",
+        status,
+        starts_at: (s.starts_at ?? "").slice(0, 10),
+        ends_at: (s.ends_at ?? "").slice(0, 10),
+        // target_count カラムは無いため在籍者数を代理値に（needs_review）。
+        target_count: activeEmployeeCount,
+        response_count: respCountBySurvey.get(s.id) ?? 0,
+      };
+    });
 
-    // surveys → Campaign にマップ。survey_type enum に 'stress' が無いため
-    // stress サーベイの絞り込みはできず、可視な全サーベイを campaign として扱う（needs_review）。
-    campaigns = ((surveysRes.data ?? []) as { id: string; title: string; starts_at: string | null; ends_at: string | null }[])
-      .map((s) => {
-        const startMs = s.starts_at ? new Date(s.starts_at).getTime() : 0;
-        const endMs = s.ends_at ? new Date(s.ends_at).getTime() : 0;
-        // status カラムは無いので日付から派生（下書き/進行中/完了）。
-        const status: Campaign["status"] =
-          nowMs < startMs ? "draft" : nowMs > endMs ? "analyzed" : "active";
-        return {
-          id: s.id,
-          name: s.title,
-          status,
-          starts_at: (s.starts_at ?? "").slice(0, 10),
-          ends_at: (s.ends_at ?? "").slice(0, 10),
-          // target_count カラムは無いため在籍者数を代理値に（needs_review）。
-          target_count: activeEmployeeCount,
-          response_count: respCountBySurvey.get(s.id) ?? 0,
-        };
-      });
-
-    // 個別のストレススコア（4領域）・level・面談希望は answers jsonb の
-    // 定義スキーマが無く算出不能。偽の分布を作らないため空にする（needs_review）。
-    results = [];
-    // 集団分析は匿名回答（respondent_id null）を部署に帰属できないため算出不能（needs_review）。
-    groupAnalysis = [];
-    departments = (deptsRes.data ?? []) as DemoDept[];
+    // 最新のストレスサーベイ（starts_at desc の先頭）を「今回実施」とみなし、その回答を採点する。
+    const currentSurvey = stressSurveys[0];
+    if (currentSurvey) {
+      const questions = parseStressQuestions(currentSurvey.questions);
+      // 採点済み個人結果（employee_id は常に null）＋ 集団分析用の部署帰属を組で保持。
+      const scoredWithDept: { result: StressCheckResult; department_id: string | null }[] = [];
+      for (const r of respRows) {
+        if (r.survey_id !== currentSurvey.id) continue;
+        const result = scoreStressResponse(questions, r.answers);
+        if (!result) continue; // health_risk 欠測などで採点不能 → 除外
+        const departmentId = r.respondent_id ? deptByEmployee.get(r.respondent_id) ?? null : null;
+        scoredWithDept.push({ result, department_id: departmentId });
+      }
+      results = scoredWithDept.map((x) => x.result);
+      // 集団分析: 部署帰属できる回答のみ集計。全匿名なら空配列（集団分析不可）。
+      // 受検者数<10 の部署は high_stress_count がマスクされる（ヘルパー側で処理）。
+      groupAnalysis = aggregateGroupAnalysis(scoredWithDept, deptHeadcount);
+    } else {
+      // ストレスサーベイが見つからない場合は空状態（偽データを作らない）。
+      results = [];
+      groupAnalysis = [];
+    }
   }
 
   const distribution: Record<StressLevel, number> = { low: 0, medium: 0, high: 0, very_high: 0 };

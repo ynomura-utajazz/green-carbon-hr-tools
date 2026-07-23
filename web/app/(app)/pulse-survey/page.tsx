@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { DEMO_EMPLOYEES, DEMO_DEPARTMENTS, type DemoEmployee, type DemoDept } from "@/lib/demo/employees";
 import {
   DEMO_CAMPAIGNS, DEMO_ACTION_PLANS, PULSE_TREND,
+  computeCampaignResults, hasResultsContent,
   type Campaign, type ActionPlan, type Question, type CampaignStatus, type SurveyKind,
+  type ResponseInput,
 } from "@/lib/demo/surveys";
 import { PulseSurveyClient } from "./pulse-survey-client";
 
@@ -31,8 +33,9 @@ export default async function PulseSurveyPage() {
         .from("surveys")
         .select("id, type, title, description, starts_at, ends_at, questions, is_anonymous")
         .order("starts_at", { ascending: false }),
-      // respondent_id は取得しない（匿名性・PII 保護）。回答数の集計のみに使う。
-      supabase.from("survey_responses").select("survey_id"),
+      // respondent_id / answers は実データ集計に必要。respondent_id は by_department の
+      // 部門集約（個人単位では表示しない）にのみ使い、UI に個人を露出しない。
+      supabase.from("survey_responses").select("survey_id, respondent_id, answers"),
       supabase
         .from("employees")
         .select("id, employee_code, full_name, full_name_kana, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national")
@@ -50,11 +53,13 @@ export default async function PulseSurveyPage() {
     employees = (empsRes.data ?? []) as DemoEmployee[];
     departments = (deptsRes.data ?? []) as DemoDept[];
 
-    // survey_id -> 回答数
-    const responseCounts = new Map<string, number>();
+    // survey_id -> 回答行（results 集計 + 回答数の両方に使う）
+    const responsesBySurvey = new Map<string, ResponseInput[]>();
     for (const r of responsesRes.data ?? []) {
-      const sid = (r as { survey_id: string }).survey_id;
-      responseCounts.set(sid, (responseCounts.get(sid) ?? 0) + 1);
+      const row = r as { survey_id: string; respondent_id: string | null; answers: unknown };
+      const arr = responsesBySurvey.get(row.survey_id) ?? [];
+      arr.push({ respondent_id: row.respondent_id ?? null, answers: row.answers });
+      responsesBySurvey.set(row.survey_id, arr);
     }
 
     // surveys には配信対象数の列が無いため、アクティブ社員数を回答率の分母として代用する（needs_review）。
@@ -95,22 +100,32 @@ export default async function PulseSurveyPage() {
         required: Boolean(q.required ?? false),
       }));
 
+      // この survey の回答から results（dimensions / enps / by_department）を実データ集計。
+      // 回答が無い、または集計可能な数値回答が無い場合は results を付与しない（偽データを作らない）。
+      const surveyResponses = responsesBySurvey.get(r.id) ?? [];
+      const computed = computeCampaignResults(questions, surveyResponses, employees);
+      const results = hasResultsContent(computed) ? computed : undefined;
+
+      // 終了済み(closed)かつ集計可能な results があるサーベイは「分析済み(analyzed)」扱いにする。
+      // これにより Dashboard の latestAnalyzedCampaign() が実データの集計結果を拾える。
+      const baseStatus = deriveStatus(r.starts_at, r.ends_at);
+      const status: CampaignStatus = baseStatus === "closed" && results ? "analyzed" : baseStatus;
+
       return {
         id: r.id,
         kind: (r.type ?? "pulse") as SurveyKind,
         title: r.title ?? "",
         description: r.description ?? "",
-        status: deriveStatus(r.starts_at, r.ends_at),
+        status,
         is_anonymous: Boolean(r.is_anonymous),
         // timestamptz を "YYYY-MM-DD" に切り詰め（demo の日付文字列表示に合わせる）。
         starts_at: (r.starts_at ?? "").slice(0, 10),
         ends_at: (r.ends_at ?? "").slice(0, 10),
         target_count: targetCount,
-        response_count: responseCounts.get(r.id) ?? 0,
+        response_count: surveyResponses.length,
         questions,
-        // results（ディメンション別スコア / eNPS / 部門別ヒートマップ / センチメント）は
-        // answers jsonb のスキーマが非公開で、実データから信頼できる集計ができない。
-        // 偽の集計値を作らないため results は付与しない（undefined）。
+        // sentiment_keywords / top_actions は実データ源が無いため空配列（computeCampaignResults 内）。
+        results,
       };
     });
 

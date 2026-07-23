@@ -43,8 +43,8 @@ export function PulseSurveyClient({
   const [tab, setTab] = useState<"dashboard" | "campaigns" | "actions">("dashboard");
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
-  const active = activeCampaigns();
-  const latest = latestAnalyzedCampaign();
+  const active = activeCampaigns(campaigns);
+  const latest = latestAnalyzedCampaign(campaigns);
   const openActions = actionPlans.filter((a) => a.status !== "done").length;
   const _lowDeptCount = latest?.results
     ? Object.values(latest.results.by_department).filter((s) => s < 3.5).length
@@ -155,7 +155,7 @@ export function PulseSurveyClient({
           {selectedCampaign && (
             <CampaignDetail
               campaign={selectedCampaign}
-              actions={actionsForCampaign(selectedCampaign.id)}
+              actions={actionsForCampaign(selectedCampaign.id, actionPlans)}
               empMap={empMap}
               deptMap={deptMap}
               onClose={() => setSelectedCampaign(null)}

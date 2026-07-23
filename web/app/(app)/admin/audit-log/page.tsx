@@ -42,7 +42,7 @@ export default async function AuditLogPage() {
   } else {
     try {
       const sb = await createClient();
-      const { data } = await sb
+      const { data, error } = await sb
         .from("audit_logs")
         .select(`
           id, action, resource_type, resource_id, diff, ip, user_agent, created_at,
@@ -50,6 +50,9 @@ export default async function AuditLogPage() {
         `)
         .order("created_at", { ascending: false })
         .limit(200);
+      // query-level エラー（RLS拒否・FK不整合）は try/catch では捕捉できないため明示ログ。
+      // 監査ログを「操作なし」と誤表示してクエリ失敗を隠さないようにする。
+      if (error) console.error("[admin/audit-log] audit_logs query failed:", error.message);
       rows = (data ?? []).map((r) => {
         const actor = Array.isArray(r.actor) ? r.actor[0] : r.actor;
         return {

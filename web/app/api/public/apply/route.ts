@@ -67,19 +67,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "service-unavailable" }, { status: 503 });
   }
 
+  // candidates テーブルに実在する列のみで insert する。
+  // linkedin_url / years_of_experience / tags / applied_at 列は本番スキーマに
+  // 存在しないため（以前はこれらを直接 insert して 42703 で全応募が保存失敗していた）、
+  // notes に集約して保持する。applied_at は created_at のデフォルトで代替。
+  const noteParts: string[] = [];
+  if (body.cover_letter) noteParts.push(body.cover_letter);
+  if (body.linkedin_url) noteParts.push(`LinkedIn: ${body.linkedin_url}`);
+  if (body.years_of_experience !== undefined) noteParts.push(`経験年数: ${body.years_of_experience}年`);
+  if (body.casual_only) noteParts.push("[カジュアル面談希望]");
+
   const { data, error } = await sb
     .from("candidates")
     .insert({
       position_id: body.position_id,
       full_name: body.full_name,
       email: body.email,
-      linkedin_url: body.linkedin_url ?? null,
-      years_of_experience: body.years_of_experience ?? null,
-      notes: body.cover_letter ?? null,
-      stage: body.casual_only ? "applied" : "applied", // どちらも applied から始め、casual flag は tag に
+      notes: noteParts.join("\n") || null,
+      stage: "applied",
       source: "direct",
-      tags: body.casual_only ? ["カジュアル希望"] : [],
-      applied_at: new Date().toISOString(),
     })
     .select("id")
     .maybeSingle();

@@ -21,7 +21,7 @@ export default async function OrgManagementPage() {
     );
   }
 
-  const [{ data: transfers }, { data: emps }, { data: depts }] = await Promise.all([
+  const [transfersRes, empsRes, deptsRes] = await Promise.all([
     supabase
       .from("transfers")
       .select("id, employee_id, transfer_type, effective_date, is_applied, from_department_id, from_manager_id, from_job_title, from_job_grade, to_department_id, to_manager_id, to_job_title, to_job_grade, reason, created_at")
@@ -36,6 +36,12 @@ export default async function OrgManagementPage() {
       .select("id, name")
       .order("display_order", { ascending: true }),
   ]);
+  if (transfersRes.error) console.error("[org-management] transfers query failed:", transfersRes.error.message);
+  if (empsRes.error) console.error("[org-management] employees query failed:", empsRes.error.message);
+  if (deptsRes.error) console.error("[org-management] departments query failed:", deptsRes.error.message);
+  const transfers = transfersRes.data;
+  const emps = empsRes.data;
+  const depts = deptsRes.data;
 
   const transferRows: TransferRow[] = (transfers ?? []).map((t) => ({
     id: t.id as string,

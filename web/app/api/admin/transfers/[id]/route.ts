@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getWriter } from "@/lib/supabase/admin";
+import { userHasAdminRole } from "@/lib/auth/authz";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,10 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "not-authenticated" }, { status: 401 });
+  // service_role(getWriter) で transfers を消すため管理者限定にする。
+  if (!(await userHasAdminRole(user.id))) {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  }
 
   const writer = getWriter(sb);
 

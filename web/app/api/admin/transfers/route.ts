@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, getWriter } from "@/lib/supabase/admin";
+import { userHasAdminRole } from "@/lib/auth/authz";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +46,13 @@ export async function POST(req: Request) {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "not-authenticated" }, { status: 401 });
+
+  // 異動辞令の発行は employees を書き換える強い操作。service_role で RLS を
+  // バイパスするため、ここで hr_admin/executive を明示検証しないと任意ユーザーが
+  // 自己昇格できてしまう（roles ルートと同じく管理者限定にする）。
+  if (!(await userHasAdminRole(user.id))) {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  }
 
   let body: CreateBody;
   try { body = (await req.json()) as CreateBody; }

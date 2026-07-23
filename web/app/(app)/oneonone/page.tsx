@@ -66,7 +66,7 @@ export default async function OneOnOnePage() {
   let actionItems: ActionItem[] = [];
 
   if (user) {
-    const [{ data: me }, { data: emps }, { data: depts }, { data: ones }, { data: actions }] = await Promise.all([
+    const [meRes, empsRes, deptsRes, onesRes, actionsRes] = await Promise.all([
       reader
         .from("employees")
         .select("id")
@@ -90,6 +90,21 @@ export default async function OneOnOnePage() {
         .from("action_items")
         .select("id, one_on_one_id, member_id, assignee_id, title, due_date, completed_at"),
     ]);
+
+    // クエリエラーを握りつぶさずサーバーログへ出す。
+    // 本番のスキーマ不整合（例: action_items.member_id 欠落 42703）を
+    // 「一覧が空」に化けさせず検知できるようにするため。
+    if (meRes.error) console.error("[oneonone] employees(self) query failed:", meRes.error.message);
+    if (empsRes.error) console.error("[oneonone] employees query failed:", empsRes.error.message);
+    if (deptsRes.error) console.error("[oneonone] departments query failed:", deptsRes.error.message);
+    if (onesRes.error) console.error("[oneonone] oneonones query failed:", onesRes.error.message);
+    if (actionsRes.error) console.error("[oneonone] action_items query failed:", actionsRes.error.message);
+
+    const me = meRes.data;
+    const emps = empsRes.data;
+    const depts = deptsRes.data;
+    const ones = onesRes.data;
+    const actions = actionsRes.data;
 
     if (me?.id) currentEmployeeId = me.id as string;
     employees = (emps ?? []).map(mapDbEmployee);

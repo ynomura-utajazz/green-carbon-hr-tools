@@ -38,7 +38,7 @@ export default async function PulseSurveyPage() {
       supabase.from("survey_responses").select("survey_id, respondent_id, answers"),
       supabase
         .from("employees")
-        .select("id, employee_code, full_name, full_name_kana, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national")
+        .select("id, employee_code, full_name, full_name_kana, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national, slack_user_id, office_location")
         .eq("status", "active")
         .is("deleted_at", null)
         .order("employee_code"),

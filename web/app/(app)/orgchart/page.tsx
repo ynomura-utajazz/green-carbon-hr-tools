@@ -17,7 +17,7 @@ export default async function OrgChartPage() {
     const [empsRes, deptsRes] = await Promise.all([
       supabase
         .from("employees")
-        .select("id, employee_code, full_name, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national")
+        .select("id, employee_code, full_name, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national, slack_user_id, office_location")
         .eq("status", "active").is("deleted_at", null),
       supabase.from("departments").select("id, name, parent_id, display_order").order("display_order"),
     ]);

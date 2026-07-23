@@ -28,7 +28,7 @@ export default async function PulseSurveyPage() {
     trend = PULSE_TREND;
   } else {
     const supabase = await createClient();
-    const [surveysRes, responsesRes, empsRes, deptsRes] = await Promise.all([
+    const [surveysRes, responsesRes, empsRes, deptsRes, actionsRes] = await Promise.all([
       supabase
         .from("surveys")
         .select("id, type, title, description, starts_at, ends_at, questions, is_anonymous")
@@ -38,17 +38,22 @@ export default async function PulseSurveyPage() {
       supabase.from("survey_responses").select("survey_id, respondent_id, answers"),
       supabase
         .from("employees")
-        .select("id, employee_code, full_name, full_name_kana, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national")
+        .select("id, employee_code, full_name, full_name_kana, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national, slack_user_id, office_location")
         .eq("status", "active")
         .is("deleted_at", null)
         .order("employee_code"),
       supabase.from("departments").select("id, name, parent_id, display_order").order("display_order"),
+      supabase
+        .from("action_plans")
+        .select("id, campaign_id, title, owner_id, status, due_date, description, related_dimension")
+        .order("due_date", { ascending: true }),
     ]);
 
     if (surveysRes.error) console.error("[pulse-survey] surveys query failed:", surveysRes.error.message);
     if (responsesRes.error) console.error("[pulse-survey] survey_responses query failed:", responsesRes.error.message);
     if (empsRes.error) console.error("[pulse-survey] employees query failed:", empsRes.error.message);
     if (deptsRes.error) console.error("[pulse-survey] departments query failed:", deptsRes.error.message);
+    if (actionsRes.error) console.error("[pulse-survey] action_plans query failed:", actionsRes.error.message);
 
     employees = (empsRes.data ?? []) as DemoEmployee[];
     departments = (deptsRes.data ?? []) as DemoDept[];
@@ -129,8 +134,24 @@ export default async function PulseSurveyPage() {
       };
     });
 
-    // アクションプラン専用テーブルはスキーマに存在しないため、実データは空にする（needs_review）。
-    actionPlans = [];
+    // アクションプランは action_plans テーブル（migration 20260723000005）から取得。
+    // テーブル未適用/空なら空配列（空状態表示）。
+    actionPlans = (actionsRes.data ?? []).map((row): ActionPlan => {
+      const a = row as {
+        id: string; campaign_id: string | null; title: string | null; owner_id: string | null;
+        status: string | null; due_date: string | null; description: string | null; related_dimension: string | null;
+      };
+      return {
+        id: a.id,
+        campaign_id: a.campaign_id ?? "",
+        title: a.title ?? "",
+        owner_id: a.owner_id ?? "",
+        status: (a.status ?? "open") as ActionPlan["status"],
+        due_date: (a.due_date ?? "").slice(0, 10),
+        description: a.description ?? "",
+        related_dimension: a.related_dimension ?? "engagement",
+      };
+    });
 
     // トレンド系列も answers 集計に依存し実データから算出不能。空配列にすると
     // クライアントの TrendChart が data[last].y を参照してクラッシュするため、

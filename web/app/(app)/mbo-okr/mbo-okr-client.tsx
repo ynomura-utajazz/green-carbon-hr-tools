@@ -53,17 +53,38 @@ export function MboOkrClient({
   const empMap = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
   const deptMap = useMemo(() => new Map(departments.map((d) => [d.id, d])), [departments]);
   const objMap = useMemo(() => new Map(objectives.map((o) => [o.id, o])), [objectives]);
-  const current = activeCycle() ?? cycles[0];
+  const current = activeCycle(cycles) ?? cycles[0];
 
   const [tab, setTab] = useState<"company" | "department" | "individual" | "mine" | "evaluations">("company");
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [selectedObj, setSelectedObj] = useState<Objective | null>(null);
 
+  // レビューサイクルが未設定（本番でデータ無し）の場合の空状態。
+  // デモモードでは cycles は常に非空なのでここには到達せず、表示は不変。
+  if (!current) {
+    return (
+      <div className="space-y-5">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+            <Target className="size-6 text-gc-700" />
+            MBO × OKR
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">会社・部署・個人の3階層で目標管理。</p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">
+            現在のレビューサイクルがまだ設定されていません。
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // KPI
   const allActive = objectives.filter((o) => o.cycle_id === current.id);
-  const myObjs = objectivesForOwner(currentEmployeeId, current.id);
+  const myObjs = objectivesForOwner(currentEmployeeId, current.id, objectives);
   const myAvg = avgProgressOf(myObjs);
-  const companyAvg = avgProgressOf(objectivesByLevel("company", current.id));
+  const companyAvg = avgProgressOf(objectivesByLevel("company", current.id, objectives));
   const atRiskCount = allActive.filter((o) => o.status === "at_risk" || o.status === "behind").length;
 
   const daysToEnd = Math.floor((new Date(current.ends_on).getTime() - Date.now()) / 86_400_000);
@@ -107,7 +128,7 @@ export function MboOkrClient({
 
         <TabsContent value="company">
           <CompanyView
-            objectives={objectivesByLevel("company", current.id)}
+            objectives={objectivesByLevel("company", current.id, objectives)}
             allObjectives={allActive}
             objMap={objMap}
             empMap={empMap}
@@ -129,7 +150,7 @@ export function MboOkrClient({
             </Select>
           </div>
           <DepartmentView
-            objectives={objectivesByLevel("department", current.id).filter(
+            objectives={objectivesByLevel("department", current.id, objectives).filter(
               (o) => selectedDept === "all" || o.department_id === selectedDept
             )}
             objMap={objMap}
@@ -141,7 +162,7 @@ export function MboOkrClient({
 
         <TabsContent value="individual">
           <IndividualView
-            objectives={objectivesByLevel("individual", current.id)}
+            objectives={objectivesByLevel("individual", current.id, objectives)}
             empMap={empMap}
             onSelect={setSelectedObj}
           />
@@ -172,7 +193,7 @@ export function MboOkrClient({
             <ObjectiveDetail
               objective={selectedObj}
               parent={selectedObj.parent_id ? objMap.get(selectedObj.parent_id) : null}
-              childObjectives={childrenOf(selectedObj.id)}
+              childObjectives={childrenOf(selectedObj.id, objectives)}
               owner={empMap.get(selectedObj.owner_id)}
               onClose={() => setSelectedObj(null)}
               onSelectChild={setSelectedObj}

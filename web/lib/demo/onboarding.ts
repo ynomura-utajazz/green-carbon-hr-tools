@@ -246,8 +246,13 @@ export function runById(id: string): OnboardingRun | undefined {
   return DEMO_ONBOARDING_RUNS.find((r) => r.id === id);
 }
 
-export function templateById(id: string): OnboardingTemplate | undefined {
-  return DEMO_TEMPLATES.find((t) => t.id === id);
+// Layer2: 集計/参照ヘルパーはテンプレート集合を引数で受け取れるようにする。
+// 既定は DEMO_TEMPLATES（後方互換）。本番では page が実テーブル由来の配列を渡す。
+export function templateById(
+  id: string,
+  templates: OnboardingTemplate[] = DEMO_TEMPLATES,
+): OnboardingTemplate | undefined {
+  return templates.find((t) => t.id === id);
 }
 
 export function progressOf(run: OnboardingRun): { done: number; total: number; pct: number } {
@@ -270,7 +275,9 @@ export function overdueTasksOf(run: OnboardingRun, _template: OnboardingTemplate
   const today = new Date().toISOString().slice(0, 10);
   return run.task_states.filter(
     (s) => (s.status === "pending" || s.status === "in_progress" || s.status === "blocked")
-      && s.due_date < today
+      // 実データで due_date が空のタスクを「期限超過」に数えない（"" < today = true を回避）。
+      // デモデータの due_date は常に非空なので出力は不変。
+      && !!s.due_date && s.due_date < today
   ).length;
 }
 

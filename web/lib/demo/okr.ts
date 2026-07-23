@@ -368,26 +368,32 @@ export const DEMO_MBO_REVIEWS: MboReview[] = [
 ];
 
 // ─── ヘルパ ─────────────────────────
-export function activeCycle(): ReviewCycle | undefined {
-  return DEMO_CYCLES.find((c) => c.is_active);
+// Layer2: 実データ対応のため、各ヘルパは対象配列を引数で受け取れるようにする。
+// デフォルトはデモ定数なので既存の呼び出し（引数なし）は従来どおり動作する（後方互換）。
+export function activeCycle(cycles: ReviewCycle[] = DEMO_CYCLES): ReviewCycle | undefined {
+  return cycles.find((c) => c.is_active);
 }
 
-export function objectivesByLevel(level: OkrLevel, cycleId?: string): Objective[] {
-  return DEMO_OBJECTIVES.filter((o) =>
+export function objectivesByLevel(
+  level: OkrLevel, cycleId?: string, objectives: Objective[] = DEMO_OBJECTIVES,
+): Objective[] {
+  return objectives.filter((o) =>
     o.level === level && (!cycleId || o.cycle_id === cycleId)
   );
 }
 
-export function childrenOf(parentId: string): Objective[] {
-  return DEMO_OBJECTIVES.filter((o) => o.parent_id === parentId);
+export function childrenOf(parentId: string, objectives: Objective[] = DEMO_OBJECTIVES): Objective[] {
+  return objectives.filter((o) => o.parent_id === parentId);
 }
 
-export function objectiveById(id: string): Objective | undefined {
-  return DEMO_OBJECTIVES.find((o) => o.id === id);
+export function objectiveById(id: string, objectives: Objective[] = DEMO_OBJECTIVES): Objective | undefined {
+  return objectives.find((o) => o.id === id);
 }
 
-export function objectivesForOwner(ownerId: string, cycleId?: string): Objective[] {
-  return DEMO_OBJECTIVES.filter((o) =>
+export function objectivesForOwner(
+  ownerId: string, cycleId?: string, objectives: Objective[] = DEMO_OBJECTIVES,
+): Objective[] {
+  return objectives.filter((o) =>
     o.owner_id === ownerId && (!cycleId || o.cycle_id === cycleId)
   );
 }

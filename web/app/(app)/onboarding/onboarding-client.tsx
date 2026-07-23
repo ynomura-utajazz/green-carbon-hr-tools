@@ -54,7 +54,7 @@ export function OnboardingClient({
   const activeRuns = runs.filter((r) => r.status === "active");
   const totalDueSoon = activeRuns.reduce((sum, r) => sum + tasksDueSoon(r), 0);
   const totalOverdue = activeRuns.reduce((sum, r) => {
-    const tpl = templateById(r.template_id);
+    const tpl = templateById(r.template_id, templates);
     return sum + (tpl ? overdueTasksOf(r, tpl) : 0);
   }, 0);
   const avgProgress = activeRuns.length > 0
@@ -107,6 +107,7 @@ export function OnboardingClient({
                 <RunCard
                   key={run.id}
                   run={run}
+                  templates={templates}
                   employee={employee}
                   manager={empMap.get(run.manager_id)}
                   buddy={run.buddy_id ? empMap.get(run.buddy_id) : undefined}
@@ -130,6 +131,7 @@ export function OnboardingClient({
           {selected && (
             <RunDetail
               run={selected}
+              templates={templates}
               empMap={empMap}
               deptMap={deptMap}
               onClose={() => setSelected(null)}
@@ -178,9 +180,10 @@ function KpiTile({
 
 // ─── 進行中カード ──────────────────────
 function RunCard({
-  run, employee, manager, buddy, deptName, onClick,
+  run, templates, employee, manager, buddy, deptName, onClick,
 }: {
   run: OnboardingRun;
+  templates: OnboardingTemplate[];
   employee: DemoEmployee;
   manager?: DemoEmployee;
   buddy?: DemoEmployee;
@@ -189,7 +192,7 @@ function RunCard({
 }) {
   const progress = progressOf(run);
   const phase = currentPhaseOf(run);
-  const tpl = templateById(run.template_id);
+  const tpl = templateById(run.template_id, templates);
   const overdue = tpl ? overdueTasksOf(run, tpl) : 0;
   const dueSoon = tasksDueSoon(run);
   const office = officeByCode(employee.office_location);
@@ -316,9 +319,10 @@ function TemplateCard({ template }: { template: OnboardingTemplate }) {
 
 // ─── 詳細パネル ────────────────────────
 function RunDetail({
-  run, empMap, deptMap, onClose,
+  run, templates, empMap, deptMap, onClose,
 }: {
   run: OnboardingRun;
+  templates: OnboardingTemplate[];
   empMap: Map<string, DemoEmployee>;
   deptMap: Map<string, DemoDept>;
   onClose: () => void;
@@ -326,7 +330,7 @@ function RunDetail({
   const employee = empMap.get(run.employee_id)!;
   const manager = empMap.get(run.manager_id);
   const buddy = run.buddy_id ? empMap.get(run.buddy_id) : undefined;
-  const tpl = templateById(run.template_id);
+  const tpl = templateById(run.template_id, templates);
   const progress = progressOf(run);
   const phase = currentPhaseOf(run);
   const office = officeByCode(employee.office_location);

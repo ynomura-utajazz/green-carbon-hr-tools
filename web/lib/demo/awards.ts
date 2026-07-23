@@ -93,35 +93,37 @@ export const DEMO_AWARDS: Award[] = [
   { id: "aw-24", recipient_id: "e10", nominator_id: "e8",  value: "Impact", message: "オンコール対応で重大障害の影響を最小化。本番システムの信頼性を支えてくれている。", awarded_at: day(-30), reactions: [{ emoji: "⚡", count: 13 }] },
 ];
 
-export function awardsByValue(): Map<ValueTag, Award[]> {
+export function awardsByValue(awards: Award[] = DEMO_AWARDS): Map<ValueTag, Award[]> {
   const map = new Map<ValueTag, Award[]>();
   for (const v of Object.keys(VALUE_LABEL) as ValueTag[]) map.set(v, []);
-  for (const a of DEMO_AWARDS) map.get(a.value)!.push(a);
+  // 実データの value_tag が既定の ValueTag 以外（DB は自由文字列）でも throw しないよう
+  // 未知タグはスキップする（バリュー別内訳に出さない）。デモデータは全て既定値なので不変。
+  for (const a of awards) map.get(a.value)?.push(a);
   return map;
 }
 
-export function topRecipients(): { id: string; count: number }[] {
+export function topRecipients(awards: Award[] = DEMO_AWARDS): { id: string; count: number }[] {
   const map = new Map<string, number>();
-  for (const a of DEMO_AWARDS) map.set(a.recipient_id, (map.get(a.recipient_id) ?? 0) + 1);
+  for (const a of awards) map.set(a.recipient_id, (map.get(a.recipient_id) ?? 0) + 1);
   return [...map.entries()]
     .map(([id, count]) => ({ id, count }))
     .sort((a, b) => b.count - a.count);
 }
 
-export function topNominators(): { id: string; count: number }[] {
+export function topNominators(awards: Award[] = DEMO_AWARDS): { id: string; count: number }[] {
   const map = new Map<string, number>();
-  for (const a of DEMO_AWARDS) map.set(a.nominator_id, (map.get(a.nominator_id) ?? 0) + 1);
+  for (const a of awards) map.set(a.nominator_id, (map.get(a.nominator_id) ?? 0) + 1);
   return [...map.entries()]
     .map(([id, count]) => ({ id, count }))
     .sort((a, b) => b.count - a.count);
 }
 
-export function thisMonthMVP(): { id: string; count: number } | null {
+export function thisMonthMVP(awards: Award[] = DEMO_AWARDS): { id: string; count: number } | null {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
   const map = new Map<string, number>();
-  for (const a of DEMO_AWARDS) {
+  for (const a of awards) {
     if (new Date(a.awarded_at) >= monthStart) {
       map.set(a.recipient_id, (map.get(a.recipient_id) ?? 0) + 1);
     }

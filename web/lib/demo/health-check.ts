@@ -147,36 +147,40 @@ export const DEMO_LAW_COMPLIANCE: LawComplianceItem[] = [
 ];
 
 // ─── ヘルパ ─────────────────────────
-export function recordsByResult(): Map<NonNullable<HealthResult> | "未受診", HealthRecord[]> {
+export function recordsByResult(records: HealthRecord[] = DEMO_HEALTH_RECORDS): Map<NonNullable<HealthResult> | "未受診", HealthRecord[]> {
   const map = new Map<NonNullable<HealthResult> | "未受診", HealthRecord[]>();
   for (const k of ["A", "B", "C", "D", "未受診"] as const) map.set(k, []);
-  for (const r of DEMO_HEALTH_RECORDS) {
+  for (const r of records) {
     const k = r.result ?? "未受診";
     map.get(k)!.push(r);
   }
   return map;
 }
 
-export function followupNeeded(): HealthRecord[] {
-  return DEMO_HEALTH_RECORDS.filter((r) => r.followup_required);
+export function followupNeeded(records: HealthRecord[] = DEMO_HEALTH_RECORDS): HealthRecord[] {
+  return records.filter((r) => r.followup_required);
 }
 
-export function unscheduled(): HealthRecord[] {
-  return DEMO_HEALTH_RECORDS.filter((r) => !r.checked_at && !r.scheduled_at);
+export function unscheduled(records: HealthRecord[] = DEMO_HEALTH_RECORDS): HealthRecord[] {
+  return records.filter((r) => !r.checked_at && !r.scheduled_at);
 }
 
-export function recordForEmployee(employeeId: string): HealthRecord | undefined {
-  return DEMO_HEALTH_RECORDS.find((r) => r.employee_id === employeeId);
+export function recordForEmployee(employeeId: string, records: HealthRecord[] = DEMO_HEALTH_RECORDS): HealthRecord | undefined {
+  return records.find((r) => r.employee_id === employeeId);
 }
 
-export function completionRate(): number {
-  const completed = DEMO_HEALTH_RECORDS.filter((r) => r.checked_at).length;
-  return Math.round((completed / DEMO_HEALTH_RECORDS.length) * 100);
+export function completionRate(records: HealthRecord[] = DEMO_HEALTH_RECORDS): number {
+  if (records.length === 0) return 0; // 実データ0件のとき NaN% を避ける
+  const completed = records.filter((r) => r.checked_at).length;
+  return Math.round((completed / records.length) * 100);
 }
 
-export function recordsByDept(employees: { id: string; department_id: string }[]): Map<string, { total: number; done: number }> {
+export function recordsByDept(
+  employees: { id: string; department_id: string }[],
+  records: HealthRecord[] = DEMO_HEALTH_RECORDS,
+): Map<string, { total: number; done: number }> {
   const map = new Map<string, { total: number; done: number }>();
-  for (const r of DEMO_HEALTH_RECORDS) {
+  for (const r of records) {
     const e = employees.find((x) => x.id === r.employee_id);
     if (!e) continue;
     if (!map.has(e.department_id)) map.set(e.department_id, { total: 0, done: 0 });

@@ -43,7 +43,7 @@ export function VisaClient({
   const [selected, setSelected] = useState<VisaRecord | null>(null);
   const [urgencyFilter, setUrgencyFilter] = useState<VisaUrgency | "all">("all");
 
-  const grouped = recordsByUrgency();
+  const grouped = recordsByUrgency(records);
 
   // KPI
   const critical = grouped.get("critical")?.length ?? 0;

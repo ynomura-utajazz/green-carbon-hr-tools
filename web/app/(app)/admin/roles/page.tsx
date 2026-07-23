@@ -45,15 +45,19 @@ export default async function RolesPage() {
   } else {
     try {
       const sb = await createClient();
-      const { data: emps } = await sb
+      const { data: emps, error: empsError } = await sb
         .from("employees")
         .select("id, full_name, job_title, department_id, departments!employees_department_id_fkey(name)")
         .eq("status", "active")
         .is("deleted_at", null)
         .order("employee_code");
-      const { data: roleRows } = await sb
+      const { data: roleRows, error: roleError } = await sb
         .from("employee_roles")
         .select("employee_id, role");
+      // Supabase の query-level エラー（RLS拒否・列/FK不整合）は throw されず
+      // {data:null,error} で返るため try/catch では捕捉できない。明示的にログする。
+      if (empsError) console.error("[admin/roles] employees query failed:", empsError.message);
+      if (roleError) console.error("[admin/roles] employee_roles query failed:", roleError.message);
 
       const roleMap = new Map<string, Role[]>();
       for (const r of (roleRows ?? []) as { employee_id: string; role: Role }[]) {

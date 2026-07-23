@@ -26,7 +26,7 @@ export default async function EmployeesAdminPage() {
     );
   }
 
-  const [{ data: emps }, { data: depts }] = await Promise.all([
+  const [empsRes, deptsRes] = await Promise.all([
     supabase
       .from("employees")
       .select("id, employee_code, email, full_name, full_name_kana, preferred_name, display_name_en, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, resign_date, nationality")
@@ -37,6 +37,10 @@ export default async function EmployeesAdminPage() {
       .select("id, name, parent_id")
       .order("display_order", { ascending: true }),
   ]);
+  if (empsRes.error) console.error("[admin/employees] employees query failed:", empsRes.error.message);
+  if (deptsRes.error) console.error("[admin/employees] departments query failed:", deptsRes.error.message);
+  const emps = empsRes.data;
+  const depts = deptsRes.data;
 
   const employees: EmployeeRow[] = (emps ?? []).map((e) => ({
     id: e.id as string,

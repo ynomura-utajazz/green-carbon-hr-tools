@@ -14,15 +14,17 @@ export default async function OrgChartPage() {
     departments = DEMO_DEPARTMENTS;
   } else {
     const supabase = await createClient();
-    const [{ data: emps }, { data: depts }] = await Promise.all([
+    const [empsRes, deptsRes] = await Promise.all([
       supabase
         .from("employees")
         .select("id, employee_code, full_name, display_name_en, email, department_id, manager_id, job_title, job_grade, employment_type, status, hire_date, nationality, is_foreign_national")
         .eq("status", "active").is("deleted_at", null),
       supabase.from("departments").select("id, name, parent_id, display_order").order("display_order"),
     ]);
-    employees = (emps ?? []) as DemoEmployee[];
-    departments = (depts ?? []) as DemoDept[];
+    if (empsRes.error) console.error("[orgchart] employees query failed:", empsRes.error.message);
+    if (deptsRes.error) console.error("[orgchart] departments query failed:", deptsRes.error.message);
+    employees = (empsRes.data ?? []) as DemoEmployee[];
+    departments = (deptsRes.data ?? []) as DemoDept[];
   }
 
   return <OrgChartClient employees={employees} departments={departments} />;

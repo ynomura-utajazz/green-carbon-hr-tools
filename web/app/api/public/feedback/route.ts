@@ -39,18 +39,30 @@ export async function POST(req: Request) {
   const sb = createServiceClient();
   if (!sb) return NextResponse.json({ ok: false, error: "service-unavailable" }, { status: 503 });
 
-  const { error } = await sb.from("candidate_feedback").insert({
-    candidate_id:  body.application_id ?? null,
-    nps:           body.nps,
-    positive:      body.positive ?? null,
-    negative:      body.negative ?? null,
+  // candidate_feedback テーブルは本番に存在しないため（以前はここで毎回 500 になり
+  // 候補者にエラーが返っていた）、既存の candidate_events に kind='candidate_feedback'
+  // で記録する。application_id が実在候補のときのみ保存し、匿名/不正 id はログのみ。
+  // いずれの場合も候補者にはエラーを返さない（体験フィードバックで 500 は不適切）。
+  const payload = {
+    nps: body.nps,
+    positive: body.positive ?? null,
+    negative: body.negative ?? null,
     stage_at_feedback: body.stage_at_feedback ?? null,
-    submitted_at:  new Date().toISOString(),
-  });
+    submitted_at: new Date().toISOString(),
+  };
 
-  if (error) {
-    console.error("[careers/feedback] insert failed", error);
-    return NextResponse.json({ ok: false, error: "insert-failed" }, { status: 500 });
+  if (body.application_id) {
+    const { error } = await sb.from("candidate_events").insert({
+      candidate_id: body.application_id,
+      kind: "candidate_feedback",
+      payload,
+    });
+    if (error) {
+      // FK 不一致（存在しない候補 id）等。候補者にはエラーを見せずログのみ。
+      console.error("[careers/feedback] event insert failed:", error.message, payload);
+    }
+  } else {
+    console.info("[careers/feedback] anonymous feedback:", payload);
   }
 
   return NextResponse.json({ ok: true, message: "ご回答ありがとうございました 🙏" });

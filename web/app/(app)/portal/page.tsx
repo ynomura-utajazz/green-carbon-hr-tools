@@ -37,13 +37,13 @@ async function loadPortalData(): Promise<PortalData> {
   const next30 = new Date(today.getTime() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
 
   const [
-    { count: activeCount },
-    { count: hiresThisMonth },
-    { count: departmentsCount },
-    { data: birthdayRows },
-    { data: awardRows },
-    { count: visaWarnings },
-    { data: announcementRows },
+    activeRes,
+    hiresRes,
+    deptRes,
+    birthdayRes,
+    awardRes,
+    visaRes,
+    announcementRes,
   ] = await Promise.all([
     supabase.from("employees").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("employees").select("*", { count: "exact", head: true }).gte("hire_date", monthStart).eq("status", "active"),
@@ -59,6 +59,28 @@ async function loadPortalData(): Promise<PortalData> {
       .eq("kind", "announcement").order("created_at", { ascending: false }).limit(4),
   ]);
 
+  // クエリエラーを握りつぶさずサーバーログへ。RLS拒否・スキーマ不整合・ポリシー未定義で
+  // 各値が空になっても「本当にデータが無い」と区別できるようにする（会社トップの可観測性）。
+  if (activeRes.error) console.error("[portal] active count failed:", activeRes.error.message);
+  if (hiresRes.error) console.error("[portal] hires count failed:", hiresRes.error.message);
+  if (deptRes.error) console.error("[portal] departments count failed:", deptRes.error.message);
+  if (birthdayRes.error) console.error("[portal] birthdays query failed:", birthdayRes.error.message);
+  if (awardRes.error) console.error("[portal] value_awards query failed:", awardRes.error.message);
+  if (visaRes.error) console.error("[portal] visa_records count failed:", visaRes.error.message);
+  if (announcementRes.error) console.error("[portal] announcements query failed:", announcementRes.error.message);
+
+  const activeCount = activeRes.count;
+  const hiresThisMonth = hiresRes.count;
+  const departmentsCount = deptRes.count;
+  const birthdayRows = birthdayRes.data;
+  const awardRows = awardRes.data;
+  const visaWarnings = visaRes.count;
+  const announcementRows = announcementRes.data;
+
+  // 誕生日判定用に today を日付のみ(0時)へ正規化。now()の時分秒が入ると、
+  // 本日誕生日の人が next(本日0時) < today(現在時刻) で翌年送りされ取りこぼす（off-by-one）。
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   type BirthdayRow = {
     id: string; full_name: string; birth_date: string;
     departments: { name: string }[] | { name: string } | null;
@@ -67,7 +89,7 @@ async function loadPortalData(): Promise<PortalData> {
     .map((e) => {
       const b = new Date(e.birth_date);
       const next = new Date(today.getFullYear(), b.getMonth(), b.getDate());
-      if (next < today) next.setFullYear(today.getFullYear() + 1);
+      if (next < todayMidnight) next.setFullYear(today.getFullYear() + 1);
       const dept = Array.isArray(e.departments) ? e.departments[0] : e.departments;
       return {
         id: e.id,

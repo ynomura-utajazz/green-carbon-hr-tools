@@ -54,7 +54,10 @@ export default async function AttendancePage() {
   const todayStr = ymd(now);
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
-  const [leaveRes, otRes, todayRes, empsRes, deptsRes] = await Promise.all([
+  // 年度（日本の年度: 4月始まり）。付与日数マスタの絞り込みに使う。
+  const fiscalYear = now.getMonth() + 1 >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+
+  const [leaveRes, otRes, todayRes, empsRes, deptsRes, balancesRes] = await Promise.all([
     supabase
       .from("leave_requests")
       .select("id, employee_id, kind, starts_on, ends_on, days, reason, status")
@@ -75,12 +78,17 @@ export default async function AttendancePage() {
       .is("deleted_at", null)
       .order("employee_code"),
     supabase.from("departments").select("id, name, parent_id, display_order").order("display_order"),
+    supabase
+      .from("leave_balances")
+      .select("employee_id, granted_days, used_days")
+      .eq("fiscal_year", fiscalYear),
   ]);
   if (leaveRes.error) console.error("[attendance] leave_requests query failed:", leaveRes.error.message);
   if (otRes.error) console.error("[attendance] attendance_records(overtime) query failed:", otRes.error.message);
   if (todayRes.error) console.error("[attendance] attendance_records(today) query failed:", todayRes.error.message);
   if (empsRes.error) console.error("[attendance] employees query failed:", empsRes.error.message);
   if (deptsRes.error) console.error("[attendance] departments query failed:", deptsRes.error.message);
+  if (balancesRes.error) console.error("[attendance] leave_balances query failed:", balancesRes.error.message);
 
   const leaves: LeaveRow[] = (leaveRes.data ?? []).map((r) => ({
     id: r.id as string,
@@ -113,9 +121,22 @@ export default async function AttendancePage() {
   const employees = (empsRes.data ?? []) as DemoEmployee[];
   const departments = (deptsRes.data ?? []) as DemoDept[];
 
-  // 部署別 有給取得率は「付与日数マスタ」が本番スキーマに無く率(分母)を算出できないため空配列。
-  // クライアントは空状態を表示する（偽の取得率は出さない）。専用テーブル整備後に実装可能。
-  const leaveTaking: LeaveTakingRow[] = [];
+  // 部署別 有給取得率 = Σ消化日数 / Σ付与日数 × 100（今年度・leave_balances より）。
+  // employee_id → department_id を引いて部署ごとに集計する。付与0の部署は除外。
+  const empDept = new Map(employees.map((e) => [e.id, e.department_id]));
+  const deptAgg = new Map<string, { granted: number; used: number }>();
+  for (const row of balancesRes.data ?? []) {
+    const b = row as { employee_id: string; granted_days: number | null; used_days: number | null };
+    const deptId = empDept.get(b.employee_id);
+    if (!deptId) continue;
+    const agg = deptAgg.get(deptId) ?? { granted: 0, used: 0 };
+    agg.granted += Number(b.granted_days) || 0;
+    agg.used += Number(b.used_days) || 0;
+    deptAgg.set(deptId, agg);
+  }
+  const leaveTaking: LeaveTakingRow[] = [...deptAgg.entries()]
+    .filter(([, v]) => v.granted > 0)
+    .map(([dept_id, v]) => ({ dept_id, rate: Math.round((v.used / v.granted) * 100) }));
 
   return (
     <AttendanceClient

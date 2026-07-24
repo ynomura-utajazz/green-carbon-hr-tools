@@ -104,6 +104,14 @@ function tokenize(md: string): Token[] {
       buf.push(lines[i]);
       i++;
     }
+    // 上のどのブロック分岐にも該当せず、かつ段落ループの除外パターンにも一致する行
+    // （例: 単独の "#"、"#####"、">foo"、"--- text"）は buf が空のままになる。
+    // その場合ここで i を進めないと外側の while が無限ループしページが固まる。
+    // ストリーミング中は "## 見出し" が "##" だけの状態を必ず経由するため実際に踏む。
+    if (buf.length === 0) {
+      buf.push(lines[i]);
+      i++;
+    }
     tokens.push({ kind: "p", text: buf.join(" ") });
   }
   return tokens;

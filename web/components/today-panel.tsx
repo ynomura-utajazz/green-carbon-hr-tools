@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CalendarDays, Video, Users, FileCheck2, Clock, ChevronRight,
@@ -34,7 +35,14 @@ const fmtTime = (iso: string) =>
 
 export function TodayPanel() {
   const events = [...DEMO_TODAY_EVENTS].sort((a, b) => a.start.localeCompare(b.start));
-  const now = Date.now();
+  // Date.now() をレンダー中に評価すると、サーバー描画時とクライアント hydration 時で
+  // 値が変わり isUpcoming/isImminent/isPast 由来の className・要素の有無がズレて
+  // hydration エラーになる。マウント後にだけ現在時刻を確定させる（初回描画は
+  // サーバー・クライアントとも now=null で完全に一致する）。
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
 
   return (
     <Card className="overflow-hidden">
@@ -60,9 +68,9 @@ export function TodayPanel() {
         {events.map((e, i) => {
           const Icon = KIND_ICON[e.kind];
           const startMs = new Date(e.start).getTime();
-          const isUpcoming = startMs > now;
-          const isImminent = isUpcoming && startMs - now < 30 * 60_000;
-          const isPast = startMs + e.duration_minutes * 60_000 < now;
+          const isUpcoming = now !== null && startMs > now;
+          const isImminent = now !== null && isUpcoming && startMs - now < 30 * 60_000;
+          const isPast = now !== null && startMs + e.duration_minutes * 60_000 < now;
 
           return (
             <li
